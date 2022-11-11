@@ -1,0 +1,114 @@
+substitutions:
+  device_name: breathing-love
+  friendly_name: Chambre parent - Coeur ardent
+
+esphome:
+  name: ${device_name}
+  
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  level: DEBUG
+  
+api:
+  reboot_timeout: 15min
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+
+sensor:
+  - platform: wifi_signal
+    name: ${device_name} Wifi Strength
+    update_interval: 60s
+  - platform: uptime
+    name: ${device_name} Uptime
+#######################################
+# Device specific Config Begins Below #
+#######################################
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: 4
+    num_leds: 8
+    effects:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+      - pulse:
+          name: "Slow Pulse"
+          # transition_length: 1s      # defaults to 1s
+          update_interval: 2s
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }
+    id: coeur
+    name: "${friendly_name}"
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: 5
+    num_leds: 28
+    effects:
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+    id: ambience
+    name: "${friendly_name} - ambiance"
+
+    
+    
