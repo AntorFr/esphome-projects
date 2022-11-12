@@ -140,11 +140,10 @@ sensor:
 
 
 
-dashboard_import:
-  package_import_url: github://adonno/tagreader/tagreader.yaml
+#dashboard_import:
+#  package_import_url: github://adonno/tagreader/tagreader.yaml
 
 improv_serial:
-
 
 # Define switches to control LED and buzzer from HA
 switch:
@@ -215,11 +214,11 @@ button:
 
 
 
-i2c:
-  scan: False
-  frequency: 400kHz
-  sda: 22
-  scl: 21
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+  miso_pin: 19
+
 
 globals:
   - id: source
@@ -229,8 +228,10 @@ globals:
   - id: info
     type: std::string
 
-pn532_i2c:
+pn532_spi:
   id: pn532_board
+  cs_pin: 5
+  update_interval: 0.5s
   on_tag:
     then:    
     - delay: 0.15s #to fix slow component
@@ -318,7 +319,7 @@ pn532_i2c:
 # Define the buzzer output
 output:
 - platform: ledc
-  pin: 5
+  pin: 4
   id: buzzer
 
 binary_sensor:
@@ -346,16 +347,26 @@ rtttl:
   output: buzzer
 
 light:
-  - platform: fastled_clockless
-    chipset: WS2812B
+  - platform: neopixelbus
+    variant: WS2811
     pin: 15
     num_leds: 256
-    rgb_order: GRB
+    type: GRB
     name: "led_matrix"
     id: led_matrix_light
     default_transition_length: 0s
     color_correct: [100%, 100%, 100%]
     restore_mode: RESTORE_DEFAULT_OFF
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+font:
+  # gfonts://family[@weight]
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 8
 
 display:
   - platform: addressable_light
@@ -363,5 +374,13 @@ display:
     addressable_light_id: led_matrix_light
     width: 32
     height: 8
+    pixel_mapper: |-
+      if (x % 2 == 0) {
+        return (x * 8) + y;
+      }
+      return (x * 8) + (7 - y);
     rotation: 180°
     update_interval: 16ms
+    lambda: |-
+          it.strftime(0, 0, id(roboto), "%H:%M", id(homeassistant_time).now());
+    
