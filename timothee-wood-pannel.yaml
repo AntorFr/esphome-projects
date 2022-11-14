@@ -133,19 +133,35 @@ sensor:
   - platform: uptime
     name: ${device_name} Uptime
 
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: version
+    hide_timestamp: true
+    name: "${friendly_name} ESPHome Version"
+    entity_category: diagnostic
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP Address"
+      icon: mdi:wifi
+      entity_category: diagnostic
+    ssid:
+      name: "${friendly_name} Connected SSID"
+      icon: mdi:wifi-strength-2
+      entity_category: diagnostic
 #######################################
 # Device specific Config Begins Below #
 #######################################
-
-
-
 
 #dashboard_import:
 #  package_import_url: github://adonno/tagreader/tagreader.yaml
 
 improv_serial:
 
-# Define switches to control LED and buzzer from HA
+# Define switches to control buzzer from HA
 switch:
 - platform: template
   name: "${friendly_name} Buzzer Enabled"
@@ -211,7 +227,6 @@ button:
   - platform: restart
     name: "${friendly_name} Restart"
     entity_category: config
-
 
 
 spi:
@@ -322,25 +337,6 @@ output:
   pin: 4
   id: buzzer
 
-binary_sensor:
-  - platform: status
-    name: "${friendly_name} Status"
-    entity_category: diagnostic
-
-text_sensor:
-  - platform: version
-    hide_timestamp: true
-    name: "${friendly_name} ESPHome Version"
-    entity_category: diagnostic
-  - platform: wifi_info
-    ip_address:
-      name: "${friendly_name} IP Address"
-      icon: mdi:wifi
-      entity_category: diagnostic
-    ssid:
-      name: "${friendly_name} Connected SSID"
-      icon: mdi:wifi-strength-2
-      entity_category: diagnostic
 
 # Define buzzer as output for RTTTL
 rtttl:
@@ -357,16 +353,32 @@ light:
     default_transition_length: 0s
     color_correct: [100%, 100%, 100%]
     restore_mode: RESTORE_DEFAULT_OFF
+    effects:
+      - random:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - automation:
+          name: clock
+          sequence:
+            - delay: 10s
 
 time:
-  - platform: homeassistant
-    id: homeassistant_time
+  - platform: sntp
+    timezone: "Europe/Paris"
+    id: _time
 
 font:
-  # gfonts://family[@weight]
-  - file: "gfonts://Roboto"
-    id: roboto
-    size: 8
+  - file: font/monobit.ttf
+    id: monobit
+    size: 16
+    glyphs:  |
+      !"%()+*=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz@
+
 
 display:
   - platform: addressable_light
@@ -374,13 +386,21 @@ display:
     addressable_light_id: led_matrix_light
     width: 32
     height: 8
+    auto_clear_enabled: off
     pixel_mapper: |-
       if (x % 2 == 0) {
         return (x * 8) + y;
       }
       return (x * 8) + (7 - y);
     rotation: 180°
-    update_interval: 16ms
+    update_interval: 1s #16ms
+    #it.strftime(0, 0, id(monobit), Color(id(red)) ,TextAlign::CENTER, "%H:%M",id(homeassistant_time).now());
     lambda: |-
-          it.strftime(0, 0, id(roboto), "%H:%M", id(homeassistant_time).now());
+          //float r,g,b;
+          //id(led_matrix_light).remote_values.as_rgb(&r,&g,&b);
+          //ESP_LOGD("custom", "The value of sensor is: %f,%f,%f", r,g,b);
+          if(id(led_matrix_light).get_effect_name() == "clock") {
+            it.clear();
+            it.strftime(7, -4, id(monobit), Color(255,255,255) , "%H:%M", id(_time).now());
+          }
     
