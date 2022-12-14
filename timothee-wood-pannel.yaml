@@ -6,13 +6,35 @@ esphome:
   name: ${device_name}
 # If buzzer is enabled, notify on api connection success
   on_boot:
-    priority: -10
-    then:
-    - wait_until:
-        api.connected:
-    - logger.log: API is connected!
-    - rtttl.play: "success:d=24,o=5,b=100:c,g,b"
-    - switch.turn_on: buzzer_enabled
+    - priority: -10
+      then:
+      - wait_until:
+          api.connected:
+      - logger.log: API is connected!
+      - rtttl.play: "success:d=24,o=5,b=100:c,g,b"
+      - switch.turn_on: buzzer_enabled
+    - priority: -20
+      then: 
+        - lambda: |-
+            auto index = id(display_mode).active_index();
+            if (!(index.has_value())) {
+              ESP_LOGD("custom", "Turn off led_matrix_display (default)");
+              id(led_matrix_display).set_enabled(false);            
+            } else {
+              int i = index.value();
+              switch (i) { // index of the choosen value
+                case 0:
+                  ESP_LOGD("custom", " Turn off led_matrix_display");
+                  id(led_matrix_display).set_enabled(false);
+                  break;
+                case 1: 
+                  ESP_LOGD("custom", " Turn on led_matrix_display");
+                  id(led_matrix_display).set_enabled(true);
+                  break;
+              }
+            }
+            id(init_done)= true;
+
   
 esp32:
   board: esp32dev
@@ -242,6 +264,10 @@ globals:
     type: std::string
   - id: info
     type: std::string
+  - id: init_done
+    type: bool
+    initial_value: "false"
+    
 
 pn532_spi:
   id: pn532_board
@@ -342,19 +368,45 @@ output:
 rtttl:
   output: buzzer
 
+select:
+  - platform: template
+    name: "Display mode"
+    id: "display_mode"
+    optimistic: true
+    restore_value: true
+    options:
+      - Light
+      - Clock
+    initial_option: Light
+    on_value:
+      lambda: |-
+        if(id(init_done)) {
+          switch (i) { // index of the choosen value
+            case 0:
+              ESP_LOGD("custom", " Turn off led_matrix_display");
+              id(led_matrix_display).set_enabled(false);
+              break;
+            case 1: 
+              ESP_LOGD("custom", " Turn on led_matrix_display");
+              id(led_matrix_display).set_enabled(true);
+              break;
+          }
+        }
+
 light:
   - platform: neopixelbus
     variant: WS2811
+    icon: "mdi:wall-sconce-flat"
     pin: 15
     num_leds: 256
     type: GRB
     name: "led_matrix"
     id: led_matrix_light
     default_transition_length: 0s
-    color_correct: [100%, 100%, 100%]
+    color_correct: [30%, 30%, 30%]
     restore_mode: RESTORE_DEFAULT_OFF
+
     effects:
-      - random:
       - addressable_rainbow:
       - addressable_color_wipe:
       - addressable_scan:
@@ -362,10 +414,6 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
-      - automation:
-          name: clock
-          sequence:
-            - delay: 10s
 
 time:
   - platform: sntp
@@ -386,21 +434,19 @@ display:
     addressable_light_id: led_matrix_light
     width: 32
     height: 8
-    auto_clear_enabled: off
     pixel_mapper: |-
       if (x % 2 == 0) {
         return (x * 8) + y;
       }
       return (x * 8) + (7 - y);
     rotation: 180°
-    update_interval: 1s #16ms
+    update_interval: 16ms
     #it.strftime(0, 0, id(monobit), Color(id(red)) ,TextAlign::CENTER, "%H:%M",id(homeassistant_time).now());
     lambda: |-
-          //float r,g,b;
           //id(led_matrix_light).remote_values.as_rgb(&r,&g,&b);
-          //ESP_LOGD("custom", "The value of sensor is: %f,%f,%f", r,g,b);
-          if(id(led_matrix_light).get_effect_name() == "clock") {
-            it.clear();
+          //id(led_matrix_light).current_values_as_rgb(&r,&g,&b);
+          auto index = id(display_mode).active_index();
+          if ((index.has_value()) && index == 1 ) {
             it.strftime(7, -4, id(monobit), Color(255,255,255) , "%H:%M", id(_time).now());
           }
     

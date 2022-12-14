@@ -1,0 +1,132 @@
+substitutions:
+    device_name: smallcity-tgv
+    friendly_name: Small City - TGV
+  
+esphome:
+  name: ${device_name}
+# If buzzer is enabled, notify on api connection success
+  on_boot:
+    - priority: -10
+      then:
+      - number.set:
+          id: train_speed
+          value: 0
+      - number.set:
+          id: max_train_speed_bwd
+          value: 28
+      - number.set:
+          id: max_train_speed_fwd
+          value: 30
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  
+api:
+  reboot_timeout: 5min
+  password: !secret api_password
+  
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+sensor:
+  - platform: wifi_signal
+    name: ${device_name} Wifi Strength
+    update_interval: 60s
+  - platform: uptime
+    name: ${device_name} Uptime
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: version
+    hide_timestamp: true
+    name: "${friendly_name} ESPHome Version"
+    entity_category: diagnostic
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP Address"
+      icon: mdi:wifi
+      entity_category: diagnostic
+    ssid:
+      name: "${friendly_name} Connected SSID"
+      icon: mdi:wifi-strength-2
+      entity_category: diagnostic
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+number:
+  - platform: template
+    id: train_speed
+    name: Vitesse
+    optimistic: True
+    min_value: -100
+    max_value: 100
+    unit_of_measurement: '%'
+    step: 1
+    set_action:
+      then:
+        - servo.write:
+            id: my_servo
+            level: !lambda |-
+             if(x>0) {
+                return x * (id(max_train_speed_bwd).state / 100.0) / 100.0;
+             } else {
+                return x * (id(max_train_speed_fwd).state / 100.0) / 100.0;
+             }
+        
+  - platform: template
+    id: max_train_speed_bwd
+    name: max speed forward
+    optimistic: True
+    restore_value: True
+    unit_of_measurement: '%'
+    min_value: 0
+    max_value: 100
+    entity_category: config
+    step: 1
+
+  - platform: template
+    id: max_train_speed_fwd
+    name: max speed backward
+    optimistic: True
+    restore_value: True
+    unit_of_measurement: '%'
+    min_value: 0
+    max_value: 100
+    entity_category: config
+    step: 1
+
+button:
+  - platform: template
+    name: "stop"
+    on_press:
+      - number.set:
+          id: train_speed
+          value: 0
+
+servo:
+  - id: my_servo
+    output: pwm_output
+
+output:
+  - platform: esp8266_pwm
+    id: pwm_output
+    pin: D1
+    frequency: 50 Hz
