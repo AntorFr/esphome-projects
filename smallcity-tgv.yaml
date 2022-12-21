@@ -75,7 +75,7 @@ number:
   - platform: template
     id: train_speed
     name: Vitesse
-    optimistic: True
+    optimistic: true
     min_value: -100
     max_value: 100
     unit_of_measurement: '%'

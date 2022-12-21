@@ -39,8 +39,41 @@ sensor:
 #######################################
 # Device specific Config Begins Below #
 #######################################
+switch:
+  - platform: template
+    id: master_switch
+    name: "${friendly_name}"
+    icon: "mdi:heart"
+    lambda: |-
+      if (id(ambience).current_values.is_on() || id(coeur).current_values.is_on()) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - light.turn_on:
+          id: coeur
+          brightness: 42%
+          red: 100%
+          green: 0%
+          blue: 0%
+      - light.turn_on:
+          id: ambience
+          brightness: 100%
+          red: 100%
+          green: 100%
+          blue: 100%
+          effect: Twinkle
+    turn_off_action:
+      - light.turn_off: ambience
+      - light.turn_off: coeur
+
 light:
-  - platform: neopixelbus
+  - id: coeur
+    name: "${friendly_name} - coeur"
+    icon: "mdi:heart"
+    entity_category: config
+    platform: neopixelbus
     type: GRB
     variant: WS2812
     pin: 4
@@ -88,9 +121,11 @@ light:
               firstBeat = 1;
               lastBeat = millis();
             }
-    id: coeur
-    name: "${friendly_name}"
-  - platform: neopixelbus
+  - id: ambience
+    name: "${friendly_name} - ambiance"
+    icon: "mdi:heart-settings"
+    entity_category: config
+    platform: neopixelbus
     type: GRB
     variant: WS2812
     pin: 5
@@ -107,8 +142,7 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
-    id: ambience
-    name: "${friendly_name} - ambiance"
+
 
     
     

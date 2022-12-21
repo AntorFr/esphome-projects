@@ -1,0 +1,192 @@
+substitutions:
+  device_name: "daynight-light"
+  friendly_name: "Cadre lumineux Timothée"
+
+esphome:
+  name: ${device_name}
+  
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  level: DEBUG
+  
+api:
+  reboot_timeout: 15min
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+
+sensor:
+  - platform: wifi_signal
+    name: ${device_name} Wifi Strength
+    update_interval: 60s
+  - platform: uptime
+    name: ${device_name} Uptime
+#######################################
+# Device specific Config Begins Below #
+#######################################
+switch:
+  - platform: template
+    id: master_switch
+    name: "${friendly_name}"
+    icon: "mdi:weather-night"
+    lambda: |-
+      if (id(moon).current_values.is_on() || id(sun).current_values.is_on() || id(stars).current_values.is_on() ) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - light.turn_on: moon
+      - light.turn_on: sun
+      - light.turn_on: stars
+    turn_off_action:
+      - light.turn_off: moon
+      - light.turn_off: sun
+      - light.turn_off: stars
+ 
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: D1
+    num_leds: 63
+    internal: True
+    id: led
+  - platform: partition
+    id: moon
+    name: "${friendly_name} - Lune"
+    icon: "mdi:moon-waning-crescent"
+    entity_category: config
+    segments:
+      - id: led
+        from: 0
+        to: 30
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }
+  - platform: partition
+    id: stars
+    name: "${friendly_name} - Etoiles"
+    icon: "mdi:star"   
+    entity_category: config
+    segments:
+      - id: led
+        from: 31
+        to: 35
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }
+  - platform: partition
+    id: sun
+    name: "${friendly_name} - Soleil"
+    icon: "mdi:white-balance-sunny" 
+    entity_category: config  
+    segments:
+      - id: led
+        from: 36
+        to: 62
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }
+
+    
+    

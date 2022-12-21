@@ -75,16 +75,20 @@ sensor:
         - 3.14 -> 100.0
     on_value:
       then:
-        - homeassistant.service:
-            service: number.set_value
-            data:
-              value: !lambda |-
-                if(abs(x) <= 0) {
-                  return 0.0;
-                } else {
-                  return round(x);
-                }
-              entity_id: number.vitesse
+        - if:
+            condition:
+              switch.is_off: disconnect_tgv
+            then:
+              - homeassistant.service:
+                  service: number.set_value
+                  data:
+                    value: !lambda |-
+                      if(abs(x) <= 0) {
+                        return 0.0;
+                      } else {
+                        return (double) round(x);
+                      }
+                    entity_id: number.vitesse
 
   - platform: adc
     pin: 32
@@ -99,13 +103,31 @@ sensor:
         - 3.14 -> 100.0
     on_value:
       then:
-        - homeassistant.service:
-            service: number.set_value
-            data:
-              value: !lambda |-
-                if(abs(x) <= 0) {
-                  return 0.0;
-                } else {
-                  return round(x);
-                }
-              entity_id: number.vitesse_2
+        - if:
+            condition:
+              switch.is_off: disconnect_ter
+            then:
+              - homeassistant.service:
+                  service: number.set_value
+                  data:
+                    value: !lambda |-
+                      if(abs(x) <= 0) {
+                        return 0.0;
+                      } else {
+                        return (double) round(x);
+                      }
+                    entity_id: number.vitesse_2
+        
+switch:
+- platform: template
+  name: "${friendly_name} - disconnect TGV"
+  id: disconnect_tgv
+  optimistic: true
+  restore_state: true
+  entity_category: config
+- platform: template
+  name: "${friendly_name} - disconnect TER"
+  id: disconnect_ter
+  optimistic: true
+  restore_state: true
+  entity_category: config

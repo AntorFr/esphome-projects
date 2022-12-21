@@ -1,0 +1,154 @@
+substitutions:
+    device_name: smallcity-rail-switch
+    friendly_name: Small City - Aiguillage
+  
+esphome:
+  name: ${device_name}
+
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  
+api:
+  reboot_timeout: 5min
+  password: !secret api_password
+  
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+sensor:
+  - platform: wifi_signal
+    name: ${device_name} Wifi Strength
+    update_interval: 60s
+  - platform: uptime
+    name: ${device_name} Uptime
+
+binary_sensor:
+  - platform: status
+    name: "${friendly_name} Status"
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: version
+    hide_timestamp: true
+    name: "${friendly_name} ESPHome Version"
+    entity_category: diagnostic
+  - platform: wifi_info
+    ip_address:
+      name: "${friendly_name} IP Address"
+      icon: mdi:wifi
+      entity_category: diagnostic
+    ssid:
+      name: "${friendly_name} Connected SSID"
+      icon: mdi:wifi-strength-2
+      entity_category: diagnostic
+#######################################
+# Device specific Config Begins Below #
+#######################################
+switch:
+  - platform: template
+    name: "Aiguillage 1"
+    optimistic: true
+    restore_state: true
+    turn_on_action:
+      - servo.write:
+          id: rail_1
+          level: 1
+    turn_off_action:
+      - servo.write:
+          id: rail_1
+          level: -90%
+  - platform: template
+    name: "Aiguillage 2"
+    optimistic: true
+    restore_state: true
+    turn_on_action:
+      - servo.write:
+          id: rail_2
+          level: 1
+    turn_off_action:
+      - servo.write:
+          id: rail_2
+          level: -90%
+  - platform: template
+    name: "Aiguillage 3"
+    optimistic: true
+    restore_state: true
+    turn_on_action:
+      - servo.write:
+          id: rail_3
+          level: 1
+    turn_off_action:
+      - servo.write:
+          id: rail_3
+          level: -90%
+  - platform: template
+    name: "Aiguillage 4"
+    optimistic: true
+    restore_state: true
+    turn_on_action:
+      - servo.write:
+          id: rail_4
+          level: 1
+    turn_off_action:
+      - servo.write:
+          id: rail_4
+          level: -90%
+
+
+
+servo:
+  - id: rail_1
+    output: hub_1
+    auto_detach_time: 4s
+    transition_length: 2s
+  - id: rail_2
+    output: hub_2
+    auto_detach_time: 4s
+    transition_length: 2s
+  - id: rail_3
+    output: hub_3
+    auto_detach_time: 4s
+    transition_length: 2s
+  - id: rail_4
+    output: hub_4
+    auto_detach_time: 4s
+    transition_length: 2s
+
+i2c:
+  scan: true
+
+pca9685:
+  - id: hub
+    frequency: 50 Hz
+
+output:
+  - platform: pca9685
+    pca9685_id: hub
+    id: hub_1
+    channel: 0
+  - platform: pca9685
+    pca9685_id: hub
+    id: hub_2
+    channel: 1
+  - platform: pca9685
+    pca9685_id: hub
+    id: hub_3
+    channel: 2
+  - platform: pca9685
+    pca9685_id: hub
+    id: hub_4
+    channel: 3
