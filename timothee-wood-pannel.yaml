@@ -11,7 +11,7 @@ esphome:
       - wait_until:
           api.connected:
       - logger.log: API is connected!
-      - rtttl.play: "success:d=24,o=5,b=100:c,g,b"
+      #- rtttl.play: "success:d=24,o=5,b=100:c,g,b"
       - switch.turn_on: buzzer_enabled
     - priority: -20
       then: 
@@ -405,6 +405,15 @@ light:
     default_transition_length: 0s
     color_correct: [30%, 30%, 30%]
     restore_mode: RESTORE_DEFAULT_OFF
+    on_state:
+      lambda: |-
+        float r,g,b,brightness;
+        auto state = id(led_matrix_light).current_values;
+        state.as_rgb(&r,&g,&b);
+        brightness = state.get_brightness();
+        ESP_LOGD("custom", "The value of sensor is: [%f,%f,%f] - %f",255*r/brightness,255*g/brightness,255*b/brightness,brightness);
+
+
 
     effects:
       - addressable_rainbow:
@@ -443,10 +452,12 @@ display:
     update_interval: 16ms
     #it.strftime(0, 0, id(monobit), Color(id(red)) ,TextAlign::CENTER, "%H:%M",id(homeassistant_time).now());
     lambda: |-
-          //id(led_matrix_light).remote_values.as_rgb(&r,&g,&b);
-          //id(led_matrix_light).current_values_as_rgb(&r,&g,&b);
+          float r,g,b,brightness;
+          auto state = id(led_matrix_light).current_values;
+          state.as_rgb(&r,&g,&b);
+          brightness = state.get_brightness();
           auto index = id(display_mode).active_index();
           if ((index.has_value()) && index == 1 ) {
-            it.strftime(7, -4, id(monobit), Color(255,255,255) , "%H:%M", id(_time).now());
+            it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
           }
     

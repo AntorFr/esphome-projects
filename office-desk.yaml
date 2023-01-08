@@ -1,6 +1,11 @@
+substitutions:
+  device_name: "office-desk"
+  friendly_name: "Smart Desk"
+
 
 esphome:
-  name: office-desk
+  name: ${device_name}
+  comment: Iken idasen desk controller
 
 esp32:
   board: esp32dev
@@ -24,7 +29,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: office-desk.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -77,6 +82,16 @@ cover:
     
     
 sensor:
+  - platform: wifi_signal
+    name: "${device_name} - Wifi Signal"
+    update_interval: 60s
+    icon: mdi:wifi
+
+  - platform: uptime
+    name: "${device_name} - Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
+
   # Desk Height Sensor
   - platform: ble_client
     ble_client_id: office_desk
@@ -130,3 +145,15 @@ switch:
   - platform: restart
     id: "office_desk_reboot"
     name: "office-desk reboot"
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "${device_name} - IP Address"
+    ssid:
+      name: "${device_name} - Wi-Fi SSID"
+    bssid:
+      name: "${device_name} - Wi-Fi BSSID"
+  - platform: version
+    name: "${device_name} - ESPHome Version"
+    hide_timestamp: true

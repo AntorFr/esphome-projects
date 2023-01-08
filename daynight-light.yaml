@@ -7,6 +7,7 @@ esphome:
   
 esp8266:
   board: d1_mini
+  restore_from_flash: True
 
 wifi:
   ssid: !secret wifi_ssid
@@ -18,10 +19,10 @@ wifi:
     password: !secret ap_password
 
 logger:
-  level: DEBUG
+  level: WARN
   
 api:
-  reboot_timeout: 15min
+  reboot_timeout: 30min
   password: !secret api_password
 
 ota:
@@ -29,6 +30,8 @@ ota:
 
 captive_portal:
 
+web_server:
+  port: 80
 
 sensor:
   - platform: wifi_signal
@@ -67,6 +70,7 @@ light:
     num_leds: 63
     internal: True
     id: led
+    restore_mode: ALWAYS_OFF
   - platform: partition
     id: moon
     name: "${friendly_name} - Lune"
