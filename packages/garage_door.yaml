@@ -1,0 +1,240 @@
+sensor:
+  - platform: vl53l0x
+    id: door_sensor
+    name: "Door distance"
+    address: 0x29
+    update_interval: 500ms
+    long_range: True
+    device_class: "distance"
+    entity_category: "diagnostic"
+    icon: "mdi:align-vertical-distribute"
+    filters:
+      - lambda: |-
+          if (isnan(x) or (x <= 0.04)) {
+            // Sensor out of reach. 
+            return 2.00;
+          } else {
+            return x;
+          }
+      - median:
+          window_size: 20
+          send_every: 10
+          send_first_at: 10 
+
+number:
+  - platform: template
+    id: open_duration
+    name: ${friendly_name} - Durée ouverture
+    entity_category: "config"
+    unit_of_measurement: "s"
+    initial_value: 30
+    max_value: 120
+    min_value: 0
+    step: 1
+    optimistic: true
+    restore_value: true
+    mode: "box"
+    icon: "mdi:timer-cog-outline"
+  - platform: template
+    id: close_duration
+    name: ${friendly_name} - Durée fermeture
+    entity_category: "config"
+    unit_of_measurement: "s"
+    initial_value: 30
+    max_value: 120
+    min_value: 0
+    step: 1
+    optimistic: true
+    restore_value: true
+    mode: "box"
+    icon: "mdi:timer-cog-outline"
+  - platform: template
+    id: max_door_dist
+    name: ${friendly_name} - hauteur porte ouverte
+    entity_category: "config"
+    unit_of_measurement: "cm"
+    initial_value: 30
+    max_value: 60
+    min_value: 5
+    step: 1
+    optimistic: true
+    restore_value: true
+    icon: "mdi:align-vertical-distribute"
+
+globals:
+  - id: last_move 
+    type: bool #true: openning / false: closing
+    restore_value: true
+
+script:
+  - id: open_cover
+    then:
+      - if:
+          condition:
+            lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_CLOSING;'
+          then:
+            - script.execute: stop_cover
+            - script.wait: stop_cover
+      - if:
+          condition:
+            lambda: |-
+              return (
+                (id(my_cover).position > 0.)
+                and (id(my_cover).position < 1.)
+                and (id(last_move)==true)
+              );
+          then:
+            - script.execute: invert_last_move
+            - script.wait: invert_last_move
+      - if:
+          condition:
+            lambda: |-
+              return (
+                (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
+                and (id(my_cover).position != 1.)
+              );
+          then:
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
+            - cover.template.publish:
+                id: my_cover
+                current_operation: OPENING
+            - delay: !lambda "return (id(open_duration).state)*1000;"
+            - cover.template.publish:
+                id: my_cover
+                current_operation: IDLE
+                position: 1.
+ 
+  - id: close_cover
+    then:
+      - if:
+          condition:
+            lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_OPENING;'
+          then:
+            - script.execute: stop_cover
+            - script.wait: stop_cover
+      - if:
+          condition:
+            lambda: |-
+              return (
+                (id(my_cover).position > 0.)
+                and (id(my_cover).position < 1.)
+                and (id(last_move)==false)
+              );
+          then:
+            - script.execute: invert_last_move
+            - script.wait: invert_last_move
+      - if:
+          condition:
+            lambda: |-
+              return (
+                (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
+                and (id(my_cover).position != 0.)
+              );
+          then:
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
+            - cover.template.publish:
+                id: my_cover
+                current_operation: CLOSING
+            - delay: !lambda "return (id(close_duration).state)*1000;"
+            - cover.template.publish:
+                id: my_cover
+                current_operation: IDLE
+                position: 0.
+                  
+  - id: stop_cover
+    then:
+      - if:
+          condition:
+            lambda: 'return id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE;'
+          then:
+            - if:
+                condition:
+                  - script.is_running: open_cover
+                then:
+                  - script.stop: open_cover
+            - if:
+                condition:
+                  - script.is_running: close_cover
+                then:
+                  - script.stop: close_cover
+            - if:
+                condition:
+                  - script.is_running: invert_last_move
+                then:
+                  - script.wait: invert_last_move
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
+            - lambda: |-
+                if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_OPENING) {
+                  id(last_move) = true;
+                } else if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_CLOSING) {
+                  id(last_move) = false;
+                }
+            - cover.template.publish:
+                id: my_cover
+                current_operation: IDLE
+                position: 0.5
+            - delay: 800ms
+  
+  - id: invert_last_move
+    then:
+      - if:
+          condition:
+            lambda: |-
+              if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) { return false;}
+              if ((id(my_cover).position == 1.) or (id(my_cover).position == 0.)) { return false;}
+              return true;
+          then:
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
+            - delay: 800ms
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
+            - lambda: 'id(last_move) = !id(last_move);'
+            - delay: 800ms
+            
+binary_sensor:
+  - platform: template
+    id: open_sensor
+    lambda: |-
+      if (id(door_sensor).state * 100. > id(max_door_dist).state) {
+        // Garage Door is closed.
+        return false;
+      } else {
+        // Garage Door is open.
+        return true;
+      }
+    name: "Gate open"
+    device_class: "garage_door"
+    entity_category: "diagnostic"
+    icon: "mdi:gate"
+      
+cover:
+  - platform: template
+    id: my_cover
+    name: ${friendly_name}
+    has_position: true
+    device_class: garage
+    open_action:
+      - script.execute: open_cover
+    close_action:
+      - script.execute: close_cover
+    stop_action:
+      - script.execute: stop_cover
+    lambda: |-
+      if (id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE) {
+        return 0.5;
+      } else if (id(open_sensor).state) {
+        return 1.;
+      } else {
+        return 0.;
+      }
+    
+
