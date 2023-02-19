@@ -441,7 +441,7 @@ time:
     id: _time
 
 font:
-  - file: font/monobit.ttf
+  - file: fonts/monobit.ttf
     id: monobit
     size: 16
     glyphs:  |
