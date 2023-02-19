@@ -146,7 +146,7 @@ button:
 # Enable Home Assistant API
 api:
   encryption:
-    key: !secret api_password
+    key: !secret api_encryption
     
   services:
   - service: rfidreader_tag_ok

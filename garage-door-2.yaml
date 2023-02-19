@@ -1,13 +1,14 @@
 substitutions:
-  device_name: entrance-gate
-  friendly_name: Portail
+  device_name: garage-door-2
+  friendly_name: Garage 2
 
 esphome:
   name: ${device_name}
-  comment: "Portail connecté"
   
-esp8266:
-  board: esp8285
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -41,15 +42,89 @@ sensor:
 #######################################
 # Device specific Config Begins Below #
 #######################################
+  - platform: vl53l0x
+    id: door_sensor
+    name: "Door distance"
+    address: 0x29
+    update_interval: 500ms
+    long_range: True
+    device_class: "distance"
+    entity_category: "diagnostic"
+    icon: "mdi:align-vertical-distribute"
+    filters:
+      - lambda: |-
+          if (isnan(x) or (x <= 0.04)) {
+            // Sensor out of reach. 
+            return 2.00;
+          } else {
+            return x;
+          }
+      - median:
+          window_size: 20
+          send_every: 10
+          send_first_at: 10 
+
+number:
+  - platform: template
+    id: open_duration
+    name: ${friendly_name} - Durée ouverture
+    entity_category: "config"
+    unit_of_measurement: "s"
+    initial_value: 30
+    max_value: 120
+    min_value: 0
+    step: 1
+    optimistic: true
+    restore_value: true
+    mode: "box"
+    icon: "mdi:timer-cog-outline"
+  - platform: template
+    id: close_duration
+    name: ${friendly_name} - Durée fermeture
+    entity_category: "config"
+    unit_of_measurement: "s"
+    initial_value: 30
+    max_value: 120
+    min_value: 0
+    step: 1
+    optimistic: true
+    restore_value: true
+    mode: "box"
+    icon: "mdi:timer-cog-outline"
+  - platform: template
+    id: max_door_dist
+    name: ${friendly_name} - hauteur porte ouverte
+    entity_category: "config"
+    unit_of_measurement: "cm"
+    initial_value: 30
+    max_value: 60
+    min_value: 5
+    step: 1
+    optimistic: true
+    restore_value: true
+    icon: "mdi:align-vertical-distribute"
+
+i2c:
+  sda: GPIO27
+  scl: GPIO26
+  scan: true
+  id: bus_a
+
+web_server:
+
+switch:
+  - platform: gpio
+    pin: GPIO16
+    id: relay
+
+status_led:
+  pin: GPIO23
+
+
 globals:
   - id: last_move 
     type: bool #true: openning / false: closing
     restore_value: true
-
-switch:
-  - platform: gpio
-    pin: GPIO12
-    id: relay
 
 script:
   - id: open_cover
@@ -85,7 +160,7 @@ script:
             - cover.template.publish:
                 id: my_cover
                 current_operation: OPENING
-            - delay: 12s
+            - delay: !lambda "return (id(open_duration).state)*1000;"
             - cover.template.publish:
                 id: my_cover
                 current_operation: IDLE
@@ -124,7 +199,7 @@ script:
             - cover.template.publish:
                 id: my_cover
                 current_operation: CLOSING
-            - delay: 12s
+            - delay: !lambda "return (id(close_duration).state)*1000;"
             - cover.template.publish:
                 id: my_cover
                 current_operation: IDLE
@@ -186,27 +261,21 @@ script:
             - delay: 800ms
             
 binary_sensor:
-  - platform: gpio
-    id: closed_sensor
-    pin: 
-      number: GPIO4
-      inverted: false
-    name: "Gate closed"
+  - platform: template
+    id: open_sensor
+    lambda: |-
+      if (id(door_sensor).state * 100. > id(max_door_dist).state) {
+        // Garage Door is closed.
+        return false;
+      } else {
+        // Garage Door is open.
+        return true;
+      }
+    name: "Gate open"
     device_class: "garage_door"
     entity_category: "diagnostic"
     icon: "mdi:gate"
-    filters:
-      - delayed_on_off: 1s
       
-  - platform: gpio
-    pin: 
-      number: GPIO5
-      inverted: true
-    name: "Obstruction"
-    disabled_by_default: true
-    filters:
-      - delayed_on: 50ms
-
 cover:
   - platform: template
     id: my_cover
@@ -220,12 +289,12 @@ cover:
     stop_action:
       - script.execute: stop_cover
     lambda: |-
-      if (id(closed_sensor).state) {
-        return 1.;
-      } else if (id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE) {
+      if (id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE) {
         return 0.5;
-      }
-      else {
+      } else if (id(open_sensor).state) {
+        return 1.;
+      } else {
         return 0.;
       }
     
+

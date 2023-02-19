@@ -54,7 +54,8 @@ logger:
   
 api:
   reboot_timeout: 5min
-  password: !secret api_password
+  encryption:
+    key: !secret api_encryption
   
     
   services:
@@ -154,6 +155,11 @@ sensor:
     update_interval: 60s
   - platform: uptime
     name: ${device_name} Uptime
+  - platform: homeassistant
+    id: weather_temp
+    entity_id: weather.petit_mars
+    attribute: temperature
+    internal: True
 
 binary_sensor:
   - platform: status
@@ -174,6 +180,10 @@ text_sensor:
       name: "${friendly_name} Connected SSID"
       icon: mdi:wifi-strength-2
       entity_category: diagnostic
+  - platform: homeassistant
+    id: weather
+    entity_id: weather.petit_mars
+    internal: True
 #######################################
 # Device specific Config Begins Below #
 #######################################
@@ -377,6 +387,7 @@ select:
     options:
       - Light
       - Clock
+      - Weather
     initial_option: Light
     on_value:
       lambda: |-
@@ -386,7 +397,7 @@ select:
               ESP_LOGD("custom", " Turn off led_matrix_display");
               id(led_matrix_display).set_enabled(false);
               break;
-            case 1: 
+            default: 
               ESP_LOGD("custom", " Turn on led_matrix_display");
               id(led_matrix_display).set_enabled(true);
               break;
@@ -436,6 +447,37 @@ font:
     glyphs:  |
       !"%()+*=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz@
 
+image:
+  - file: "images/warning.png"
+    id: warning
+    type: RGB24
+  - file: "images/sun.png"
+    id: sun
+    type: RGB24
+  - file: "images/clock.png"
+    id: _clock
+    type: RGB24
+  - file: "images/moon.png"
+    id: moon
+    type: RGB24
+  - file: "images/cloud.png"
+    id: cloud
+    type: RGB24
+  - file: "images/lightning.png"
+    id: lightning
+    type: RGB24
+  - file: "images/lightning_rain.png"
+    id: lightning_rain
+    type: RGB24
+  - file: "images/partcloud.png"
+    id: partcloud
+    type: RGB24
+  - file: "images/rain.png"
+    id: rain
+    type: RGB24
+  - file: "images/pouring.png"
+    id: pouring
+    type: RGB24
 
 display:
   - platform: addressable_light
@@ -457,7 +499,38 @@ display:
           state.as_rgb(&r,&g,&b);
           brightness = state.get_brightness();
           auto index = id(display_mode).active_index();
-          if ((index.has_value()) && index == 1 ) {
-            it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+          if (index.has_value()) {
+            switch (index.value())
+            {
+                case 1:
+                  //it.image(0, 0, id(_clock));
+                  //it.image(0, 0, id(moon));
+                  //it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  break;
+                case 2:
+                  if(id(weather).state == "clear-night")
+                    { it.image(0, 0, id(moon));}
+                  else if (id(weather).state == "cloudy")
+                    { it.image(0, 0, id(cloud));}
+                  else if (id(weather).state == "lightning")
+                    { it.image(0, 0, id(lightning));}
+                  else if (id(weather).state == "lightning-rainy")
+                    { it.image(0, 0, id(lightning_rain));}
+                  else if (id(weather).state == "partlycloudy")
+                    { it.image(0, 0, id(partcloud));}
+                  else if (id(weather).state == "rainy")
+                    { it.image(0, 0, id(rain));}
+                  else if (id(weather).state == "pouring")
+                    { it.image(0, 0, id(pouring));}
+                  else if (id(weather).state == "sunny")
+                    { it.image(0, 0, id(sun));}
+                  else if (id(weather).state == "exceptional")
+                    { it.image(0, 0, id(warning));}
+                  
+                  it.printf(9, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
+                  break;
+
+            }
           }
     

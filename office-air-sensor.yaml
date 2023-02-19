@@ -1,7 +1,6 @@
 substitutions:
   device_name: office-air-sensor
 
-
 esphome:
   name: ${device_name}
   comment: IKEA LaskaKit
@@ -24,7 +23,7 @@ wifi:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "A5rhZjd65sd4ozscwM+uSeofPFYMxJqu49JzbO/lheE="
+    key: !secret api_encryption
 
 ota:
   password: "d0a62d4585a247aeae7e2b2c24099356"

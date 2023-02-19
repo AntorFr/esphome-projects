@@ -23,7 +23,8 @@ logger:
   
 api:
   reboot_timeout: 30min
-  password: !secret api_password
+  encryption:
+    key: !secret api_encryption
 
 ota:
   password: !secret ota_password
