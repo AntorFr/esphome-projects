@@ -64,6 +64,21 @@ sensor:
           send_every: 10
           send_first_at: 10 
 
+i2c:
+  sda: GPIO27
+  scl: GPIO26
+  scan: true
+
+web_server:
+
+switch:
+  - platform: gpio
+    pin: GPIO16
+    id: relay
+
+status_led:
+  pin: GPIO23
+
 number:
   - platform: template
     id: open_duration
@@ -103,23 +118,6 @@ number:
     optimistic: true
     restore_value: true
     icon: "mdi:align-vertical-distribute"
-
-i2c:
-  sda: GPIO27
-  scl: GPIO26
-  scan: true
-  id: bus_a
-
-web_server:
-
-switch:
-  - platform: gpio
-    pin: GPIO16
-    id: relay
-
-status_led:
-  pin: GPIO23
-
 
 globals:
   - id: last_move 
