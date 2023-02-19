@@ -75,7 +75,7 @@ light:
   - platform: neopixelbus
     variant: WS2811
     icon: "mdi:wall-sconce-flat"
-    pin: ${LED_PIN}
+    pin: ${matrix_led_pin}
     num_leds: 256
     type: GRB
     name: "led_matrix"
