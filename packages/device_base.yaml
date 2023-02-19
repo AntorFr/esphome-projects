@@ -1,25 +1,3 @@
-esphome:
-  name: ${device_name}
-
-wifi:
-  ssid: ${wifi_ssid}
-  password: ${wifi_password}
-  use_address: ${device_name}.intra.sberard.fr
-
-  ap:
-    ssid: ${device_name}
-    password: ${ap_password}
-  
-api:
-  reboot_timeout: 15min
-  encryption:
-    key: ${api_encryption}
-
-ota:
-  password: ${ota_password}
-
-captive_portal:
-
 sensor:
   - platform: wifi_signal
     name: ${device_name} Wifi Strength
