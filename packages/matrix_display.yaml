@@ -1,0 +1,200 @@
+
+esphome:
+  on_boot:
+    - priority: -20
+      then: 
+        - lambda: |-
+            auto index = id(display_mode).active_index();
+            if (!(index.has_value())) {
+              ESP_LOGD("custom", "Turn off led_matrix_display (default)");
+              id(led_matrix_display).set_enabled(false);            
+            } else {
+              int i = index.value();
+              switch (i) { // index of the choosen value
+                case 0:
+                  ESP_LOGD("custom", " Turn off led_matrix_display");
+                  id(led_matrix_display).set_enabled(false);
+                  break;
+                case 1: 
+                  ESP_LOGD("custom", " Turn on led_matrix_display");
+                  id(led_matrix_display).set_enabled(true);
+                  break;
+              }
+            }
+            id(init_done)= true;
+
+sensor:
+  - platform: homeassistant
+    id: weather_temp
+    entity_id: weather.petit_mars
+    attribute: temperature
+    internal: True
+
+
+text_sensor:
+  - platform: homeassistant
+    id: weather
+    entity_id: weather.petit_mars
+    internal: True
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+globals:
+  - id: init_done
+    type: bool
+    initial_value: "false"
+    
+select:
+  - platform: template
+    name: "Display mode"
+    id: "display_mode"
+    optimistic: true
+    restore_value: true
+    options:
+      - Light
+      - Clock
+      - Weather
+    initial_option: Light
+    on_value:
+      lambda: |-
+        if(id(init_done)) {
+          switch (i) { // index of the choosen value
+            case 0:
+              ESP_LOGD("custom", " Turn off led_matrix_display");
+              id(led_matrix_display).set_enabled(false);
+              break;
+            default: 
+              ESP_LOGD("custom", " Turn on led_matrix_display");
+              id(led_matrix_display).set_enabled(true);
+              break;
+          }
+        }
+
+light:
+  - platform: neopixelbus
+    variant: WS2811
+    icon: "mdi:wall-sconce-flat"
+    pin: ${LED_PIN}
+    num_leds: 256
+    type: GRB
+    name: "led_matrix"
+    id: led_matrix_light
+    default_transition_length: 0s
+    color_correct: [30%, 30%, 30%]
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_state:
+      lambda: |-
+        float r,g,b,brightness;
+        auto state = id(led_matrix_light).current_values;
+        state.as_rgb(&r,&g,&b);
+        brightness = state.get_brightness();
+
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+
+time:
+  - platform: sntp
+    timezone: "Europe/Paris"
+    id: _time
+
+font:
+  - file: fonts/monobit.ttf
+    id: monobit
+    size: 16
+    glyphs:  |
+      !"%()+*=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz@
+
+image:
+  - file: "images/warning.png"
+    id: warning
+    type: RGB24
+  - file: "images/sun.png"
+    id: sun
+    type: RGB24
+  - file: "images/clock.png"
+    id: _clock
+    type: RGB24
+  - file: "images/moon.png"
+    id: moon
+    type: RGB24
+  - file: "images/cloud.png"
+    id: cloud
+    type: RGB24
+  - file: "images/lightning.png"
+    id: lightning
+    type: RGB24
+  - file: "images/lightning_rain.png"
+    id: lightning_rain
+    type: RGB24
+  - file: "images/partcloud.png"
+    id: partcloud
+    type: RGB24
+  - file: "images/rain.png"
+    id: rain
+    type: RGB24
+  - file: "images/pouring.png"
+    id: pouring
+    type: RGB24
+
+display:
+  - platform: addressable_light
+    id: led_matrix_display
+    addressable_light_id: led_matrix_light
+    width: 32
+    height: 8
+    pixel_mapper: |-
+      if (x % 2 == 0) {
+        return (x * 8) + y;
+      }
+      return (x * 8) + (7 - y);
+    rotation: 180°
+    update_interval: 16ms
+    #it.strftime(0, 0, id(monobit), Color(id(red)) ,TextAlign::CENTER, "%H:%M",id(homeassistant_time).now());
+    lambda: |-
+          float r,g,b,brightness;
+          auto state = id(led_matrix_light).current_values;
+          state.as_rgb(&r,&g,&b);
+          brightness = state.get_brightness();
+          auto index = id(display_mode).active_index();
+          if (index.has_value()) {
+            switch (index.value())
+            {
+                case 1:
+                  //it.image(0, 0, id(_clock));
+                  //it.image(0, 0, id(moon));
+                  //it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  break;
+                case 2:
+                  if(id(weather).state == "clear-night")
+                    { it.image(0, 0, id(moon));}
+                  else if (id(weather).state == "cloudy")
+                    { it.image(0, 0, id(cloud));}
+                  else if (id(weather).state == "lightning")
+                    { it.image(0, 0, id(lightning));}
+                  else if (id(weather).state == "lightning-rainy")
+                    { it.image(0, 0, id(lightning_rain));}
+                  else if (id(weather).state == "partlycloudy")
+                    { it.image(0, 0, id(partcloud));}
+                  else if (id(weather).state == "rainy")
+                    { it.image(0, 0, id(rain));}
+                  else if (id(weather).state == "pouring")
+                    { it.image(0, 0, id(pouring));}
+                  else if (id(weather).state == "sunny")
+                    { it.image(0, 0, id(sun));}
+                  else if (id(weather).state == "exceptional")
+                    { it.image(0, 0, id(warning));}
+                  
+                  it.printf(9, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
+                  break;
+
+            }
+          }
+    
