@@ -4,11 +4,13 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  
+  friendly_name: ${friendly_name}
+
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
+    #type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -27,12 +29,12 @@ api:
 ota:
   password: !secret ota_password
 
-captive_portal:
+#captive_portal:
 
 logger:
-  level: ERROR #DEBUG
+  level: DEBUG #ERROR #DEBUG
 
-web_server:
+#web_server:
 
 #######################################
 # Device specific Config Begins Below #

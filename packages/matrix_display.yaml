@@ -81,7 +81,7 @@ light:
     name: "led_matrix"
     id: led_matrix_light
     default_transition_length: 0s
-    color_correct: [30%, 30%, 30%]
+    color_correct: [50%, 50%, 50%]
     restore_mode: RESTORE_DEFAULT_OFF
     on_state:
       lambda: |-
@@ -167,10 +167,12 @@ display:
             switch (index.value())
             {
                 case 1:
-                  //it.image(0, 0, id(_clock));
-                  //it.image(0, 0, id(moon));
-                  //it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
-                  it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  if(brightness >= 0.50) {
+                    it.image(0, 0, id(_clock));
+                    it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  } else {
+                    it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                  }
                   break;
                 case 2:
                   if(id(weather).state == "clear-night")
@@ -192,7 +194,7 @@ display:
                   else if (id(weather).state == "exceptional")
                     { it.image(0, 0, id(warning));}
                   
-                  it.printf(9, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
+                  it.printf(12, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
                   break;
 
             }

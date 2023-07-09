@@ -1,6 +1,6 @@
 substitutions:
-  device_name: garage-door-2
-  friendly_name: Garage 2
+  device_name: smart-parent-bed
+  friendly_name: Lit parents
 
 esphome:
   name: ${device_name}
@@ -9,7 +9,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    type: esp-idf
+    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -28,34 +28,23 @@ api:
 ota:
   password: !secret ota_password
 
-#captive_portal:
+captive_portal:
 
 logger:
   level: DEBUG
 
-#web_server:
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
-
 packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  garage_door:
-    url: https://github.com/AntorFr/esphome-projects
-    file: packages/garage_door.yaml 
 
-i2c:
-  sda: GPIO27
-  scl: GPIO26
-  scan: true
-
-switch:
+binary_sensor:
   - platform: gpio
-    pin: GPIO16
-    id: relay
-
-status_led:
-  pin: GPIO23
+    pin: GPIO32
+    name: "Gauche"
+    device_class: motion

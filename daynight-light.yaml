@@ -4,6 +4,7 @@ substitutions:
 
 esphome:
   name: ${device_name}
+  friendly_name: ${friendly_name}
   
 esp8266:
   board: d1_mini
@@ -40,6 +41,16 @@ sensor:
     update_interval: 60s
   - platform: uptime
     name: ${device_name} Uptime
+
+external_components:
+  #- source: github://antorfr/esphome-fastled-effects
+  #  components: [ custom-addressable-effetcs ]
+  #  refresh: 1s
+  - source:
+      type: local
+      path: components
+
+custom-addressable-effetcs:
 #######################################
 # Device specific Config Begins Below #
 #######################################
@@ -89,6 +100,8 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
+      - addressable_stars:
+          stars_probability: 50%
       - addressable_lambda:
           name: heartbeat
           update_interval: 16ms

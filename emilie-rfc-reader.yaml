@@ -1,5 +1,10 @@
+substitutions:
+  device_name: emilie-rfc-reader
+  friendly_name: Emilie TagReader
+
 esphome:
-  name: emilie-rfc-reader
+  name: ${device_name}
+  friendly_name: ${friendly_name}
 
 # If buzzer is enabled, notify on api connection success
   on_boot:
@@ -46,11 +51,6 @@ dashboard_import:
   package_import_url: github://adonno/tagreader/tagreader.yaml
 
 improv_serial:
-
-
-substitutions:
-  name: emilie-rfc-reader
-  friendly_name: Emilie TagReader
 
 # Define switches to control LED and buzzer from HA
 switch:

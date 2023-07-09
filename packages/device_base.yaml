@@ -1,9 +1,11 @@
 sensor:
   - platform: wifi_signal
     name: ${device_name} Wifi Strength
+    entity_category: diagnostic
     update_interval: 60s
   - platform: uptime
     name: ${device_name} Uptime
+    entity_category: diagnostic
 
 binary_sensor:
   - platform: status
@@ -24,3 +26,8 @@ text_sensor:
       name: ${device_name} Connected SSID
       icon: mdi:wifi-strength-2
       entity_category: diagnostic
+
+switch:
+  - platform: restart
+    name: ${device_name} Restart
+    entity_category: config
