@@ -27,7 +27,7 @@ text_sensor:
       icon: mdi:wifi-strength-2
       entity_category: diagnostic
 
-switch:
+button:
   - platform: restart
     name: ${device_name} Restart
     entity_category: config
