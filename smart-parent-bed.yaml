@@ -46,5 +46,48 @@ packages:
 binary_sensor:
   - platform: gpio
     pin: GPIO32
-    name: "Gauche"
+    name: "Mouvement gauche"
     device_class: motion
+  - platform: gpio
+    pin:
+      number: GPIO23
+      inverted: true
+      mode:
+          input: true
+          pullup: true
+    filters:
+      - delayed_off: 10s
+    name: "Presence gauche"
+    device_class: occupancy
+
+light:
+  - id: led_gauche
+    name: "${friendly_name} - lumière gauche"
+    #icon: "mdi:heart"
+    #entity_category: config
+    platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: 22
+    num_leds: 120
+    effects:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+      - pulse:
+          name: "Slow Pulse"
+          # transition_length: 1s      # defaults to 1s
+          update_interval: 2s
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+

@@ -47,8 +47,8 @@ wifi:
     password: !secret ap_password
 
 
-dashboard_import:
-  package_import_url: github://adonno/tagreader/tagreader.yaml
+#dashboard_import:
+#  package_import_url: github://adonno/tagreader/tagreader.yaml
 
 improv_serial:
 
