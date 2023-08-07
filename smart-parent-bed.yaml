@@ -49,6 +49,10 @@ binary_sensor:
     name: "Mouvement gauche"
     device_class: motion
   - platform: gpio
+    pin: GPIO33
+    name: "Mouvement droite"
+    device_class: motion
+  - platform: gpio
     pin:
       number: GPIO23
       inverted: true
@@ -68,8 +72,11 @@ light:
     platform: neopixelbus
     type: GRB
     variant: WS2812
-    pin: 22
+    pin: GPIO22
     num_leds: 120
+    method:
+      type: esp32_rmt
+      channel: 0
     effects:
       - pulse:
           name: "Fast Pulse"
@@ -90,4 +97,35 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
-
+  - id: led_droite
+    name: "${friendly_name} - lumière droite"
+    #icon: "mdi:heart"
+    #entity_category: config
+    platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO21
+    num_leds: 120
+    method:
+      type: esp32_rmt
+      channel: 1
+    effects:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+      - pulse:
+          name: "Slow Pulse"
+          # transition_length: 1s      # defaults to 1s
+          update_interval: 2s
+      - pulse:
+      - random:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
