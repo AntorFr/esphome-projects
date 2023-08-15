@@ -44,9 +44,10 @@ packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  garage_door:
-    url: https://github.com/AntorFr/esphome-projects
-    file: packages/garage_door.yaml 
+  garage_door: !include packages/garage_door.yaml 
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/garage_door.yaml 
+    
 
 i2c:
   sda: GPIO27

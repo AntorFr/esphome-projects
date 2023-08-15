@@ -42,11 +42,33 @@ packages:
 
 
 light:
-  - name: "led_strip"
-    platform: neopixelbus
-    type: GRBW
-    variant: SK6812
-    pin: D1
-    num_leds: 60
-   
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO1
+    num_leds: 1
+    name: "NeoPixel 1"
+    internal: true
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO3
+    num_leds: 1
+    name: "NeoPixel 3"
+    internal: true
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO5
+    num_leds: 1
+    name: "NeoPixel 5"
+    internal: true
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO13
+    num_leds: 1
+    name: "NeoPixel 13"
+    internal: true
+    restore_mode: ALWAYS_ON
     

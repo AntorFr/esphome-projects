@@ -104,7 +104,7 @@ switch:
   id: buzzer_enabled
   icon: mdi:volume-high
   optimistic: true
-  restore_state: true
+  restore_mode: RESTORE_DEFAULT_OFF
   entity_category: config
 
   

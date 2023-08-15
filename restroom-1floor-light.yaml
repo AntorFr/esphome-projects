@@ -1,6 +1,6 @@
 substitutions:
-  device_name: restroom-groundfloor-light
-  friendly_name: Bouton toilettes rdc 
+  device_name: restroom-1floor-light
+  friendly_name: Bouton toilettes etage 
 
 esphome:
   name: ${device_name}
@@ -55,7 +55,7 @@ binary_sensor:
           id: relay_1
 
   - platform: gpio
-    name: status
+    name: bouton
     pin: GPIO04
     id: switch_1
     #on_press:

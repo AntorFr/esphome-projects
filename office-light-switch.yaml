@@ -1,15 +1,15 @@
 substitutions:
-  device_name: garage-door-2
-  friendly_name: Garage 2
-
+  device_name: office-light-switch
+  friendly_name: Bouton lumiere bureau
+  relay_count: "3"
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
 
 esp32:
   board: esp32dev
-  framework:
-    type: esp-idf
+  #framework:
+  #  type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -28,34 +28,19 @@ api:
 ota:
   password: !secret ota_password
 
-#captive_portal:
+captive_portal:
 
 logger:
   level: DEBUG
 
-#web_server:
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
-
 packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  garage_door: !include packages/garage_door.yaml 
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/garage_door.yaml 
-
-i2c:
-  sda: GPIO27
-  scl: GPIO26
-  scan: true
-
-switch:
-  - platform: gpio
-    pin: GPIO16
-    id: relay
-
-status_led:
-  pin: GPIO23
+  smarthomeyourself.tx-ultimate: github://SmartHome-yourself/sonoff-tx-ultimate-for-esphome/tx_ultimate.yaml@main
+  

@@ -1,33 +1,33 @@
 sensor:
   - platform: wifi_signal
-    name: ${device_name} Wifi Strength
+    name: Wifi Strength
     entity_category: diagnostic
     update_interval: 60s
   - platform: uptime
-    name: ${device_name} Uptime
+    name: Uptime
     entity_category: diagnostic
 
 binary_sensor:
   - platform: status
-    name: ${device_name} Status
+    name: Status
     entity_category: diagnostic
 
 text_sensor:
   - platform: version
     hide_timestamp: true
-    name: ${device_name} ESPHome Version
+    name: ESPHome Version
     entity_category: diagnostic
   - platform: wifi_info
     ip_address:
-      name: ${device_name} IP Address
+      name: IP Address
       icon: mdi:wifi
       entity_category: diagnostic
     ssid:
-      name: ${device_name} Connected SSID
+      name: Connected SSID
       icon: mdi:wifi-strength-2
       entity_category: diagnostic
 
 button:
   - platform: restart
-    name: ${device_name} Restart
+    name: Restart
     entity_category: config
