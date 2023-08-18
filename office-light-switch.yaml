@@ -1,7 +1,13 @@
 substitutions:
   device_name: office-light-switch
   friendly_name: Bouton lumiere bureau
+  
+  ## TX Ultimate ##
   relay_count: "3"
+  switch_id_for_button_1: "relay_2"
+  switch_id_for_button_2: "relay_1"
+  switch_id_for_button_3: "relay_3"
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
@@ -39,8 +45,7 @@ web_server:
 # Device specific Config Begins Below #
 #######################################
 packages:
-  device_base:
-    url: https://github.com/AntorFr/esphome-projects
-    file: packages/device_base.yaml
-  smarthomeyourself.tx-ultimate: github://SmartHome-yourself/sonoff-tx-ultimate-for-esphome/tx_ultimate.yaml@main
-  
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  tx_ultimate: !include packages/tx_ultimate.yaml

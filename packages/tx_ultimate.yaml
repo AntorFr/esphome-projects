@@ -1,18 +1,19 @@
 substitutions:
 
-  relay_count: "2"
+  button_count: "3"
 
-  toggle_relay_on_touch_1: "1"
-  toggle_relay_on_touch_2: "2"
-  toggle_relay_on_touch_3: "3"
+  switch_id_for_button_1: "relay_1" # false for disable
+  switch_id_for_button_2: "relay_2"
+  switch_id_for_button_3: "relay_3"
 
-  vibra_time: 150ms
+  vibra_time: 100ms
   button_on_time: 500ms
 
   button_brightness: "0.7"
   button_color: "{0,0,100}"
 
   nightlight: "on"
+  nightlight_sensor_id: "binary_sensor.nuit"
   nightlight_brightness: "0.2"
   nightlight_color: "{80,70,0}"
 
@@ -148,14 +149,15 @@ binary_sensor:
     on_press:
       - if:
           condition:
-            lambda: "return (${toggle_relay_on_touch_1}>0);"
+            lambda: 'return (string("${switch_id_for_button_1}").substr(0, 6) == "relay_");'
           then:
-            - switch.toggle: relay_${toggle_relay_on_touch_1
+            - switch.toggle: ${switch_id_for_button_1}
+      - script.execute: refresh_led_default
       - delay: ${button_on_time}
       - binary_sensor.template.publish:
           id: touchfield_1
           state: OFF
-      - script.execute: refresh_led_default
+
 
   - platform: template
     name: "Touchfield 2"
@@ -163,14 +165,14 @@ binary_sensor:
     on_press:
       - if:
           condition:
-            lambda: "return (${toggle_relay_on_touch_2}>0);"
+            lambda: 'return (string("${switch_id_for_button_2}").substr(0, 6) == "relay_");'
           then:
-            - switch.toggle: relay_${toggle_relay_on_touch_2
+            - switch.toggle: ${switch_id_for_button_2}
+      - script.execute: refresh_led_default
       - delay: ${button_on_time}
       - binary_sensor.template.publish:
           id: touchfield_2
           state: OFF
-      - script.execute: refresh_led_default
 
   - platform: template
     name: "Touchfield 3"
@@ -178,14 +180,14 @@ binary_sensor:
     on_press:
       - if:
           condition:
-            lambda: "return (${toggle_relay_on_touch_3}>0);"
+            lambda: 'return (string("${switch_id_for_button_3}").substr(0, 6) == "relay_");'
           then:
-            - switch.toggle: relay_${toggle_relay_on_touch_3
+            - switch.toggle: ${switch_id_for_button_3}
+      - script.execute: refresh_led_default
       - delay: ${button_on_time}
       - binary_sensor.template.publish:
           id: touchfield_3
           state: OFF
-      - script.execute: refresh_led_default
 
   - platform: template
     name: "Swipe left"
@@ -228,15 +230,15 @@ binary_sensor:
       - script.execute: refresh_led_default
 
   - platform: homeassistant
-    name: "night"
+    name: night
     id: night
-    entity_id: binary_sensor.nuit
-    internal: true
-  
+    entity_id: ${nightlight_sensor_id}
+    internal: true  
+    on_state:
+      - script.execute: refresh_nightlight
+
+
 switch:
-  - platform: template
-    id: relay_0
-    internal: true
   - platform: gpio
     id: relay_1
     name: "L1"
@@ -531,7 +533,8 @@ script:
           then:
             - if:
                 condition:
-                  - night.is_on:
+                  - binary_sensor.is_on:
+                      id: night
                 then:
                   - switch.turn_on:
                       id: nightlight
@@ -546,27 +549,39 @@ script:
 
       - if:
           condition:
-            lambda: "return (${relay_count}>1 && id(relay_1).state) ;"
+            lambda: 'return (string("${switch_id_for_button_1}").substr(0, 6) == "relay_");'
           then:
-            - script.execute: led_on_button_left
-          else:
-            - script.execute: led_off_button_left
+            - if:
+                condition:
+                  lambda: 'return (id(${switch_id_for_button_1}).state);'
+                then:
+                  - script.execute: led_on_button_left
+                else:
+                  - script.execute: led_off_button_left
 
       - if:
           condition:
-            lambda: "return (${relay_count}==3 && id(relay_2).state) || (${relay_count}==1 && id(relay_1).state);"
+            lambda: 'return (string("${switch_id_for_button_2}").substr(0, 6) == "relay_");'
           then:
-            - script.execute: led_on_button_middle
-          else:
-            - script.execute: led_off_button_middle
+            - if:
+                condition:
+                  lambda: 'return (id(${switch_id_for_button_2}).state);'
+                then:
+                  - script.execute: led_on_button_middle
+                else:
+                  - script.execute: led_off_button_middle
 
       - if:
           condition:
-            lambda: "return (${relay_count}==2 && id(relay_2).state) || (${relay_count}==3 && id(relay_3).state);"
+            lambda: 'return (string("${switch_id_for_button_3}").substr(0, 6) == "relay_");'
           then:
-            - script.execute: led_on_button_right
-          else:
-            - script.execute: led_off_button_right
+            - if:
+                condition:
+                  lambda: 'return (id(${switch_id_for_button_3}).state);'
+                then:
+                  - script.execute: led_on_button_right
+                else:
+                  - script.execute: led_off_button_right
 
       - if:
           condition:
@@ -742,7 +757,7 @@ script:
     then:
       - if:
           condition:
-            lambda: "return ${relay_count}==1;"
+            lambda: "return ${button_count}==1;"
           then:
             - binary_sensor.template.publish:
                 id: touchfield_1
@@ -750,7 +765,7 @@ script:
 
       - if:
           condition:
-            lambda: "return ${relay_count}==2;"
+            lambda: "return ${button_count}==2;"
           then:
             - if:
                 condition:
@@ -767,7 +782,7 @@ script:
 
       - if:
           condition:
-            lambda: "return ${relay_count}==3;"
+            lambda: "return ${button_count}==3;"
           then:
             - if:
                 condition:

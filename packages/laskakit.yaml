@@ -1,0 +1,291 @@
+substitutions:
+  presence_sensor_id: binary_sensor.capteurs_mouvement_bureau
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: IKEA LaskaKit
+  on_boot:
+    priority: -100
+    then:
+      - script.execute: refresh_led_default
+
+uart:
+  rx_pin: 16
+  tx_pin: 17
+  baud_rate: 9600
+  id: uart_2
+
+sensor:
+  - platform: pm1006
+    pm_2_5:
+      name: "Particulate Matter 2.5µm Concentration"
+      id: pm
+      accuracy_decimals: 1
+      on_value:
+        then:
+          - if:
+              condition:
+                binary_sensor.is_on: presence
+              then:
+                - script.execute:
+                    id: refresh_led_pm
+                    pm: !lambda "return x;"      
+
+    uart_id: uart_2
+    update_interval: 20s
+  - platform: scd4x
+    co2:
+      name: "CO2"
+      id: co2
+      on_value:
+        then:
+          - if:
+              condition:
+                binary_sensor.is_on: presence
+              then:
+                - script.execute:
+                    id: refresh_led_co2
+                    co2: !lambda "return x;"
+
+    humidity:
+      name: "Humidity"    
+      id: humidity
+      on_value:
+        then:
+          - if:
+              condition:
+                binary_sensor.is_on: presence
+              then:
+                - script.execute:
+                    id: refresh_led_humidity
+                    humidity: !lambda "return x;"
+
+  - platform: homeassistant
+    id: sun_elevation
+    entity_id: sun.sun
+    attribute: elevation
+    internal: true
+
+
+switch:
+  - platform: gpio
+    pin: 12
+    id: fan
+    restore_mode: ALWAYS_ON
+    disabled_by_default: true
+    entity_category: diagnostic
+  
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO25
+    num_leds: 3
+    id: led_status
+    name: "test led"
+    effects:
+      - addressable_scan:
+          name: "Scan"
+          move_interval: 150ms
+      - addressable_rainbow:
+          name: "Rainbow"
+          speed: 10
+          width: 10
+    on_turn_off:
+      then:
+        - script.execute: refresh_led_default
+
+  - platform: partition
+    name: "PM led"
+    id: pm_led
+    internal: true
+    segments:
+      - id: led_status
+        from: 0
+        to: 0
+  - platform: partition
+    name: "CO2 led"
+    id: co2_led
+    internal: true
+    segments:
+      - id: led_status
+        from: 1
+        to: 1
+  - platform: partition
+    name: "Humidity led"
+    id: humidity_led
+    internal: true
+    segments:
+      - id: led_status
+        from: 2
+        to: 2
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  id: bus_a
+
+binary_sensor:
+  - platform: homeassistant
+    name: presence
+    id: presence
+    entity_id: ${presence_sensor_id}
+    internal: true  
+    on_press:
+      - script.execute: presence_led
+    on_release:
+      - script.execute: refresh_led_default
+
+script:
+  - id: refresh_led_default
+    mode: restart
+    then:
+      - if:
+          condition:
+            binary_sensor.is_off: presence
+          then:
+            - script.execute: turn_off_led
+          else:
+            - script.execute:
+                id: refresh_led_pm
+                pm: !lambda "return id(pm).state;" 
+            - script.execute:
+                id: refresh_led_co2
+                co2: !lambda "return id(co2).state;"
+            - script.execute:
+                id: refresh_led_humidity
+                humidity: !lambda "return id(humidity).state;"
+  
+  - id: turn_off_led
+    mode: restart
+    then:
+      - light.turn_off:
+          id: led_status
+  - id: presence_led
+    mode: restart
+    then:
+      - light.turn_on:
+          id: led_status
+          brightness: !lambda 'return id(sun_elevation).state > 0 ? 1.0 : 0.5;'
+          red: 0
+          green: 0
+          blue:  1.0
+          effect: Scan
+      - delay: 1s
+      - light.turn_off:
+          id: led_status
+          transition_length: 0s
+      - script.execute: refresh_led_default
+
+  - id: refresh_led_humidity
+    mode: restart
+    parameters:
+      humidity: float
+    then:
+      - if:
+          condition:
+            lambda: 'return humidity < 30;'
+          then:
+            - light.turn_on:
+                id: humidity_led
+                red: 1.0
+                green: 0.0
+                blue: 0.0
+                brightness:  !lambda |-
+                  return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+          else:
+            - if:
+                condition:
+                  lambda: 'return humidity > 60;'
+                then:
+                  - light.turn_on:
+                      id: humidity_led
+                      red: 0.0
+                      green: 0.0
+                      blue: 1.0
+                      brightness:  !lambda |-
+                        return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+                else:
+                  - light.turn_on:
+                      id: humidity_led
+                      red: 0.0
+                      green: 1.0
+                      blue: 0.0
+                      brightness:  !lambda |-
+                        return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+
+  - id: refresh_led_co2
+    mode: restart
+    parameters:
+      co2: float
+    then:
+      - if:
+          condition:
+            lambda: 'return co2 < 1000;'
+          then:
+            - light.turn_on:
+                id: co2_led
+                red: 0.0
+                green: 1.0
+                blue: 0.0
+                brightness:  !lambda |-
+                  return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+          else:
+          - if:
+              condition:
+                lambda: 'return co2 > 1500;'
+              then:
+                - light.turn_on:
+                    id: co2_led
+                    red: 1.0
+                    green: 0.0
+                    blue: 0.0
+                    brightness:  !lambda |-
+                      return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+              else:
+                - light.turn_on:
+                    id: co2_led
+                    red: 1.0
+                    green: 0.72
+                    blue: 0.0
+                    brightness:  !lambda |-
+                      return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+
+  - id: refresh_led_pm
+    mode: restart
+    parameters:
+      pm: float
+    then:
+      - if:
+          condition:
+            lambda: 'return pm < 30;'
+          then:
+            - light.turn_on:
+                id: pm_led
+                red: 0.0
+                green: 1.0
+                blue: 0.0
+                brightness:  !lambda |-
+                  return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+          else:
+          - if:
+              condition:
+                lambda: 'return pm > 90;'
+              then:
+                - light.turn_on:
+                    id: pm_led
+                    red: 1.0
+                    green: 0.0
+                    blue: 0.0
+                    brightness:  !lambda |-
+                      return id(sun_elevation).state > 0 ? 1.0 : 0.5;
+              else:
+                - light.turn_on:
+                    id: pm_led
+                    red: 1.0
+                    green: 0.72
+                    blue: 0.0
+                    brightness:  !lambda |-
+                      return id(sun_elevation).state > 0 ? 1.0 : 0.5;
