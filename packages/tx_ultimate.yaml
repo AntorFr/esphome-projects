@@ -1,5 +1,4 @@
 substitutions:
-
   button_count: "3"
 
   button_1_switch_relay: "true" 
@@ -75,8 +74,12 @@ substitutions:
 
   touchpanel_power_pin: GPIO5
 
+esp32:
+  board: esp32dev
 
 esphome:
+  platformio_options:
+    board_build.f_cpu: 240000000L
   on_boot:
     priority: -100
     then:
@@ -461,13 +464,12 @@ light:
 media_player:
   - platform: i2s_audio
     id: media_out
-    name: Sound
+    name: ${friendly_name} Player
     dac_type: external
     i2s_dout_pin: ${audio_sdata_pin}
     i2s_audio_id: audio_i2s
     i2s_comm_fmt: lsb
     mode: mono
-    internal: false
 
 i2s_audio:
   id: audio_i2s
