@@ -1,13 +1,20 @@
 substitutions:
-  device_name: office-light-switch
-  friendly_name: Bouton lumiere bureau
+  device_name: desk-light-switch
+  friendly_name: Bouton applique bureau
   
   ## TX Ultimate ##
-  button_count: "3"
-  
-  button_1_light_id: "2"
-  button_2_light_id: "1"
-  button_3_light_id: "3"
+  button_count: "1"
+
+  light_1_internal: "false"
+  light_1_entity_category: "config"
+  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
+
+  light_2_internal: "true" 
+  light_3_internal: "true"
+
+  button_1_switch_relay: "false" 
+  button_2_switch_relay: "false"
+  button_3_switch_relay: "false"
 
 esphome:
   name: ${device_name}
@@ -51,19 +58,3 @@ packages:
     #file: packages/device_base.yaml
   tx_ultimate: !include packages/tx_ultimate.yaml
 
-tx_ultimate_touch:
-  on_swipe_left:
-    - script.execute: led_on_swipe_left
-    - switch.turn_on: vibra
-    - binary_sensor.template.publish:
-        id: swipe_left
-        state: ON
-    - script.execute: on_swipe_left
-  
-script: 
-  - id: on_swipe_left
-    mode: restart
-    then:
-      - light.turn_on: relay_${button_1_light_id}
-      - delay: 30s
-      - light.turn_off: relay_${button_1_light_id}
