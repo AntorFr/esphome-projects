@@ -1,0 +1,91 @@
+substitutions:
+  device_name: timothee-bed-light
+  friendly_name: Lumières lit Timothée
+
+esp8266:
+  board: d1_mini_pro
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+custom-addressable-effetcs: 
+
+light:
+  - platform: neopixelbus
+    name: none
+    type: GRB
+    variant: WS2812
+    pin: D1
+    num_leds: 50
+    id: led
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_stars:
+          stars_probability: 50%
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }

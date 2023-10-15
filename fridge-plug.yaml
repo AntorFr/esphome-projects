@@ -9,7 +9,7 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  comment: "Nous Smart Wifi Socket A1T (Tasmota)"
+  comment: "Nous Smart Wifi Socket A1T"
   name_add_mac_suffix: false
   project:
     name: "NOUS.Smart-Wifi-Socket"
@@ -48,14 +48,22 @@ wifi:
 
 captive_portal:
 
+# Enable Web server
+web_server:
+  port: 80
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+
 # see: https://esphome.io/components/time.html
 time:
   - platform: homeassistant
     id: homeassistant_time
-
-# Enable Web server
-web_server:
-  port: 80
 
 light:
   - platform: status_led

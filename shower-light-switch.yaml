@@ -1,0 +1,68 @@
+substitutions:
+  device_name: shower-light-switch
+  friendly_name: Bouton lumière douche
+  
+  ## TX Ultimate ##
+  button_count: "3"
+
+  light_1_internal: "false"
+  light_1_entity_category: ""
+  light_1_restore_mode: "RESTORE_DEFAULT_OFF" 
+
+  light_2_internal: "false"
+  light_2_entity_category: ""
+  light_2_restore_mode: "RESTORE_DEFAULT_OFF" 
+
+  light_3_internal: "true"
+
+  button_1_switch_relay: "true"
+  button_1_light_id: "1"
+
+  button_3_switch_relay: "true"
+  button_3_light_id: "2"
+
+  button_2_switch_relay: "false"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+esp32:
+  board: esp32dev
+  #framework:
+  #  type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  tx_ultimate: !include packages/tx_ultimate.yaml
+
+
