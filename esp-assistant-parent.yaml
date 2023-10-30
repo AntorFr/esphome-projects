@@ -1,0 +1,38 @@
+substitutions:
+  device_name: esp-assistant-parent
+  friendly_name: Esp Assistant Chambre parent
+  
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  m5stack-atom-echo: !include packages/m5stack-atom-echo.yaml

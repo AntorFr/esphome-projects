@@ -45,13 +45,6 @@ packages:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
 
-## Work-arround to allow usage of gpio08 on ESP32-Pico-V3-02 
-## cf (https://github.com/esphome/issues/issues/35380
-external_components:
-  - source: github://antorfr/esphome@gpio08
-    components:
-      - esp32
-
 uart:
   id: uart_bus
   rx_pin: GPIO8

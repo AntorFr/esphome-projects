@@ -1,0 +1,61 @@
+substitutions:
+  device_name: garage-door-1
+  friendly_name: Garage 1
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: haiot
+  password: ILchangeaitlavie96
+  #use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: ILchangeaitlavie96
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: XOwoNfBlWXl3kmRVe36E+M6xS6hpCz8V4trACa43x5c=
+
+ota:
+  password: ILchangeaitlavie96
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+  garage_door: #!include packages/garage_door.yaml 
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/garage_door.yaml 
+
+i2c:
+  sda: GPIO27
+  scl: GPIO26
+  scan: true
+
+switch:
+  - platform: gpio
+    pin: GPIO16
+    id: relay
+
+status_led:
+  pin: GPIO23

@@ -1,9 +1,7 @@
 substitutions:
-  device_name: esp-assistant
-  friendly_name: Esp Assistant
+  device_name: esp-assistant-office
+  friendly_name: Esp Assistant Bureau
   
-  
-
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
