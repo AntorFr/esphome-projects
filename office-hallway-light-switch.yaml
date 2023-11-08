@@ -1,15 +1,29 @@
 substitutions:
-  device_name: "fridge-plug"
-  friendly_name: "Prise Frigo"
-  icon: mdi:fridge-industrial
-  current_res: "0.00202"
-  voltage_div: "775"
- 
+  device_name: office-hallway-light-switch
+  friendly_name: Bouton couloir bureau
+  
+  ## TX Ultimate ##
+  button_count: "1"
+
+  light_1_internal: "false"
+  light_1_entity_category: "config"
+  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
+
+  light_2_internal: "true" 
+  light_3_internal: "true"
+
+  button_1_switch_relay: "false" 
+  button_2_switch_relay: "false"
+  button_3_switch_relay: "false"
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  on_boot:
-    - switch.turn_on: button_switch
+
+esp32:
+  board: esp32dev
+  #framework:
+  #  type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -30,10 +44,10 @@ ota:
 
 captive_portal:
 
-web_server:
-
 logger:
   level: DEBUG
+
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
@@ -42,4 +56,5 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  tx_ultimate: !include packages/tx_ultimate.yaml
+

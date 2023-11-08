@@ -1,6 +1,10 @@
 
 substitutions:
   devicename: "nous-a5t"
+  icon_switch1: mdi:power
+  icon_switch2: mdi:power
+  icon_switch3: mdi:power
+  icon_usb: mdi:usb-port
 
 logger:
   baud_rate: 0
@@ -113,7 +117,7 @@ status_led:
 switch:
   - platform: template
     name: "Switch 1"
-    icon: mdi:power
+    icon: ${icon_switch1}
     lambda: |-
       if (id(relay1).state) {
         return true;
@@ -128,7 +132,7 @@ switch:
     restore_mode: ALWAYS_ON
   - platform: template
     name: "Switch 2"
-    icon: mdi:power
+    icon: ${icon_switch2}
     lambda: |-
       if (id(relay2).state) {
         return true;
@@ -143,7 +147,7 @@ switch:
     restore_mode: ALWAYS_ON
   - platform: template
     name: "Switch 3"
-    icon: mdi:power
+    icon: ${icon_switch3}
     lambda: |-
       if (id(relay3).state) {
         return true;
@@ -158,7 +162,7 @@ switch:
     restore_mode: ALWAYS_ON
   - platform: template
     name: "Switch USB"
-    icon: mdi:power
+    icon: ${icon_usb}
     lambda: |-
       if (id(relay4).state) {
         return true;

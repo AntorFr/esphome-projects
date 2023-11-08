@@ -1,0 +1,103 @@
+substitutions:
+  icon: "mdi:power"
+  # Higher value gives lower watt readout
+  current_res: "0.00203"
+  # Lower value gives lower voltage readout
+  voltage_div: "775"
+
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
+
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+light:
+  - platform: status_led
+    id: led
+    pin:
+      number: GPIO13
+      inverted: true
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+
+  # toggle relay on/off
+  - platform: gpio
+    pin:
+      number: GPIO00
+      mode: INPUT_PULLUP
+    id: "button_state"
+    on_press:
+      - switch.toggle: "button_switch"
+
+switch:
+  - platform: template
+    name: None
+    icon: ${icon}
+    optimistic: true
+    id: "button_switch"
+    lambda: |-
+      if (id(relay).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: relay
+      - light.turn_on: led
+    turn_off_action:
+      - switch.turn_off: relay
+      - light.turn_off: led
+  - platform: gpio
+    pin: GPIO14
+    id: relay
+    restore_mode: RESTORE_DEFAULT_ON
+
+sensor:
+  - platform: total_daily_energy
+    name: "Electric Consumption [kWh]"
+    power_id: "nous_a1t_watt"
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+    unit_of_measurement: kWh
+    icon: mdi:calendar-clock
+
+  - platform: adc
+    pin: VCC
+    name: "VCC Volt"
+    icon: mdi:flash-outline
+
+  - platform: hlw8012
+    sel_pin:
+      number: GPIO12
+      inverted: True
+    cf_pin: GPIO04
+    cf1_pin: GPIO05
+    change_mode_every: 4
+    current_resistor: ${current_res}
+    voltage_divider: ${voltage_div}
+    update_interval: 3s
+
+    current:
+      name: "Ampere"
+      unit_of_measurement: A
+      accuracy_decimals: 3
+      icon: mdi:current-ac
+
+    voltage:
+      name: "Voltage"
+      unit_of_measurement: V
+      accuracy_decimals: 1
+      icon: mdi:flash-outline
+
+    power:
+      name: "Power"
+      id: "nous_a1t_watt"
+      unit_of_measurement: W
+      icon: mdi:gauge

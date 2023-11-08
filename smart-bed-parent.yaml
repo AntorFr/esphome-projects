@@ -1,5 +1,5 @@
 substitutions:
-  device_name: smart-parent-bed
+  device_name: smart-bed-parent
   friendly_name: Lit parents
 
 esphome:
@@ -54,7 +54,7 @@ binary_sensor:
     device_class: motion
   - platform: gpio
     pin:
-      number: GPIO23
+      number: GPIO19
       inverted: true
       mode:
           input: true
@@ -62,6 +62,17 @@ binary_sensor:
     filters:
       - delayed_off: 10s
     name: "Presence gauche"
+    device_class: occupancy
+  - platform: gpio
+    pin:
+      number: GPIO18
+      inverted: true
+      mode:
+          input: true
+          pullup: true
+    filters:
+      - delayed_off: 10s
+    name: "Presence droite"
     device_class: occupancy
 
 light:

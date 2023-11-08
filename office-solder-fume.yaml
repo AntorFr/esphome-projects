@@ -1,15 +1,13 @@
 substitutions:
-  device_name: "fridge-plug"
-  friendly_name: "Prise Frigo"
-  icon: mdi:fridge-industrial
-  current_res: "0.00202"
+  device_name: office-solder-fume
+  friendly_name: "Filtre fumée soudure"
+  icon: mdi:air-filter
+  current_res: "0.00204"
   voltage_div: "775"
- 
+  
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  on_boot:
-    - switch.turn_on: button_switch
 
 wifi:
   ssid: !secret wifi_ssid
@@ -33,7 +31,7 @@ captive_portal:
 web_server:
 
 logger:
-  level: DEBUG
+  #level: DEBUG
 
 #######################################
 # Device specific Config Begins Below #

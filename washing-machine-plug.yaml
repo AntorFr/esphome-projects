@@ -1,15 +1,13 @@
 substitutions:
-  device_name: "fridge-plug"
-  friendly_name: "Prise Frigo"
-  icon: mdi:fridge-industrial
-  current_res: "0.00202"
+  device_name: washing-machine-plug
+  friendly_name: "Prise Machine à laver"
+  icon: mdi:washing-machine
+  current_res: "0.00204"
   voltage_div: "775"
- 
+  
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  on_boot:
-    - switch.turn_on: button_switch
 
 wifi:
   ssid: !secret wifi_ssid
@@ -42,4 +40,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  m5stack-atom-echo: !include packages/nous-a1t.yaml

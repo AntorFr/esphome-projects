@@ -76,6 +76,8 @@ substitutions:
 
 esp32:
   board: esp32dev
+  framework:
+    type: arduino
 
 esphome:
   platformio_options:
@@ -109,7 +111,7 @@ esphome:
       - script.execute: init_relays
 
 logger:
-#  hardware_uart: UART2
+# hardware_uart: UART2
   level: DEBUG
   logs:
     binary_sensor: INFO
@@ -464,7 +466,7 @@ light:
 media_player:
   - platform: i2s_audio
     id: media_out
-    name: ${friendly_name} Player
+    name: Player
     dac_type: external
     i2s_dout_pin: ${audio_sdata_pin}
     i2s_audio_id: audio_i2s

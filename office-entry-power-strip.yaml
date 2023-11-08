@@ -1,15 +1,15 @@
 substitutions:
-  device_name: "fridge-plug"
-  friendly_name: "Prise Frigo"
-  icon: mdi:fridge-industrial
-  current_res: "0.00202"
-  voltage_div: "775"
- 
+  device_name: office-entry-power-strip
+  friendly_name: Mutliprise entrée bureau
+  
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  on_boot:
-    - switch.turn_on: button_switch
+
+esp8266:
+  board: esp8285
+  #framework:
+  #  type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -30,10 +30,10 @@ ota:
 
 captive_portal:
 
-web_server:
-
 logger:
   level: DEBUG
+
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
@@ -42,4 +42,5 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  nous-a5t: !include packages/nous-a5t.yaml
+
