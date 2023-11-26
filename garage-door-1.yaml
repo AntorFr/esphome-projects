@@ -12,23 +12,23 @@ esp32:
     type: arduino
 
 wifi:
-  ssid: haiot
-  password: ILchangeaitlavie96
-  #use_address: ${device_name}.intra.sberard.fr
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
 
   ap:
     ssid: ${device_name}
-    password: ILchangeaitlavie96
+    password: !secret ap_password
 
 api:
   reboot_timeout: 15min
   encryption:
-    key: XOwoNfBlWXl3kmRVe36E+M6xS6hpCz8V4trACa43x5c=
+    key: !secret api_encryption
 
 ota:
-  password: ILchangeaitlavie96
+  password: !secret ota_password
 
-captive_portal:
+#captive_portal:
 
 logger:
   level: DEBUG
@@ -48,8 +48,8 @@ packages:
     file: packages/garage_door.yaml 
 
 i2c:
-  sda: GPIO27
-  scl: GPIO26
+  sda: GPIO21
+  scl: GPIO22
   scan: true
 
 switch:
@@ -59,3 +59,15 @@ switch:
 
 status_led:
   pin: GPIO23
+
+sensor:
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+      oversampling: 16x
+    pressure:
+      name: "BME280 Pressure"
+    humidity:
+      name: "BME280 Humidity"
+    address: 0x76
+    update_interval: 60s

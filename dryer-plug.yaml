@@ -1,7 +1,7 @@
 substitutions:
-  device_name: washing-machine-plug
-  friendly_name: "Prise Machine à laver"
-  icon: mdi:washing-machine
+  device_name: dryer-plug
+  friendly_name: "Prise sèche linge"
+  icon: mdi:tumble-dryer
   current_res: "0.00204"
   voltage_div: "775"
   
@@ -40,5 +40,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  m5stack-atom-echo: !include packages/nous-a1t.yaml
-  washing-machine: !include packages/washing-machine.yaml
+  Sm5stack-atom-echo: !include packages/nous-a1t.yaml

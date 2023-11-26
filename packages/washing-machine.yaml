@@ -1,0 +1,102 @@
+
+binary_sensor:
+################################################################################
+#                               Machine running                                #
+################################################################################
+  - platform: template
+    name: "RUN"
+    id: machine_running
+    filters:
+      - delayed_on: 60s # MINIMUM TIME TO AVOID FALSE POSITIVES
+      - delayed_off: 300s
+    lambda: |-
+      if (isnan(id(power).state)) {
+        return {};
+      } else if (id(power).state > 4) {
+        // Running
+        return true;
+      } else {
+        // Not running
+        return false;
+      }
+    on_press:
+      then: # at cycle start i reset all binary sensors
+        - lambda: |-  
+            {
+              id(machine_end).publish_state(false);
+              id(minimum_working_time).publish_state(false);
+              id(cycle_centrifughe).publish_state(false);
+              id(cycle_drain).publish_state(false);
+            }
+    on_release:
+      then: # at the end of cycle turn on end cycle
+        - lambda: |-  
+            {
+              id(machine_end).publish_state(true);
+            }        
+################################################################################
+#                           Minimum duration cycle                             #
+################################################################################
+  - platform: template
+    name: "Washing Machine Minimum time"
+    internal: true # minimum working time 30m
+    id: minimum_working_time 
+    filters:
+      - delayed_on: 30min
+      - delayed_off: 180s
+    lambda: |-
+      if (isnan(id(power).state)) {
+        return {};
+      } else if (id(power).state > 4) {
+        // Running
+        return true;
+      } else {
+        // Not running (the two braces means it does nothing)
+        return {};
+      }
+
+################################################################################
+#                                Centrifuge                                    #
+################################################################################
+  - platform: template
+    name: "CENTRIFUGE"
+    id: cycle_centrifughe
+    filters:
+      - delayed_on: 60s
+    # >< 90W-400W for 60s (centrifuge)  010520 changed threshold to 100W
+    lambda: |-  
+      if (isnan(id(power).state)) {
+        return {};
+      } else if ( (id(power).state > 100)&&(id(power).state < 400)&&(id(minimum_working_time).state) ){
+        // Running
+        return true;
+      } else {
+        // Not running
+        return {};
+      }
+################################################################################
+#                                Water drain                                   #
+################################################################################
+  - platform: template
+    name: "DRAIN"
+    id: cycle_drain
+    filters:
+      - delayed_on: 60s
+    # >< 15W-50W for 60s (drain pump)  
+    lambda: |-  
+      if (isnan(id(power).state)) {
+        return {};
+      } else if ( (id(power).state > 15) && (id(power).state < 60) && (id(cycle_centrifughe).state) ){
+        // Running
+        return true;
+      } else {
+        // Not running
+        return {};
+      }                             
+################################################################################
+#                                 Machine end                                  #
+################################################################################
+  - platform: template
+    name: "END"
+    id: machine_end      
+################################################################################

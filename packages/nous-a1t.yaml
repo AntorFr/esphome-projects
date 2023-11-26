@@ -61,7 +61,7 @@ switch:
 sensor:
   - platform: total_daily_energy
     name: "Electric Consumption [kWh]"
-    power_id: "nous_a1t_watt"
+    power_id: "power"
     filters:
       # Multiplication factor from W to kW is 0.001
       - multiply: 0.001
@@ -98,6 +98,6 @@ sensor:
 
     power:
       name: "Power"
-      id: "nous_a1t_watt"
+      id: "power"
       unit_of_measurement: W
       icon: mdi:gauge

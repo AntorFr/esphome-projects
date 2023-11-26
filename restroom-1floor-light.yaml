@@ -67,6 +67,12 @@ binary_sensor:
     #    - switch.toggle:
     #        id: relay_1
 
+  - platform: status
+    name: "API Status"
+    id: api_status
+    internal: True
+
+
 switch:
   - platform: gpio
     name: switch

@@ -48,8 +48,8 @@ packages:
     #file: packages/garage_door.yaml 
 
 i2c:
-  sda: GPIO27
-  scl: GPIO26
+  sda: GPIO21
+  scl: GPIO22
   scan: true
 
 switch:
@@ -59,3 +59,15 @@ switch:
 
 status_led:
   pin: GPIO23
+
+sensor:
+  - platform: bme280
+    temperature:
+      name: "Temperature"
+      oversampling: 16x
+    pressure:
+      name: "Pressure"
+    humidity:
+      name: "Humidity"
+    address: 0x76
+    update_interval: 60s
