@@ -58,4 +58,22 @@ packages:
     #file: packages/device_base.yaml
   tx_ultimate: !include packages/tx_ultimate.yaml
 
+button:
+  - platform: template
+    name: "Reset Ikea"
+    on_press:
+      - script.execute: reset_ikea
 
+script:
+  - id: reset_ikea
+    mode: restart
+    then:
+      - repeat:
+          count: 6
+          then:
+            - light.turn_off:
+                id: relay_1
+            - delay: 500ms
+            - light.turn_on:
+                id: relay_1
+            - delay: 500ms

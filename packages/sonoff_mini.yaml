@@ -1,0 +1,74 @@
+esp8266:
+  board: esp8285
+
+binary_sensor:
+  - platform: gpio
+    pin: GPIO00
+    id: reset
+    internal: true
+    filters:
+      - invert:
+      - delayed_off: 10ms
+    on_press:
+      - switch.toggle:
+          id: relay_1
+
+  - platform: gpio
+    name: bouton
+    pin: GPIO04
+    id: switch_1
+    on_press:
+      then:
+        - script.execute: toggle_if_disconnected
+    on_release:
+      then:
+        - script.execute: toggle_if_disconnected
+
+  - platform: status
+    name: "API Status"
+    id: api_connected
+    internal: True
+    on_press:
+      - script.execute: api_reconnected
+
+switch:
+  - platform: gpio
+    name: switch
+    icon: "mdi:lightbulb_outline"
+    pin: GPIO12
+    id: relay_1
+    restore_mode: restore_default_off
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+output:
+  - platform: esp8266_pwm
+    id: blue_led
+    pin: GPIO13
+    inverted: True
+
+light:
+  - platform: monochromatic
+    name: blueled
+    output: blue_led
+    internal: true # hides the Blue LED from HomeAssistant
+
+script:
+  - id: api_reconnected
+    mode: restart
+    then:
+      - switch.turn_on:
+          id: relay_1
+  - id: toggle_if_disconnected
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: "return !(id(api_connected).state);"
+          then:
+            - switch.toggle:
+                id: relay_1
+        

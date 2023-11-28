@@ -181,7 +181,6 @@ binary_sensor:
       - binary_sensor.template.publish:
           id: touchfield_1
           state: OFF
-
   - id: touchfield_2
     platform: template
     name: "Touchfield 2"
@@ -196,7 +195,6 @@ binary_sensor:
       - binary_sensor.template.publish:
           id: touchfield_2
           state: OFF
-
   - id: touchfield_3
     platform: template
     name: "Touchfield 3"
@@ -211,7 +209,6 @@ binary_sensor:
       - binary_sensor.template.publish:
           id: touchfield_3
           state: OFF
-
   - id: swipe_left
     platform: template
     name: "Swipe left"
@@ -221,7 +218,6 @@ binary_sensor:
           id: swipe_left
           state: OFF
       - script.execute: refresh_led_default
-
   - id: swipe_right
     platform: template
     name: "Swipe_right"
@@ -231,7 +227,6 @@ binary_sensor:
           id: swipe_right
           state: OFF
       - script.execute: refresh_led_default
-
   - id: multi_touch
     platform: template
     name: "Multi Touch"
@@ -241,7 +236,6 @@ binary_sensor:
           id: multi_touch
           state: OFF
       - script.execute: refresh_led_default
-
   - id: long_press
     platform: template
     name: "Long Press"
@@ -251,12 +245,11 @@ binary_sensor:
           id: long_press
           state: OFF
       - script.execute: refresh_led_default
-
   - id: night
     platform: homeassistant
     name: night
     entity_id: ${nightlight_sensor_id}
-    internal: true  
+    internal: false  
     on_state:
       - script.execute: refresh_nightlight
 
@@ -264,7 +257,7 @@ binary_sensor:
     platform: homeassistant
     name: sleep_mode
     entity_id: ${nightlight_sleep_id}
-    internal: true  
+    internal: false  
     on_state:
       - script.execute: refresh_nightlight
 
@@ -332,7 +325,6 @@ switch:
       then:
         - script.execute: refresh_led_default
 
-
 light:
   - id: relay_1
     platform: binary
@@ -341,7 +333,6 @@ light:
     restore_mode: ${light_1_restore_mode}
     entity_category: ${light_1_entity_category}
     internal: ${light_1_internal}  
-
     on_turn_on:
       then:
         - script.execute: refresh_led_default
@@ -396,7 +387,6 @@ light:
     on_turn_off:
       then:
         - script.execute: refresh_led_default
-
   - id: leds_button_right
     platform: partition
     name: "LEDs Button right"
@@ -422,7 +412,6 @@ light:
       - id: leds
         from: 11
         to: 11
-
   - id: leds_nightlight
     platform: partition
     name: "LEDs Nightlight"
@@ -446,7 +435,6 @@ light:
       - id: leds_top
         from: 0
         to: 6
-
   - id: leds_top
     platform: partition
     name: "LEDs Top"  
@@ -564,7 +552,6 @@ tx_ultimate_touch:
 
 time:
   - platform: homeassistant
-  - platform: sntp
     on_time:
       # Every 5 minutes
       - seconds: 0
@@ -580,6 +567,7 @@ script:
           condition:
             lambda: 'return "${nightlight}" == "on";'
           then:
+            - logger.log: "[refresh_nightlight] - Start"
             - if:
                 condition:
                   - binary_sensor.is_on:
@@ -587,12 +575,13 @@ script:
                   - binary_sensor.is_off:
                       id: sleep_mode
                 then:
+                  - logger.log: "[refresh_nightlight] - turn_on"
                   - switch.turn_on:
                       id: nightlight
                 else:
+                  - logger.log: "[refresh_nightlight] - turn_off"
                   - switch.turn_off:
                       id: nightlight
-
   - id: refresh_led_default
     mode: restart
     then:
@@ -641,7 +630,6 @@ script:
             - script.execute: led_on_nightlight
           else:
             - light.turn_off: leds_nightlight
-
   - id: led_on_button_left
     mode: restart
     then:
@@ -651,7 +639,6 @@ script:
           red: !lambda "return id(button_color)[0]/100.0;"
           green: !lambda "return id(button_color)[1]/100.0;"
           blue:  !lambda "return id(button_color)[2]/100.0;"
-
   - id: led_on_button_middle
     mode: restart
     then:
@@ -661,7 +648,6 @@ script:
           red: !lambda "return id(button_color)[0]/100.0;"
           green: !lambda "return id(button_color)[1]/100.0;"
           blue:  !lambda "return id(button_color)[2]/100.0;"
-
   - id: led_on_button_right
     mode: restart
     then:
