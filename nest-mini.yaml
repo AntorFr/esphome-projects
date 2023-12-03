@@ -1,0 +1,49 @@
+substitutions:
+  device_name: nest-mini
+  friendly_name: Nest mini
+  
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  #use_address: ${device_name}.intra.sberard.fr
+  use_address: nest-mini.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+  services:
+    - service: start_va
+      then:
+        - voice_assistant.start
+    - service: stop_va
+      then:
+        - voice_assistant.stop
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  onju-voice: !include packages/onju-voice.yaml
+#https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
+

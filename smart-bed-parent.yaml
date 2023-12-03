@@ -60,7 +60,8 @@ binary_sensor:
           input: true
           pullup: true
     filters:
-      - delayed_off: 10s
+      - delayed_on: 15s
+      - delayed_off: 15s
     name: "Presence gauche"
     device_class: occupancy
   - platform: gpio
@@ -71,7 +72,8 @@ binary_sensor:
           input: true
           pullup: true
     filters:
-      - delayed_off: 10s
+      - delayed_on: 15s
+      - delayed_off: 15s
     name: "Presence droite"
     device_class: occupancy
 
