@@ -55,7 +55,7 @@ uart:
 
 teleinfo:
   id: myteleinfo
-  update_interval: 30s
+  update_interval: 15s
   historical_mode: true
 
 time:
@@ -77,6 +77,7 @@ light:
 sensor:
   # Intensité souscrite
   - platform: teleinfo
+    id: int_sousc
     tag_name: "ISOUSC"
     name: "Intensité souscrite"
     unit_of_measurement: A
@@ -127,26 +128,30 @@ sensor:
     device_class: current
     state_class: measurement
     icon: mdi:current-ac
+    on_value:
+      - sensor.template.publish:
+          id: puiss_used
+          state: !lambda 'return (x*100)/id(int_sousc).state;'
 
   # Avertissement de Dépassement De Puissance Souscrite
-  #- platform: teleinfo
-  #  tag_name: "ADPS"
-  #  name: "Intensité Instantanée Dépassement"
-  #  unit_of_measurement: A
-  #  device_class: current
-  #  state_class: measurement
-  #  icon: mdi:current-ac
-  #  entity_category: diagnostic
+  - platform: teleinfo
+    tag_name: "ADPS"
+    name: "Intensité Instantanée Dépassement"
+    unit_of_measurement: A
+    device_class: current
+    state_class: measurement
+    icon: mdi:current-ac
+    entity_category: diagnostic
 
   # Intensité maximale appelée (monophasé)
-  #- platform: teleinfo
-  #  tag_name: "IMAX"
-  #  name: "Intensité Maximale"
-  #  unit_of_measurement: A
-  #  device_class: current
-  #  state_class: measurement
-  #  icon: mdi:current-ac
-  #  entity_category: diagnostic
+  - platform: teleinfo
+    tag_name: "IMAX"
+    name: "Intensité Maximale"
+    unit_of_measurement: A
+    device_class: current
+    state_class: measurement
+    icon: mdi:current-ac
+    entity_category: diagnostic
 
   # Puissance apparente
   - platform: teleinfo
@@ -155,6 +160,14 @@ sensor:
     unit_of_measurement: VA
     state_class: measurement
     device_class: apparent_power
+    icon: mdi:gauge
+
+ # Intensité Instantanée (monophasé)
+  - platform: template
+    id: puiss_used
+    name: "Puissance utilisée"
+    unit_of_measurement: "%"
+    state_class: measurement
     icon: mdi:gauge
 
 text_sensor:
