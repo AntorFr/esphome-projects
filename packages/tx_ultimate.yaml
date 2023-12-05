@@ -28,7 +28,6 @@ substitutions:
   button_brightness: "0.7"
   button_color: "{0,0,100}"
 
-  nightlight: "on"
   nightlight_sensor_id: "binary_sensor.nuit"
   nightlight_sleep_id: "input_boolean.night_mode"
   nightlight_brightness: "0.2"
@@ -108,9 +107,9 @@ esphome:
       - binary_sensor.template.publish:
           id: long_press
           state: OFF
-      - script.execute: refresh_led_default
-      - script.execute: refresh_nightlight
       - script.execute: init_relays
+      - script.execute: refresh_nightlight
+      - script.execute: refresh_led_default
 
 logger:
 # hardware_uart: UART2
@@ -251,15 +250,14 @@ binary_sensor:
     platform: homeassistant
     name: night
     entity_id: ${nightlight_sensor_id}
-    internal: false  #DEBUG
+    internal: true
     on_state:
       - script.execute: refresh_nightlight
-
   - id: sleep_mode
     platform: homeassistant
     name: sleep_mode
     entity_id: ${nightlight_sleep_id}
-    internal: false  #DEBUG
+    internal: true
     on_state:
       - script.execute: refresh_nightlight
 
@@ -284,14 +282,12 @@ switch:
     on_turn_on:
       - delay: ${vibra_time}
       - switch.turn_off: vibra
-
   - id: pa_power
     platform: gpio
     pin: ${pa_power_pin}
     name: "PA Power"
     internal: true
     restore_mode: ALWAYS_ON
-
   - id: touch_power
     platform: gpio
     name: "touch panel power"
@@ -300,7 +296,6 @@ switch:
       inverted: true
     internal: true
     restore_mode: RESTORE_DEFAULT_ON
-
   - id: nightlight
     platform: template
     name: "Nightlight"
@@ -309,9 +304,11 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     on_turn_on:
       then:
+        - script.execute: refresh_nightlight
         - script.execute: refresh_led_default
     on_turn_off:
       then:
+        - script.execute: refresh_nightlight
         - script.execute: refresh_led_default
 
   - id: nightlight_active
@@ -319,7 +316,7 @@ switch:
     name: "Nightlight"
     entity_category: "config"
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: RESTORE_DEFAULT_ON
     on_turn_on:
       then:
         - script.execute: refresh_led_default
@@ -374,6 +371,7 @@ light:
     pin: ${led_pin}
     num_leds: 28
     name: "NeoPixel Light"
+    internal: true
     entity_category: "config"
     default_transition_length: 0s
     effects:
@@ -567,28 +565,20 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return "${nightlight}" == "on";'
+            - binary_sensor.is_on:
+                id: night
+            - binary_sensor.is_off:
+                id: sleep_mode
           then:
-            - logger.log: "[refresh_nightlight] - Start" #DEBUG
-            - if:
-                condition:
-                  - binary_sensor.is_on:
-                      id: night
-                  - binary_sensor.is_off:
-                      id: sleep_mode
-                then:
-                  - logger.log: "[refresh_nightlight] - turn_on" #DEBUG
-                  - switch.turn_on:
-                      id: nightlight
-                else:
-                  - logger.log: "[refresh_nightlight] - turn_off" #DEBUG
-                  - switch.turn_off:
-                      id: nightlight
+            - switch.turn_on:
+                id: nightlight
+          else:
+            - switch.turn_off:
+                id: nightlight
   - id: refresh_led_default
     mode: restart
     then:
       - light.turn_off: leds_top
-
       - if:
           condition:
             lambda: 'return ${button_1_switch_relay};'
