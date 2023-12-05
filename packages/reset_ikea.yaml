@@ -1,3 +1,6 @@
+substitutions:
+  ikea_light_relay: "relay_1"
+
 button:
   - platform: template
     name: "Reset Ikea"
@@ -12,8 +15,8 @@ script:
           count: 6
           then:
             - light.turn_off:
-                id: relay_1
+                id: ${ikea_light_relay}
             - delay: 800ms
             - light.turn_on:
-                id: relay_1
+                id: ${ikea_light_relay}
             - delay: 800ms
