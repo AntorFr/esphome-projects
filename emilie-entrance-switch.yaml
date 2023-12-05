@@ -1,9 +1,9 @@
 substitutions:
-  device_name: dressing-light-switch
-  friendly_name: Bouton lumière dressing
+  device_name: emilie-entrance-switch
+  friendly_name: Bouton lumière Émilie
   
   ## TX Ultimate ##
-  button_count: "1"
+  button_count: "3"
 
   light_1_internal: "false"
   light_1_entity_category: "config"
@@ -12,9 +12,11 @@ substitutions:
   light_2_internal: "true" 
   light_3_internal: "true"
 
-  button_1_switch_relay: "false" 
+  button_1_switch_relay: "false"
   button_2_switch_relay: "false"
   button_3_switch_relay: "false"
+
+  led_variant: TM1914
 
 esphome:
   name: ${device_name}
@@ -56,7 +58,6 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate.yaml
-  #reset_ikea: !include packages/reset_ikea.yaml
+  tx_ultimate: !include packages/tx_ultimate_nolight.yaml
 
 

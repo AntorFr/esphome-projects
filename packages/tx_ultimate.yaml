@@ -74,6 +74,8 @@ substitutions:
 
   touchpanel_power_pin: GPIO5
 
+  led_variant: WS2811
+
 esp32:
   board: esp32dev
   framework:
@@ -368,7 +370,7 @@ light:
   - id: leds
     platform: neopixelbus
     type: GRB
-    variant: WS2811
+    variant: ${led_variant}
     pin: ${led_pin}
     num_leds: 28
     name: "NeoPixel Light"
@@ -894,11 +896,11 @@ script:
     then:
        - lambda: >
           if (!${button_1_switch_relay}) {
-            id(relay_${button_1_light_id}_output).turn_on();
+            id(relay_${button_1_light_id}).turn_on();
           }
           if (!${button_2_switch_relay}) {
-            id(relay_${button_2_light_id}_output).turn_on();
+            id(relay_${button_2_light_id}).turn_on();
           }
           if (!${button_3_switch_relay}) {
-            id(relay_${button_3_light_id}_output).turn_on();
+            id(relay_${button_3_light_id}).turn_on();
           }
