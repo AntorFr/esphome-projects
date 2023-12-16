@@ -1,7 +1,7 @@
 substitutions:
-  device_name: emilie-entrance-switch
-  friendly_name: Bouton lumière Émilie
-  
+  device_name: timothee-entrance-switch
+  friendly_name: Bouton lumière Timothée
+
   ## TX Ultimate ##
   button_count: "3"
 

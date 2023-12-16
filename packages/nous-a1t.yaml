@@ -61,6 +61,8 @@ switch:
 sensor:
   - platform: total_daily_energy
     name: "Electric Consumption [kWh]"
+    device_class: energy
+    state_class: total_increasing
     power_id: "power"
     filters:
       # Multiplication factor from W to kW is 0.001
@@ -87,6 +89,8 @@ sensor:
     current:
       name: "Ampere"
       unit_of_measurement: A
+      device_class: current
+      state_class: measurement
       accuracy_decimals: 3
       icon: mdi:current-ac
 
@@ -94,10 +98,14 @@ sensor:
       name: "Voltage"
       unit_of_measurement: V
       accuracy_decimals: 1
+      state_class: measurement
+      device_class: voltage
       icon: mdi:flash-outline
 
     power:
       name: "Power"
       id: "power"
+      state_class: measurement
+      device_class: power
       unit_of_measurement: W
       icon: mdi:gauge

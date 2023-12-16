@@ -31,13 +31,14 @@ binary_sensor:
       - switch.toggle: button_switch3
 
 sensor:
-  - platform: total_daily_energy
-    name: "Energie"
-    power_id: "power_wattage"
-    filters:
-      - multiply: 0.001
-    unit_of_measurement: kWh
-    icon: mdi:calendar-clock
+  #- platform: total_daily_energy
+  #  name: "Energie"
+  #  power_id: "power_wattage"
+  #  filters:
+  #    - multiply: 0.001
+  #  unit_of_measurement: kWh
+  #  accuracy_decimals: 3
+  #  icon: mdi:calendar-clock
 
   # Small buttons over ADC - see https://templates.blakadder.com/nous_A5T.html
   - platform: adc
@@ -62,6 +63,8 @@ sensor:
     current:
       name: "Ampere"
       unit_of_measurement: A
+      device_class: current
+      state_class: measurement
       accuracy_decimals: 3
       icon: mdi:current-ac
       filters:
@@ -78,6 +81,8 @@ sensor:
     voltage:
       name: "Volt"
       unit_of_measurement: V
+      state_class: measurement
+      device_class: voltage
       accuracy_decimals: 1
       icon: mdi:flash-outline
       filters:
@@ -88,6 +93,8 @@ sensor:
     power:
       name: "Watt"
       unit_of_measurement: W
+      state_class: measurement
+      device_class: power
       id: "power_wattage"
       icon: mdi:gauge
       filters:
@@ -105,8 +112,13 @@ sensor:
 
     energy:
       name: "Energie"
-      unit_of_measurement: Wh
+      unit_of_measurement: kWh
+      device_class: energy
+      state_class: total_increasing
+      accuracy_decimals: 3
       icon: mdi:calendar-clock
+      filters:
+        - multiply: 0.001
 
 status_led:
   pin:

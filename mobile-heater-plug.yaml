@@ -51,7 +51,7 @@ climate:
     name: "Thermostat"
     sensor: office_temperature
     min_heating_off_time: 300s
-    min_heating_run_time: 300s
+    min_heating_run_time: 30s
     min_idle_time: 30s
     heat_action:
       - switch.turn_on: button_switch
@@ -62,4 +62,4 @@ climate:
       - name: Home
         default_target_temperature_low: 19 °C
       - name: Travail
-        default_target_temperature_low: 22 °C
+        default_target_temperature_low: 21 °C

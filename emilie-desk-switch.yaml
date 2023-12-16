@@ -1,6 +1,6 @@
 substitutions:
-  device_name: emilie-entrance-switch
-  friendly_name: Bouton lumière Émilie
+  device_name: emilie-desk-switch
+  friendly_name: Bouton lumière bureau Émilie
   
   ## TX Ultimate ##
   button_count: "3"

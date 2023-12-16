@@ -28,6 +28,8 @@ binary_sensor:
     name: "API Status"
     id: api_connected
     internal: True
+    filters:
+     - delayed_off: 30s
     on_press:
       - script.execute: api_reconnected
 

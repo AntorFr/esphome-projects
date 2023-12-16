@@ -55,7 +55,7 @@ uart:
 
 teleinfo:
   id: myteleinfo
-  update_interval: 15s
+  update_interval: 5s
   historical_mode: true
 
 time:
@@ -97,28 +97,112 @@ sensor:
   #  accuracy_decimals: 2
   #  filters:
   #    - multiply: 0.001
-    # Index option HP/HC
+  
+  # Index option HP/HC
+  #- platform: teleinfo
+  #  tag_name: "HCHC"
+  #  name: "Index HC"
+  #  unit_of_measurement: kWh
+  #  device_class: energy
+  #  state_class: total_increasing
+  #  icon: mdi:flash
+  #  accuracy_decimals: 2
+  #  filters:
+  #    - multiply: 0.001
+  #- platform: teleinfo
+  #  tag_name: "HCHP"
+  #  name: "Index HP"
+  #  unit_of_measurement: kWh
+  #  device_class: energy
+  #  state_class: total_increasing
+  #  icon: mdi:flash
+  #  accuracy_decimals: 2
+  #  filters:
+  #    - multiply: 0.001
 
+  # Index option Tempo
   - platform: teleinfo
-    tag_name: "HCHC"
-    name: "Index HC"
+    tag_name: "BBRHCJB"
+    id: index_bleu_HC
+    name: "Index Tempo Bleu HC"
     unit_of_measurement: kWh
     device_class: energy
     state_class: total_increasing
-    icon: mdi:flash
-    accuracy_decimals: 2
+    accuracy_decimals: 3
     filters:
       - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "HCHP"
-    name: "Index HP"
+    tag_name: "BBRHPJB"
+    id: index_bleu_HP
+    name: "Index Tempo Bleu HP"
     unit_of_measurement: kWh
     device_class: energy
     state_class: total_increasing
-    icon: mdi:flash
-    accuracy_decimals: 2
+    accuracy_decimals: 3
     filters:
       - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
+  - platform: teleinfo
+    tag_name: "BBRHCJW"
+    id: index_blanc_HC
+    name: "Index Tempo Blanc HC"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
+  - platform: teleinfo
+    tag_name: "BBRHPJW"
+    id: index_blanc_HP
+    name: "Index Tempo Blanc HP"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
+  - platform: teleinfo
+    tag_name: "BBRHCJR"
+    id: index_rouge_HC
+    name: "Index Tempo Rouge HC"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
+  - platform: teleinfo
+    tag_name: "BBRHPJR"
+    id: index_rouge_HP
+    name: "Index Tempo Rouge HP"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+    on_value:
+      - script.execute: compute_index_total
+  
+  # Index total
+  - platform: template
+    id: index_total
+    name: "Index Total"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    icon: mdi:transmission-tower-export
+    accuracy_decimals: 3
 
   # Intensité Instantanée (monophasé)
   - platform: teleinfo
@@ -162,13 +246,23 @@ sensor:
     device_class: apparent_power
     icon: mdi:gauge
 
- # Intensité Instantanée (monophasé)
+ # Puissance utilisée
   - platform: template
     id: puiss_used
     name: "Puissance utilisée"
     unit_of_measurement: "%"
     state_class: measurement
     icon: mdi:gauge
+
+ # Prix kwh
+  - platform: template
+    id: kwh_price
+    name: "Prix kWh"
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+
 
 text_sensor:
   # Adresse du compteur
@@ -186,17 +280,51 @@ text_sensor:
   # Période Tarifaire en cours
   - platform: teleinfo
     tag_name: "PTEC"
+    id: raw_price_period
+    name: "Période Tarifaire brute"
+    internal: true
+    filters:
+    - substitute:
+      - ".. -> "
+    on_value:
+      - sensor.template.publish:
+          id: kwh_price
+          state: !lambda |-
+           if( x == "HCJB" ) return 0.1056;
+           if( x == "HPJB" ) return 0.1369;
+           if( x == "HCJW" ) return 0.1246;
+           if( x == "HPJW" ) return 0.1654;
+           if( x == "HCJR" ) return 0.1328;
+           if( x == "HPJV" ) return 0.7324;
+    
+  - platform: teleinfo
+    tag_name: "PTEC"
     name: "Période Tarifaire"
     icon: mdi:information
     filters:
     - substitute:
       - ".. -> "
-  # Horaire Heures Pleines Heures Creuses
+      - "JB -> "
+      - "JR -> "
+      - "JW -> "
   - platform: teleinfo
-    tag_name: "HHPHC"
-    name: "Horaire HP/HC"
+    tag_name: "PTEC"
+    name: "Couleur actuelle"
     icon: mdi:information
-    entity_category: diagnostic
+    filters:
+    - substitute:
+      - ".. -> "
+      - "HC -> "
+      - "HP -> "
+      - "JB -> bleu"
+      - "JW -> blanc"
+      - "JR -> rouge"
+  # Horaire Heures Pleines Heures Creuses
+  #- platform: teleinfo
+  #  tag_name: "HHPHC"
+  #  name: "Horaire HP/HC"
+  #  icon: mdi:information
+  #  entity_category: diagnostic
   ## Mot d'état du compteur
   #- platform: teleinfo
   #  tag_name: "MOTDETAT"
@@ -208,3 +336,18 @@ text_sensor:
   #  name: "Présence Potentiels"
   #  icon: mdi:information
 
+
+
+script:
+  - id: compute_index_total
+    mode: restart
+    then:
+      - sensor.template.publish:
+          id: index_total
+          state: !lambda |-
+            return id(index_bleu_HC).state
+             +id(index_bleu_HP).state
+             +id(index_blanc_HC).state
+             +id(index_blanc_HP).state
+             +id(index_rouge_HC).state
+             +id(index_rouge_HP).state;
