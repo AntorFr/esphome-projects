@@ -1,6 +1,6 @@
 substitutions:
   device_name: parent-bed-power-strip
-  friendly_name: Mutliprise lit 
+  friendly_name: Multiprise lit 
   
 
 esphome:

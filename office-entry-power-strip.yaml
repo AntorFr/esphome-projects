@@ -1,6 +1,6 @@
 substitutions:
   device_name: office-entry-power-strip
-  friendly_name: Mutliprise entrée bureau
+  friendly_name: Multiprise entrée bureau
   
 esphome:
   name: ${device_name}
