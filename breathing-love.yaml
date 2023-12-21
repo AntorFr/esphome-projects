@@ -32,19 +32,20 @@ ota:
 captive_portal:
 
 
-sensor:
-  - platform: wifi_signal
-    name: ${device_name} Wifi Strength
-    update_interval: 60s
-  - platform: uptime
-    name: ${device_name} Uptime
+  
 #######################################
 # Device specific Config Begins Below #
 #######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  addressable-effetcs: !include packages/addressable-effetcs.yaml
+
 switch:
   - platform: template
     id: master_switch
-    name: "${friendly_name}"
+    name: none
     icon: "mdi:heart"
     lambda: |-
       if (id(ambience).current_values.is_on() || id(coeur).current_values.is_on()) {
@@ -72,7 +73,7 @@ switch:
 
 light:
   - id: coeur
-    name: "${friendly_name} - coeur"
+    name: "coeur"
     icon: "mdi:heart"
     entity_category: config
     platform: neopixelbus
@@ -100,6 +101,8 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
+      - addressable_stars:
+          stars_probability: 50%
       - addressable_lambda:
           name: heartbeat
           update_interval: 16ms
@@ -123,8 +126,9 @@ light:
               firstBeat = 1;
               lastBeat = millis();
             }
+          
   - id: ambience
-    name: "${friendly_name} - ambiance"
+    name: "ambiance"
     icon: "mdi:heart-settings"
     entity_category: config
     platform: neopixelbus
@@ -144,6 +148,11 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
+      - addressable_christmas:
+          bit_size: 1
+          blank_size: 0
+      - addressable_stars:
+          stars_probability: 50%
 
 
     

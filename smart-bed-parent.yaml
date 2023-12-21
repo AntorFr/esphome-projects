@@ -35,6 +35,8 @@ logger:
 
 web_server:
 
+
+
 #######################################
 # Device specific Config Begins Below #
 #######################################
@@ -42,6 +44,7 @@ packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
+  addressable-effetcs: !include packages/addressable-effetcs.yaml
 
 binary_sensor:
   - platform: gpio
@@ -110,6 +113,11 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
+      - addressable_christmas:
+          bit_size: 5
+          blank_size: 5
+      - addressable_stars:
+          stars_probability: 80%
   - id: led_droite
     name: "${friendly_name} - lumière droite"
     #icon: "mdi:heart"
@@ -142,3 +150,8 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
+      - addressable_christmas:
+          bit_size: 5
+          blank_size: 5
+      - addressable_stars:
+          stars_probability: 80%

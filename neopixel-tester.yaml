@@ -28,6 +28,15 @@ api:
 ota:
   password: !secret ota_password
 
+external_components:
+  #- source: github://AntorFr/esphome-addressable-effetcs
+  #  components: [ custom-addressable-effetcs ]
+  #  refresh: 1s
+  - source:
+      type: local
+      path: components
+
+custom-addressable-effetcs:  
 
 captive_portal:
 web_server:
@@ -45,30 +54,16 @@ light:
   - platform: neopixelbus
     type: GRB
     variant: WS2812
-    pin: GPIO1
-    num_leds: 1
+    pin: D1
+    num_leds: 40
     name: "NeoPixel 1"
-    internal: true
-  - platform: neopixelbus
-    type: GRB
-    variant: WS2812
-    pin: GPIO3
-    num_leds: 1
-    name: "NeoPixel 3"
-    internal: true
-  - platform: neopixelbus
-    type: GRB
-    variant: WS2812
-    pin: GPIO5
-    num_leds: 1
-    name: "NeoPixel 5"
-    internal: true
-  - platform: neopixelbus
-    type: GRB
-    variant: WS2812
-    pin: GPIO13
-    num_leds: 1
-    name: "NeoPixel 13"
-    internal: true
-    restore_mode: ALWAYS_ON
+    internal: false
+    effects:
+      - addressable_flicker:
+      - addressable_twinkle:
+      - addressable_christmas:
+          bit_size: 4
+          blank_size: 4
+      - addressable_stars:
+          stars_probability: 30%
     
