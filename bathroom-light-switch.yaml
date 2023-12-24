@@ -8,7 +8,7 @@ substitutions:
   light_1_internal: "false"
   light_1_entity_category: "config"
   light_1_restore_mode: "RESTORE_DEFAULT_ON" 
-
+  
   light_2_internal: "true" 
   light_3_internal: "true"
 

@@ -2,6 +2,13 @@ substitutions:
   device_name: linky
   friendly_name: Linky
 
+  HCJB_price: "0.1056"
+  HPJB_price: "0.1369"
+  HCJW_price: "0.1246"
+  HPJW_price: "0.1654"
+  HCJR_price: "0.1328"
+  HPJV_price: "0.7324"
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
@@ -131,6 +138,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - max:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
@@ -143,6 +151,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - max:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
@@ -155,6 +164,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - filter_out: 0.0
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
@@ -167,6 +177,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - filter_out: 0.0
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
@@ -179,6 +190,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - filter_out: 0.0
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
@@ -191,6 +203,7 @@ sensor:
     accuracy_decimals: 3
     filters:
       - multiply: 0.001
+      - filter_out: 0.0
     on_value:
       - script.execute: compute_index_total
   
@@ -262,7 +275,60 @@ sensor:
     device_class: monetary
     state_class: measurement
     accuracy_decimals: 4
-
+  - platform: template
+    name: "Prix kWh Bleu HC"
+    id: HCJB
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HCJB_price};"
+    entity_category: diagnostic
+  - platform: template
+    name: "Prix kWh Bleu HP"
+    id: HPJB
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HPJB_price};"
+    entity_category: diagnostic
+  - platform: template
+    name: "Prix kWh Blanc HC"
+    id: HCJW
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HCJW_price};"
+    entity_category: diagnostic
+  - platform: template
+    name: "Prix kWh Blanc HP"
+    id: HPJW
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HPJW_price};"
+    entity_category: diagnostic
+  - platform: template
+    name: "Prix kWh Rouge HC"
+    id: HCJR
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HCJR_price};"
+    entity_category: diagnostic
+  - platform: template
+    name: "Prix kWh Rouge HP"
+    id: HPJV
+    unit_of_measurement: "€/kWh"
+    device_class: monetary
+    state_class: measurement
+    accuracy_decimals: 4
+    lambda: "return ${HPJV_price};"
+    entity_category: diagnostic
 
 text_sensor:
   # Adresse du compteur
@@ -290,13 +356,13 @@ text_sensor:
       - sensor.template.publish:
           id: kwh_price
           state: !lambda |-
-           if( x == "HCJB" ) return 0.1056;
-           if( x == "HPJB" ) return 0.1369;
-           if( x == "HCJW" ) return 0.1246;
-           if( x == "HPJW" ) return 0.1654;
-           if( x == "HCJR" ) return 0.1328;
-           if( x == "HPJV" ) return 0.7324;
-    
+           if( x == "HCJB" ) return ${HCJB_price};
+           if( x == "HPJB" ) return ${HPJB_price};
+           if( x == "HCJW" ) return ${HCJW_price};
+           if( x == "HPJW" ) return ${HPJW_price};
+           if( x == "HCJR" ) return ${HCJR_price};
+           if( x == "HPJV" ) return ${HPJV_price};
+
   - platform: teleinfo
     tag_name: "PTEC"
     name: "Période Tarifaire"
@@ -335,7 +401,6 @@ text_sensor:
   #  tag_name: "PPOT"
   #  name: "Présence Potentiels"
   #  icon: mdi:information
-
 
 
 script:
