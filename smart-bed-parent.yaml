@@ -82,7 +82,7 @@ binary_sensor:
 
 light:
   - id: led_gauche
-    name: "${friendly_name} - lumière gauche"
+    name: "lumière gauche"
     #icon: "mdi:heart"
     #entity_category: config
     platform: neopixelbus
@@ -119,7 +119,7 @@ light:
       - addressable_stars:
           stars_probability: 80%
   - id: led_droite
-    name: "${friendly_name} - lumière droite"
+    name: "lumière droite"
     #icon: "mdi:heart"
     #entity_category: config
     platform: neopixelbus
