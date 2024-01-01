@@ -83,11 +83,7 @@ output:
   - platform: gpio
     pin: GPIO12
     id: main_light_relay  
-  # the 3 lines below control the Blue LED
-  - platform: esp8266_pwm
-    id: blue_led
-    pin: GPIO13
-    inverted: True
+
 
 light:
   # the 4 lines below define the main relay as a light
@@ -96,8 +92,4 @@ light:
     output: main_light_relay 
     restore_mode: RESTORE_DEFAULT_OFF 
     id: light_id
-  # the 4 lines below define the Blue LED light on Sonoff Mini, to expose in HomeAssistant remove line "internal: true"
-  - platform: monochromatic
-    name: ${device_name}_blueled
-    output: blue_led
-    internal: true # hides the Blue LED from Homeassistant
+

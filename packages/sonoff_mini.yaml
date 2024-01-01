@@ -46,18 +46,6 @@ status_led:
     number: GPIO13
     inverted: true
 
-output:
-  - platform: esp8266_pwm
-    id: blue_led
-    pin: GPIO13
-    inverted: True
-
-light:
-  - platform: monochromatic
-    name: blueled
-    output: blue_led
-    internal: true # hides the Blue LED from HomeAssistant
-
 script:
   - id: api_reconnected
     mode: restart
