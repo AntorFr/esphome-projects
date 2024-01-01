@@ -4,6 +4,8 @@ substitutions:
   
   ## TX Ultimate ##
   button_count: "3"
+
+  nightlight_sleep_id: input_boolean.away_mode
   
   button_1_light_id: "2"
   button_2_light_id: "1"

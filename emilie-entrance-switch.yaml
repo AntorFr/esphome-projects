@@ -5,6 +5,8 @@ substitutions:
   ## TX Ultimate ##
   button_count: "3"
 
+  nightlight_sleep_id: input_boolean.night_mode_emilie
+
   light_1_internal: "false"
   light_1_entity_category: "config"
   light_1_restore_mode: "RESTORE_DEFAULT_ON" 

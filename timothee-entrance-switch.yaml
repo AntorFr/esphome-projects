@@ -5,6 +5,8 @@ substitutions:
   ## TX Ultimate ##
   button_count: "3"
 
+  nightlight_sleep_id: input_boolean.night_mode_timothee
+
   light_1_internal: "true"
   light_2_internal: "true" 
   light_3_internal: "true"
