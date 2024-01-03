@@ -1,0 +1,85 @@
+
+substitutions:
+  num_leds: "60"
+
+esp32:
+  board: esp32dev
+
+external_components:
+  - source: github://AntorFr/esphome-addressable-effetcs
+    components: [ custom-addressable-effetcs ]
+
+custom-addressable-effetcs: 
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO15
+
+microphone:
+  - platform: i2s_audio
+    id: echo_microphone
+    i2s_din_pin: GPIO32
+    adc_type: external
+    pdm: true
+
+#remote_receiver:
+#  pin: GPIO23
+#  dump: all
+
+power_supply:
+  - id: 'relay'
+    pin: 
+      number: GPIO02
+      #inverted: true
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      inverted: true
+    name: Bouton
+    disabled_by_default: true
+    entity_category: diagnostic
+    id: bouton
+
+light:
+  - platform: neopixelbus
+    power_supply: relay
+    name: none
+    type: GRB
+    variant: WS2812X
+    pin: GPIO18
+    num_leds: ${num_leds}
+    id: led
+    effects:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+      - addressable_random_twinkle:
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_stars:
+          stars_probability: 50%
+      - addressable_lambda:
+          name: heartbeat
+          update_interval: 16ms
+          lambda: |-
+            int bpm = 40;
+            int msPerBeat = (60000 / bpm);
+            int secondBeat = (msPerBeat / 3);
+            
+            static bool firstBeat = 0;
+            static unsigned long lastBeat;
+          
+            it.all().fade_to_black(15);
+
+            unsigned long beatTimer = millis() - lastBeat;
+            if((beatTimer > secondBeat) && firstBeat) { // time for the second beat?
+              it.all() = Color(255,0,0);
+              firstBeat = 0;
+            }
+            if(beatTimer > msPerBeat) { // time to reset the beat timer?
+              it.all() = Color(255,0,0);
+              firstBeat = 1;
+              lastBeat = millis();
+            }

@@ -127,7 +127,7 @@ script:
             - cover.template.publish:
                 id: my_cover
                 current_operation: CLOSING
-            - delay: 12s
+            - delay: 20s
             - cover.template.publish:
                 id: my_cover
                 current_operation: IDLE
@@ -199,7 +199,7 @@ binary_sensor:
     entity_category: "diagnostic"
     icon: "mdi:gate"
     filters:
-      - delayed_on_off: 1s
+      - delayed_on_off: 5s
       
   - platform: gpio
     pin: 

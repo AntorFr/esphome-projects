@@ -29,12 +29,9 @@ ota:
   password: !secret ota_password
 
 external_components:
-  #- source: github://AntorFr/esphome-addressable-effetcs
-  #  components: [ custom-addressable-effetcs ]
-  #  refresh: 1s
-  - source:
-      type: local
-      path: components
+  - source: github://AntorFr/esphome-addressable-effetcs@Color-Stars
+    components: [ custom-addressable-effetcs ]
+    refresh: 1s
 
 custom-addressable-effetcs:  
 
@@ -49,9 +46,16 @@ web_server:
 packages:
   device_base: !include packages/device_base.yaml
 
+button:
+  - platform: template
+    name: "Turn blue"
+    on_press:
+      then:
+        - script.execute: light_blue
 
 light:
   - platform: neopixelbus
+    id: leds
     type: GRB
     variant: WS2812
     pin: D1
@@ -66,4 +70,20 @@ light:
           blank_size: 4
       - addressable_stars:
           stars_probability: 30%
-    
+      - addressable_stars:
+          name: purple star
+          stars_probability: 30%
+          color:
+            red: 100%
+            green: 0%
+            blue: 90%
+
+script:
+  - id: light_blue
+    then:
+      - light.turn_on:
+          id: leds
+          brightness: 100%
+          red: 10% 
+          green: 10%
+          blue:  100%  

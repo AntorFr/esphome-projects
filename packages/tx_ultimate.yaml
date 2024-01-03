@@ -30,8 +30,10 @@ substitutions:
 
   nightlight_sensor_id: "binary_sensor.nuit"
   nightlight_sleep_id: "input_boolean.night_mode"
+  nightlight_restore_mode: "ALWAYS_ON"
   nightlight_brightness: "0.2"
-  nightlight_color: "{80,70,0}"
+  nightlight_color:  "{80,70,0}" #"{100,100,100}"
+  nightlight_effect: "Default"
 
   touch_brightness: "1"
   touch_color: "{0,100,100}"
@@ -109,7 +111,6 @@ esphome:
           state: OFF
       - script.execute: init_relays
       - script.execute: refresh_nightlight
-      - script.execute: refresh_led_default
 
 logger:
 # hardware_uart: UART2
@@ -136,7 +137,16 @@ external_components:
       url: https://github.com/SmartHome-yourself/sonoff-tx-ultimate-for-esphome
       ref: main
     components: [tx_ultimate_touch]
-    
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-i2c-audio
+      ref: main
+    components: [i2s_audio]
+  - source: github://AntorFr/esphome-addressable-effetcs
+    components: [ custom-addressable-effetcs ]
+
+custom-addressable-effetcs:  
+
 globals:
   - id: nightlight_color
     type: int [3]
@@ -221,7 +231,7 @@ binary_sensor:
       - script.execute: refresh_led_default
   - id: swipe_right
     platform: template
-    name: "Swipe_right"
+    name: "Swipe right"
     on_press:
       - delay: ${button_on_time}
       - binary_sensor.template.publish:
@@ -303,7 +313,7 @@ switch:
       number: ${touchpanel_power_pin}
       inverted: true
     internal: true
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: RESTORE_DEFAULT_OFF
   - id: nightlight
     platform: template
     name: "Nightlight"
@@ -313,18 +323,16 @@ switch:
     on_turn_on:
       then:
         - script.execute: refresh_nightlight
-        - script.execute: refresh_led_default
     on_turn_off:
       then:
         - script.execute: refresh_nightlight
-        - script.execute: refresh_led_default
 
   - id: nightlight_active
     platform: template
     name: "Nightlight"
     entity_category: "config"
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${nightlight_restore_mode}
     on_turn_on:
       then:
         - script.execute: refresh_led_default
@@ -391,15 +399,6 @@ light:
           name: "Pulse"
           transition_length: 1.4s
           update_interval: 1s
-      - addressable_lambda:
-          name: "Noel"
-          lambda: |-
-            for (int i = 1; i <  it.size(); i+=2) {
-            it[i] = light::ESPColor(255, 0, 18);
-            }
-            for (int i = 0; i <  it.size(); i+=2) {
-            it[i] = light::ESPColor(0, 179, 44);
-            }
     on_turn_off:
       then:
         - script.execute: refresh_led_default
@@ -430,7 +429,7 @@ light:
   - id: leds_nightlight
     platform: partition
     name: "LEDs Nightlight"
-    internal: false
+    internal: true
     segments:
       - id: leds
         from: 0
@@ -449,7 +448,17 @@ light:
         to: 27
       - id: leds_top
         from: 0
-        to: 6  
+        to: 6
+    effects:
+      - addressable_christmas:
+          blank_size: 1
+          bit_size: 1
+      - addressable_stars: 
+          stars_probability: 30%
+          color:
+            red: 100%
+            green: 100%
+            blue: 100%
   - id: leds_top
     platform: partition
     name: "LEDs Top"  
@@ -475,6 +484,7 @@ media_player:
     i2s_audio_id: audio_i2s
     i2s_comm_fmt: lsb
     mode: mono
+    redirect_https: true
 
 i2s_audio:
   id: audio_i2s
@@ -574,6 +584,20 @@ time:
         then:
           - script.execute: refresh_nightlight
 
+select:
+  - platform: template
+    name: nightlight effect
+    id: nightlight_effect
+    entity_category: "config"
+    options:
+     - "Default"
+     - "Christmas"
+     - "Stars"
+    initial_option: ${nightlight_effect}
+    optimistic: true
+    on_value:
+      - script.execute: refresh_nightlight
+
 script:
   - id: refresh_nightlight
     mode: restart
@@ -590,10 +614,19 @@ script:
           else:
             - switch.turn_off:
                 id: nightlight
+      - script.execute: refresh_led_default
   - id: refresh_led_default
     mode: restart
     then:
       - light.turn_off: leds_top
+      - if:
+          condition:
+            lambda: "return id(nightlight).state && id(nightlight_active).state;"
+          then:
+            - script.execute: led_on_nightlight
+          else:
+            - light.turn_off: leds_nightlight
+
       - if:
           condition:
             lambda: 'return ${button_1_switch_relay};'
@@ -630,13 +663,7 @@ script:
                 else:
                   - script.execute: led_off_button_right
 
-      - if:
-          condition:
-            lambda: "return id(nightlight).state && id(nightlight_active).state;"
-          then:
-            - script.execute: led_on_nightlight
-          else:
-            - light.turn_off: leds_nightlight
+
   - id: led_on_button_left
     mode: restart
     then:
@@ -663,7 +690,7 @@ script:
           brightness: ${button_brightness}
           red: !lambda "return id(button_color)[0]/100.0;"
           green: !lambda "return id(button_color)[1]/100.0;"
-          blue:  !lambda "return id(button_color)[2]/100.0;"
+          blue:  !lambda "return id(button_color)[2]/100.0;"       
   - id: led_off_button_left
     mode: restart
     then:
@@ -677,6 +704,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default") {
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_left
@@ -693,6 +727,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default") {
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_middle
@@ -709,6 +750,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default"){
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_right
@@ -721,6 +769,14 @@ script:
           red: !lambda "return id(nightlight_color)[0]/100.0;"
           green: !lambda "return id(nightlight_color)[1]/100.0;"
           blue:  !lambda "return id(nightlight_color)[2]/100.0;"
+          effect: !lambda |-
+            auto effect = id(nightlight_effect).state;
+            if(effect == "Default"){
+              return "None";
+            } else {
+              return effect.c_str();
+            }
+
   - id: led_on_release
     mode: restart
     then:
