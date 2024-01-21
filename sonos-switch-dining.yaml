@@ -1,0 +1,41 @@
+substitutions:
+  device_name: sonos-switch-dining
+  friendly_name: "Salle à manger Prise Sonos"
+  icon: mdi:power-plug
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+web_server:
+
+logger:
+  level: DEBUG
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+  sonoff_basic: !include packages/sonoff_basic.yaml

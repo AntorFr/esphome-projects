@@ -45,19 +45,21 @@ packages:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
   addressable-effetcs: !include packages/addressable-effetcs.yaml
+  ld2410: !include packages/ld2410.yaml
 
 binary_sensor:
-  - platform: gpio
-    pin: GPIO32
-    name: "Mouvement gauche"
+  - name: "Mouvement gauche"
+    platform: gpio
+    pin: GPIO26
     device_class: motion
-  - platform: gpio
+  - name: "Mouvement droite"
+    platform: gpio
     pin: GPIO33
-    name: "Mouvement droite"
     device_class: motion
-  - platform: gpio
+  - name: "Presence gauche"
+    platform: gpio
     pin:
-      number: GPIO19
+      number: GPIO17
       inverted: true
       mode:
           input: true
@@ -65,11 +67,11 @@ binary_sensor:
     filters:
       - delayed_on: 15s
       - delayed_off: 15s
-    name: "Presence gauche"
     device_class: occupancy
-  - platform: gpio
+  - name: "Presence droite"
+    platform: gpio
     pin:
-      number: GPIO18
+      number: GPIO04
       inverted: true
       mode:
           input: true
@@ -77,8 +79,11 @@ binary_sensor:
     filters:
       - delayed_on: 15s
       - delayed_off: 15s
-    name: "Presence droite"
+
     device_class: occupancy
+
+status_led:
+  pin: GPIO23
 
 light:
   - id: led_gauche
@@ -88,7 +93,7 @@ light:
     platform: neopixelbus
     type: GRB
     variant: WS2812
-    pin: GPIO22
+    pin: GPIO27
     num_leds: 120
     method:
       type: esp32_rmt
@@ -125,7 +130,7 @@ light:
     platform: neopixelbus
     type: GRB
     variant: WS2812
-    pin: GPIO21
+    pin: GPIO25
     num_leds: 120
     method:
       type: esp32_rmt

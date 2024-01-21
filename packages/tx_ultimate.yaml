@@ -516,50 +516,38 @@ tx_ultimate_touch:
     - script.execute: led_on_touch
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_press", "Touch Position: %d / State: %d", touch.x, touch.state);
-
   on_release:
     - script.execute:
         id: handle_release
         pos: !lambda "return touch.x;"
-
     - switch.turn_on: vibra
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
 
   on_swipe_left:
     - script.execute: led_on_swipe_left
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: swipe_left
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_left", "Swipe Left Position: %d / State: %d", touch.x, touch.state);
 
   on_swipe_right:
     - script.execute: led_on_swipe_right
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: swipe_right
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_right", "Swipe Right Position: %d / State: %d", touch.x, touch.state);
 
   on_full_touch_release:
     - script.execute: led_on_full_touch
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_full_touch_release", "Full Touch Release Position: %d / State: %d", touch.x, touch.state);
 
@@ -662,8 +650,6 @@ script:
                   - script.execute: led_on_button_right
                 else:
                   - script.execute: led_off_button_right
-
-
   - id: led_on_button_left
     mode: restart
     then:
@@ -776,7 +762,6 @@ script:
             } else {
               return effect.c_str();
             }
-
   - id: led_on_release
     mode: restart
     then:
