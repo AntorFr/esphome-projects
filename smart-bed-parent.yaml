@@ -31,7 +31,7 @@ ota:
 captive_portal:
 
 logger:
-  level: DEBUG
+  level: INFO
 
 web_server:
 
@@ -44,7 +44,6 @@ packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  addressable-effetcs: !include packages/addressable-effetcs.yaml
   ld2410: !include packages/ld2410.yaml
 
 binary_sensor:
@@ -52,10 +51,14 @@ binary_sensor:
     platform: gpio
     pin: GPIO26
     device_class: motion
+    filters:
+      - delayed_off: 5s
   - name: "Mouvement droite"
     platform: gpio
     pin: GPIO33
     device_class: motion
+    filters:
+      - delayed_off: 5s
   - name: "Presence gauche"
     platform: gpio
     pin:
@@ -118,11 +121,6 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
-      - addressable_christmas:
-          bit_size: 5
-          blank_size: 5
-      - addressable_stars:
-          stars_probability: 80%
   - id: led_droite
     name: "lumière droite"
     #icon: "mdi:heart"
@@ -155,8 +153,3 @@ light:
       - addressable_random_twinkle:
       - addressable_fireworks:
       - addressable_flicker:
-      - addressable_christmas:
-          bit_size: 5
-          blank_size: 5
-      - addressable_stars:
-          stars_probability: 80%

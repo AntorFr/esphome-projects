@@ -1,3 +1,11 @@
+substitutions:
+  light_name: "switch"
+  light_icon: "mdi:lightbulb"
+  light_restore_mode: "RESTORE_DEFAULT_OFF"
+  light_entity_category: "config"
+  light_controled: "false" #controled by the button
+  light_switch_always_on: "true" #switch always on 
+
 esp8266:
   board: esp8285
 
@@ -10,7 +18,7 @@ binary_sensor:
       - invert:
       - delayed_off: 10ms
     on_press:
-      - switch.toggle:
+      - light.toggle:
           id: relay_1
 
   - platform: gpio
@@ -19,10 +27,10 @@ binary_sensor:
     id: switch_1
     on_press:
       then:
-        - script.execute: toggle_if_disconnected
+        - script.execute: toggle
     on_release:
       then:
-        - script.execute: toggle_if_disconnected
+        - script.execute: toggle
 
   - platform: status
     name: "API Status"
@@ -33,13 +41,19 @@ binary_sensor:
     on_press:
       - script.execute: api_reconnected
 
-switch:
-  - platform: gpio
-    name: switch
-    icon: "mdi:lightbulb_outline"
+output:
+  - id: output_1
+    platform: gpio
     pin: GPIO12
-    id: relay_1
-    restore_mode: restore_default_off
+
+light:
+  - id: relay_1
+    platform: binary
+    name: ${light_name}
+    icon: ${light_icon}
+    restore_mode: ${light_restore_mode}
+    output: output_1
+    entity_category: ${light_entity_category}
 
 status_led:
   pin:
@@ -50,15 +64,20 @@ script:
   - id: api_reconnected
     mode: restart
     then:
-      - switch.turn_on:
-          id: relay_1
-  - id: toggle_if_disconnected
+      - if:
+          condition:
+            lambda: "return (${light_switch_always_on});"
+          then:
+            - light.turn_on:
+                id: relay_1
+
+  - id: toggle
     mode: restart
     then:
       - if:
           condition:
-            lambda: "return !(id(api_connected).state);"
+            lambda: "return (${light_controled} || !(id(api_connected).state));"
           then:
-            - switch.toggle:
+            - light.toggle:
                 id: relay_1
         

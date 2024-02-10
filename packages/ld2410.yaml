@@ -33,12 +33,18 @@ binary_sensor:
     has_target:
       name: Presence
       device_class: occupancy
+      filters:
+        - delayed_off: 5s
     has_moving_target:
       name: Moving Target
       device_class: motion
+      filters:
+        - delayed_off: 5s
     has_still_target:
       name: Still Target
       device_class: occupancy
+      filters:
+        - delayed_off: 5s
 
 sensor:
   - platform: ld2410

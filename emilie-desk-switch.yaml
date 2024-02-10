@@ -46,7 +46,7 @@ ota:
 captive_portal:
 
 logger:
-  level: DEBUG
+  level: INFO
 
 web_server:
 

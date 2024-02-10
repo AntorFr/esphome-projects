@@ -1,0 +1,46 @@
+substitutions:
+  device_name: garden-light-back
+  friendly_name: lumière arrière jardin
+
+  light_name: "none"
+  light_entity_category: "" 
+  light_controled: "true"
+  light_switch_always_on: "false"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+  sonoff_mini: !include packages/sonoff_mini.yaml
+
