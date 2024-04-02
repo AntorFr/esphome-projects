@@ -1,16 +1,17 @@
 substitutions:
-  device_name: garage-door-3
-  friendly_name: Garage 3
+  device_name: livingroom-presence-sensor
+  friendly_name: capteur salon
+  area: salon
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  area: ${area} 
 
 esp32:
   board: esp32dev
   framework:
-    type: esp-idf
-    #type: arduino
+    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -32,44 +33,53 @@ ota:
 #captive_portal:
 
 logger:
-  level: DEBUG #ERROR #DEBUG
+  level: DEBUG
+  baud_rate: 0
 
-#web_server:
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
-
 packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  garage_door: !include packages/garage_door.yaml 
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/garage_door.yaml 
-    
+  ld2410: !include packages/ld2410.yaml
 
 i2c:
-  sda: GPIO21
-  scl: GPIO22
+  sda: 21
+  scl: 22
   scan: true
 
-switch:
-  - platform: gpio
-    pin: GPIO16
-    id: relay
 
-status_led:
-  pin: GPIO23
+uart:
+  id: uart_bus
+  tx_pin: 1
+  rx_pin: 3
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+  data_bits: 8
+
 
 sensor:
-  - platform: bme280_i2c
+  - platform: bmp280
     temperature:
-      name: "Temperature"
+      name: "BME280 Temperature"
       oversampling: 16x
     pressure:
-      name: "Pressure"
-    humidity:
-      name: "Humidity"
+      name: "BME280 Pressure"
     address: 0x76
     update_interval: 60s
+  - platform: bh1750
+    name: "BH1750 Illuminance"
+    address: 0x23
+    update_interval: 10s
+
+
+binary_sensor:
+  - name: "Mouvement"
+    platform: gpio
+    pin: GPIO04
+    device_class: motion

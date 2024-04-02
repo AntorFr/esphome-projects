@@ -1,6 +1,7 @@
 substitutions:
   tx_pin: "1"
   rx_pin: "3"
+  still_distance: "300"
 
 logger:
   level: DEBUG
@@ -59,4 +60,13 @@ sensor:
     detection_distance:
       name: Detection Distance
 
-
+number:
+  - platform: ld2410
+    timeout:
+      name: timeout
+    light_threshold:
+      name: light threshold
+    max_move_distance_gate:
+      name: max move distance gate
+    max_still_distance_gate:
+      name: max still distance gate

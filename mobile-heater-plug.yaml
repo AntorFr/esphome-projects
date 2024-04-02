@@ -26,7 +26,7 @@ ota:
 
 captive_portal:
 
-web_server:
+#web_server:
 
 logger:
   level: DEBUG
@@ -60,6 +60,6 @@ climate:
     default_preset: Home
     preset:
       - name: Home
-        default_target_temperature_low: 19 °C
+        default_target_temperature_low: 18 °C
       - name: Travail
-        default_target_temperature_low: 21 °C
+        default_target_temperature_low: 19 °C

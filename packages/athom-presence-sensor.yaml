@@ -84,7 +84,6 @@ binary_sensor:
       then:
         - light.turn_off: led
 
-
   - platform: template
     name: "Occupancy"
     id: occupancy
@@ -118,8 +117,6 @@ switch:
       - uart.write: "sensorStart\r\n"
     turn_off_action:
       - uart.write: "sensorStop\r\n"
-
-
 
 number:
   - platform: template

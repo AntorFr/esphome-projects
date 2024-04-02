@@ -24,7 +24,7 @@ sensor:
 number:
   - platform: template
     id: open_duration
-    name: ${friendly_name} - Durée ouverture
+    name: Durée ouverture
     entity_category: "config"
     unit_of_measurement: "s"
     initial_value: 30
@@ -37,7 +37,7 @@ number:
     icon: "mdi:timer-cog-outline"
   - platform: template
     id: close_duration
-    name: ${friendly_name} - Durée fermeture
+    name: Durée fermeture
     entity_category: "config"
     unit_of_measurement: "s"
     initial_value: 30
@@ -50,7 +50,7 @@ number:
     icon: "mdi:timer-cog-outline"
   - platform: template
     id: max_door_dist
-    name: ${friendly_name} - hauteur porte ouverte
+    name: hauteur porte ouverte
     entity_category: "config"
     unit_of_measurement: "cm"
     initial_value: 30

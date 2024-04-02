@@ -8,7 +8,9 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-
+  on_boot:
+    - switch.turn_on: button_switch
+    
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -28,10 +30,10 @@ ota:
 
 captive_portal:
 
-web_server:
+#web_server:
 
 logger:
-  level: DEBUG
+  level: WARN
 
 #######################################
 # Device specific Config Begins Below #
@@ -40,5 +42,5 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  m5stack-atom-echo: !include packages/nous-a1t.yaml
+  nous-a1t: !include packages/nous-a1t.yaml
   washing-machine: !include packages/washing-machine.yaml

@@ -82,5 +82,4 @@ sensor:
       name: 'Power '
     energy:
       name: 'Energy'
-    update_interval: 5s
 

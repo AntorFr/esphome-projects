@@ -61,7 +61,7 @@ status_led:
   pin: GPIO23
 
 sensor:
-  - platform: bme280
+  - platform: bme280_i2c
     temperature:
       name: "Temperature"
       oversampling: 16x

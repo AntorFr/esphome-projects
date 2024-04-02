@@ -2,12 +2,12 @@ substitutions:
   device_name: linky
   friendly_name: Linky
 
-  HCJB_price: "0.1056"
-  HPJB_price: "0.1369"
-  HCJW_price: "0.1246"
-  HPJW_price: "0.1654"
-  HCJR_price: "0.1328"
-  HPJV_price: "0.7324"
+  HCJB_price: "0.1296"
+  HPJB_price: "0.1609"
+  HCJW_price: "0.1486"
+  HPJW_price: "0.1894"
+  HCJR_price: "0.1568"
+  HPJR_price: "0.7562"
 
 esphome:
   name: ${device_name}
@@ -327,7 +327,7 @@ sensor:
     device_class: monetary
     state_class: measurement
     accuracy_decimals: 4
-    lambda: "return ${HPJV_price};"
+    lambda: "return ${HPJR_price};"
     entity_category: diagnostic
 
 text_sensor:
@@ -361,7 +361,7 @@ text_sensor:
            if( x == "HCJW" ) return ${HCJW_price};
            if( x == "HPJW" ) return ${HPJW_price};
            if( x == "HCJR" ) return ${HCJR_price};
-           if( x == "HPJV" ) return ${HPJV_price};
+           if( x == "HPJR" ) return ${HPJR_price};
 
   - platform: teleinfo
     tag_name: "PTEC"

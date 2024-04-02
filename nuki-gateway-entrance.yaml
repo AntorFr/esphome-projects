@@ -1,0 +1,77 @@
+substitutions:
+  device_name: nuki-gateway-entrance
+  friendly_name: Nuki Gateway entrée
+  area: entree
+  
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+  area: ${area}
+  libraries:
+  - Preferences
+  - https://github.com/vinmenn/Crc16.git
+  - https://github.com/uriyacovy/NukiBleEsp32
+  platformio_options:
+    build_flags: 
+      - -DDEBUG_NUKI_CONNECT
+      - -DDEBUG_NUKI_COMMUNICATION
+      - -DDEBUG_NUKI_READABLE_DATA
+
+esp32:
+  board: "lolin_d32"  # Or whatever other board you're using
+  framework:
+    type: arduino
+    version: 2.0.3
+    platform_version: 5.3.0
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: DEBUG
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+
+external_components:
+  - source: github://uriyacovy/ESPHome_nuki_lock
+
+lock:
+  # Required:
+  - platform: nuki_lock
+    name: Nuki Lock
+    is_connected: 
+      name: "Nuki Connected"
+    is_paired: 
+      name: "Nuki Paired"      
+  # Optional:
+    battery_critical:
+      name: "Nuki Battery Critical"
+    battery_level:
+      name: "Nuki Battery Level"
+    door_sensor:
+      name: "Nuki Door Sensor"
+    door_sensor_state:
+      name: "Nuki Door Sensor State"
+    

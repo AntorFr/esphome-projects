@@ -1,15 +1,10 @@
 substitutions:
-  device_name: dryer-plug
-  friendly_name: "Prise sèche linge"
-  icon: mdi:tumble-dryer
-  current_res: "0.00204"
-  voltage_div: "775"
+  device_name: bathroom-presence-sensor
+  friendly_name: Capteur presence Salle de bain
   
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  on_boot:
-    - switch.turn_on: button_switch
 
 wifi:
   ssid: !secret wifi_ssid
@@ -30,10 +25,8 @@ ota:
 
 captive_portal:
 
-#web_server:
-
 logger:
-  level: WARN
+  level: DEBUG
 
 #######################################
 # Device specific Config Begins Below #
@@ -42,4 +35,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  athom-presence-sensor: !include packages/athom-presence-sensor.yaml

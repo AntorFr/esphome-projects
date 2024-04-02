@@ -31,10 +31,10 @@ ota:
 
 captive_portal:
 
-web_server:
+#web_server:
 
 logger:
-  level: DEBUG
+  level: WARN
 
 #######################################
 # Device specific Config Begins Below #

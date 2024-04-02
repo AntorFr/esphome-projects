@@ -8,6 +8,7 @@ esphome:
 
 esp32:
   board: esp32dev
+  variant: esp32
   framework:
     type: arduino
 
@@ -99,8 +100,8 @@ light:
     pin: GPIO27
     num_leds: 120
     method:
-      type: esp32_rmt
-      channel: 0
+      type: esp32_i2s
+      bus: 0
     effects:
       - pulse:
           name: "Fast Pulse"
@@ -131,8 +132,8 @@ light:
     pin: GPIO25
     num_leds: 120
     method:
-      type: esp32_rmt
-      channel: 1
+      type: esp32_i2s
+      bus: 1
     effects:
       - pulse:
           name: "Fast Pulse"

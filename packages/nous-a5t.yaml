@@ -59,7 +59,6 @@ sensor:
               }
 
   - platform: cse7766
-    update_interval: 5s
     current:
       name: "Ampere"
       unit_of_measurement: A
