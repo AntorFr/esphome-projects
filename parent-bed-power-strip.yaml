@@ -32,7 +32,7 @@ ota:
 captive_portal:
 
 logger:
-  level: DEBUG
+  level: ERROR #DEBUG
 
 web_server:
 

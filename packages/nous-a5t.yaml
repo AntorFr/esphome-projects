@@ -67,6 +67,9 @@ sensor:
       accuracy_decimals: 3
       icon: mdi:current-ac
       filters:
+        - or:
+          - throttle: 1s
+          - delta: 0.1
         # Map from sensor -> measured value
         - calibrate_linear:
             - 0.0 -> 0.013
@@ -85,6 +88,7 @@ sensor:
       accuracy_decimals: 1
       icon: mdi:flash-outline
       filters:
+        - throttle : 60s
         # Map from sensor -> measured value
         - calibrate_linear:
             - 0.0 -> 0.0
@@ -108,6 +112,9 @@ sensor:
         # Make everything below 2W appear as just 0W.
         # Furthermore it corrects 1.14W for the power usage of the plug.
         - lambda: if (x < (2 + 2.2)) return 0; else return (x - 2.2);
+        - or:
+          - throttle: 1s
+          - delta: 0.1
 
     energy:
       name: "Energie"
@@ -118,6 +125,9 @@ sensor:
       icon: mdi:calendar-clock
       filters:
         - multiply: 0.001
+        - or:
+          - throttle: 60s
+          - delta: 0.01
 
 status_led:
   pin:

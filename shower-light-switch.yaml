@@ -6,22 +6,20 @@ substitutions:
   button_count: "3"
 
   light_1_internal: "false"
-  light_1_entity_category: ""
-  light_1_restore_mode: "RESTORE_DEFAULT_OFF" 
+  light_1_entity_category: "config"
+  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
+  button_1_switch_relay: "false"
 
   light_2_internal: "false"
   light_2_entity_category: ""
   light_2_restore_mode: "RESTORE_DEFAULT_OFF" 
+  button_2_switch_relay: "false"
 
   light_3_internal: "true"
-
-  button_1_switch_relay: "true"
-  button_1_light_id: "1"
-
   button_3_switch_relay: "true"
   button_3_light_id: "2"
 
-  button_2_switch_relay: "false"
+
 
 esphome:
   name: ${device_name}

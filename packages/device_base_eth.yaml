@@ -1,0 +1,28 @@
+sensor:
+  - platform: uptime
+    name: Uptime
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: Status
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: version
+    hide_timestamp: true
+    name: ESPHome Version
+    entity_category: diagnostic
+  - platform: ethernet_info
+    ip_address:
+      name: IP Address
+      icon: mdi:ethernet
+      entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: Restart
+    entity_category: config
+  - platform: safe_mode
+    name: "Restart (Safe Mode)"
+    entity_category: config

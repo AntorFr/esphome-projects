@@ -17,10 +17,14 @@ esp32:
   framework:
     type: esp-idf
 
+
 #dashboard_import:
 #  package_import_url: github://esphome/firmware/voice-assistant/m5stack-atom-echo.yaml@main
 
-improv_serial:
+button:
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
 
 i2s_audio:
   i2s_lrclk_pin: GPIO33
@@ -54,16 +58,22 @@ voice_assistant:
         blue: 100%
         red: 0%
         green: 0%
-        brightness: 100%
-        effect: pulse
+        effect: "Slow Pulse"
+  on_stt_vad_end:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: "Fast Pulse"
   on_tts_start:
     - light.turn_on:
         id: led
-        blue: 0%
+        blue: 100%
         red: 0%
-        green: 100%
+        green: 0%
         brightness: 100%
-        effect: pulse
+        effect: none
   on_end:
     - delay: 100ms
     - wait_until:
@@ -73,18 +83,27 @@ voice_assistant:
   on_error:
     - light.turn_on:
         id: led
-        blue: 0%
         red: 100%
         green: 0%
+        blue: 0%
         brightness: 100%
         effect: none
     - delay: 1s
     - script.execute: reset_led
-    - script.wait: reset_led
-    - lambda: |-
-        if (code == "wake-provider-missing" || code == "wake-engine-missing") {
-          id(use_wake_word).turn_off();
-        }
+  on_client_connected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.start_continuous:
+          - script.execute: reset_led
+  on_client_disconnected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.stop:
+          - light.turn_off: led
 
 binary_sensor:
   - platform: gpio
@@ -95,24 +114,32 @@ binary_sensor:
     disabled_by_default: true
     entity_category: diagnostic
     id: echo_button
-    on_click:
-      - if:
-          condition:
-            switch.is_off: use_wake_word
-          then:
-            - if:
-                condition: voice_assistant.is_running
-                then:
-                  - voice_assistant.stop:
-                  - script.execute: reset_led
-                else:
-                  - voice_assistant.start:
-          else:
-            - voice_assistant.stop
-            - delay: 1s
-            - script.execute: reset_led
-            - script.wait: reset_led
-            - voice_assistant.start_continuous:
+    on_multi_click:
+      - timing:
+          - ON for at least 250ms
+          - OFF for at least 50ms
+        then:
+          - if:
+              condition:
+                switch.is_off: use_wake_word
+              then:
+                - if:
+                    condition: voice_assistant.is_running
+                    then:
+                      - voice_assistant.stop:
+                      - script.execute: reset_led
+                    else:
+                      - voice_assistant.start:
+              else:
+                - voice_assistant.stop
+                - delay: 1s
+                - script.execute: reset_led
+                - script.wait: reset_led
+                - voice_assistant.start_continuous:
+      - timing:
+          - ON for at least 10s
+        then:
+          - button.press: factory_reset_btn
 
 light:
   - platform: esp32_rmt_led_strip
@@ -128,8 +155,17 @@ light:
     rmt_channel: 0
     effects:
       - pulse:
+          name: "Slow Pulse"
           transition_length: 250ms
           update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
 
 script:
   - id: reset_led
@@ -141,10 +177,10 @@ script:
           then:
             - light.turn_on:
                 id: led
-                blue: 100%
                 red: 100%
-                green: 0%
-                brightness: 100%
+                green: 89%
+                blue: 71%
+                brightness: 60%
                 effect: none
           else:
             - light.turn_off: led
@@ -170,7 +206,7 @@ switch:
       - lambda: id(va).set_use_wake_word(false);
       - script.execute: reset_led
   - platform: template
-    name: Use Listen Light
+    name: Use listen light
     id: use_listen_light
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
