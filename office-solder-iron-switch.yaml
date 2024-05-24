@@ -1,36 +1,20 @@
 substitutions:
-  device_name: timothee-entrance-switch
-  friendly_name: Bouton lumière Timothée
-
-  ## TX Ultimate ##
-  button_count: "3"
-
-  nightlight_sleep_id: input_boolean.night_mode_timothee
-
-  light_1_internal: "true"
-  light_2_internal: "true" 
-  light_3_internal: "true"
-
-  button_1_switch_relay: "false"
-  button_2_switch_relay: "false"
-  button_3_switch_relay: "false"
-
-  #led_variant: TM1914
-
+  device_name: office-solder-iron-switch
+  friendly_name: "Fer à souder"
+  icon: mdi:soldering-iron
+  area: "Bureau"
+  current_res: "0.00204"
+  voltage_div: "775"
+  
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-
-esp32:
-  board: esp32dev
-  #framework:
-  #  type: arduino
+  area: ${area}  
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   use_address: ${device_name}.intra.sberard.fr
-
 
   ap:
     ssid: ${device_name}
@@ -46,10 +30,10 @@ ota:
 
 captive_portal:
 
-logger:
-  level: DEBUG
-
 web_server:
+
+logger:
+  #level: DEBUG
 
 #######################################
 # Device specific Config Begins Below #
@@ -58,5 +42,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate.yaml
-
+  nous-a1t: !include packages/nous-a1t.yaml

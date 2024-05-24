@@ -1,6 +1,7 @@
 substitutions:
   device_name: "daynight-light"
   friendly_name: "Cadre lumineux Timothée"
+  area: "Chambre Timothée"
 
   day_phase: "input_select.day_phase"
 
@@ -10,13 +11,16 @@ substitutions:
   children_night: "Soirée - enfants couché"
   night: "Nuit"
 
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  
-esp8266:
-  board: d1_mini
-  restore_from_flash: True
+  area: ${area}  
+esp32:
+  board: esp32dev
+  variant: esp32
+  framework:
+    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -28,7 +32,7 @@ wifi:
     password: !secret ap_password
 
 logger:
-  level: WARN
+  level: DEBUG
   
 api:
   reboot_timeout: 30min
@@ -39,36 +43,42 @@ ota:
   password: !secret ota_password
 
 captive_portal:
-
 web_server:
-  port: 80
-
-sensor:
-  - platform: wifi_signal
-    name: ${device_name} Wifi Strength
-    update_interval: 60s
-  - platform: uptime
-    name: ${device_name} Uptime
 
 external_components:
-  #- source: github://antorfr/esphome-fastled-effects
-  #  components: [ custom-addressable-effetcs ]
+  - source: github://antorfr/esphome-fastled-effects
+    components: [ custom-addressable-effetcs ]
   #  refresh: 1s
-  - source:
-      type: local
-      path: components
+  #- source:
+  #    type: local
+  #    path: components
 
 custom-addressable-effetcs:
 #######################################
 # Device specific Config Begins Below #
 #######################################
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+
+status_led:
+  pin: GPIO23
+
+power_supply:
+  - id: 'relay'
+    pin: 
+      number: GPIO16
+
+
 light:
   - name: None
     platform: neopixelbus
     icon: "mdi:weather-night"
+    power_supply: relay
     type: GRB
     variant: WS2812
-    pin: D1
+    pin: GPIO27
     num_leds: 63
     internal: False
     id: led
