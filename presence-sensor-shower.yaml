@@ -1,15 +1,12 @@
 substitutions:
-  device_name: office-entry-power-strip
-  friendly_name: Multiprise entrée bureau
+  device_name: presence-sensor-shower
+  friendly_name: Capteur presence Salle de douche
+  area: "Salle de douche"
   
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name} 
-
-esp8266:
-  board: esp8285
-  #framework:
-  #  type: arduino
+  friendly_name: ${friendly_name}
+  area: ${area}
 
 wifi:
   ssid: !secret wifi_ssid
@@ -28,20 +25,16 @@ api:
 ota:
   password: !secret ota_password
 
-#captive_portal:
+captive_portal:
 
 logger:
   level: DEBUG
-
-#web_server:
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
 packages:
   device_base: !include packages/device_base.yaml
-  debug: !include packages/debug_esp8266.yaml  
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a5t: !include packages/nous-a5t.yaml
-
+  athom-presence-sensor: !include packages/athom-presence-sensor.yaml

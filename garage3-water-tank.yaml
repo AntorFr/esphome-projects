@@ -1,7 +1,10 @@
 substitutions:
-  device_name: "garage2-water-tank"
-  friendly_name: "Réservoir eau garage 2"
+  device_name: "garage3-water-tank"
+  friendly_name: "Réservoir eau garage 3"
   area: "Garage"
+
+
+
 
 esphome:
   name: ${device_name}

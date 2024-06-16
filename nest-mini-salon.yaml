@@ -1,6 +1,6 @@
 substitutions:
   device_name: nest-mini-salon
-  friendly_name: Nest mini Salon
+  friendly_name: Nest mini salon
   
 esphome:
   name: ${device_name}

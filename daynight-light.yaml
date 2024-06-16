@@ -46,7 +46,7 @@ captive_portal:
 web_server:
 
 external_components:
-  - source: github://antorfr/esphome-fastled-effects
+  - source: github://AntorFr/esphome-addressable-effetcs
     components: [ custom-addressable-effetcs ]
   #  refresh: 1s
   #- source:
@@ -82,6 +82,9 @@ light:
     num_leds: 63
     internal: False
     id: led
+    method:
+      type: esp32_i2s
+      bus: 0
     restore_mode: ALWAYS_OFF
     on_state:
       - lambda: |-

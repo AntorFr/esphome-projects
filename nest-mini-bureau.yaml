@@ -1,11 +1,12 @@
 substitutions:
   device_name: nest-mini-bureau
   friendly_name: Nest mini bureau
-  
+  area: Bureau
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  
+  area: ${area}
 
 wifi:
   ssid: !secret wifi_ssid
