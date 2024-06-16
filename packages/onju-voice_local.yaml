@@ -168,9 +168,7 @@ media_player:
             old_volume = new_volume;
 
 micro_wake_word:
-  model: okay_nabu
-  # model: hey_jarvis
-  # model: alexa
+  model: github://AntorFr/esphome-projects/micro-wake-word/models/Nestor.json@master
   on_wake_word_detected:
     - if:
         condition: media_player.is_playing

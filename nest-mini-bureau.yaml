@@ -17,18 +17,6 @@ wifi:
     ssid: ${device_name}
     password: !secret ap_password
 
-api:
-  reboot_timeout: 15min
-  encryption:
-    key: !secret api_encryption
-  services:
-    - service: start_va
-      then:
-        - voice_assistant.start
-    - service: stop_va
-      then:
-        - voice_assistant.stop
-
 ota:
   password: !secret ota_password
 
@@ -44,6 +32,6 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  onju-voice: !include packages/onju-voice.yaml
+  onju-voice: !include packages/onju-voice_local.yaml
 #https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
 
