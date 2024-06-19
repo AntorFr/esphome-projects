@@ -20,6 +20,11 @@ wifi:
 ota:
   password: !secret ota_password
 
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
 captive_portal:
 
 logger:

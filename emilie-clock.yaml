@@ -1,0 +1,77 @@
+substitutions:
+  device_name: emilie-clock
+  friendly_name: Horloge Émilie
+  matrix_led_pin: "16"
+  area: Chambre Émilie
+  rotation: 0°
+   
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  
+api:
+  reboot_timeout: 5min
+  encryption:
+    key: !secret api_encryption
+  
+ota:
+  password: !secret ota_password
+
+
+captive_portal:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+#dashboard_import:
+#  package_import_url: github://adonno/tagreader/tagreader.yaml
+packages:
+  device_base: !include packages/device_base.yaml
+  matrix_display: !include packages/matrix_display.yaml
+
+i2c:
+  sda: 21
+  scl: 20
+  scan: true
+
+sensor:
+  - platform: ens160
+    eco2:
+      name: "eCO2"
+    tvoc:
+      name: "Total Volatile Organic Compounds"
+    aqi:
+      name: "Air Quality Index"
+    update_interval: 60s
+    address: 0x53
+    compensation:
+      temperature: id_temperature_sensor
+      humidity: id_humidity_sensor
+  - platform: aht10
+    variant: AHT20
+    temperature:
+      id: id_temperature_sensor
+      name: "Temperature"
+    humidity:
+      id: id_humidity_sensor
+      name: "Humidity"
+    update_interval: 60s
+

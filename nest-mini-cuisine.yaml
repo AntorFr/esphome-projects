@@ -21,13 +21,7 @@ api:
   reboot_timeout: 15min
   encryption:
     key: !secret api_encryption
-  services:
-    - service: start_va
-      then:
-        - voice_assistant.start
-    - service: stop_va
-      then:
-        - voice_assistant.stop
+
 
 ota:
   password: !secret ota_password

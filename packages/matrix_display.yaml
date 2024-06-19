@@ -1,3 +1,6 @@
+substitutions:
+  rotation: 180°
+
 
 esphome:
   on_boot:
@@ -154,7 +157,7 @@ display:
         return (x * 8) + y;
       }
       return (x * 8) + (7 - y);
-    rotation: 180°
+    rotation: ${rotation}
     update_interval: 16ms
     #it.strftime(0, 0, id(monobit), Color(id(red)) ,TextAlign::CENTER, "%H:%M",id(homeassistant_time).now());
     lambda: |-

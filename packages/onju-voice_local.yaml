@@ -169,6 +169,7 @@ media_player:
 
 micro_wake_word:
   model: github://AntorFr/esphome-projects/micro-wake-word/models/Nestor.json@master
+  probability_cutoff: 66%
   on_wake_word_detected:
     - if:
         condition: media_player.is_playing
@@ -464,6 +465,7 @@ script:
                 condition:
                   and:
                     - switch.is_on: use_wake_word
+                    - switch.is_on: use_listen_light
                     - binary_sensor.is_off: mute_switch
                 then:
                   - light.turn_on:
@@ -608,6 +610,16 @@ script:
           }
 
 switch:
+  - platform: template
+    name: Use listen light
+    id: use_listen_light
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    on_turn_on:
+      - script.execute: reset_led
+    on_turn_off:
+      - script.execute: reset_led
   - platform: template
     name: Use Wake Word
     id: use_wake_word
