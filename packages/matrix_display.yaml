@@ -77,7 +77,7 @@ select:
 light:
   - platform: neopixelbus
     variant: WS2811
-    icon: "mdi:wall-sconce-flat"
+    icon: "mdi:clock-digital"
     pin: ${matrix_led_pin}
     num_leds: 256
     type: GRB
