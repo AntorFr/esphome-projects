@@ -174,7 +174,6 @@ media_player:
 micro_wake_word:
   model: |-
     github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}@master
-  #https://raw.githubusercontent.com/AntorFr/esphome-projects/master/micro-wake-word/models/Ok_Nestor.json
   probability_cutoff: ${probability_cutoff}
   on_wake_word_detected:
     - if:
