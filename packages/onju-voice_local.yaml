@@ -1,4 +1,9 @@
 
+substitutions:
+  model_name: "Nestor.json"
+  probability_cutoff: "66%"
+
+
 esphome:
   platformio_options:
     board_build.flash_mode: dio
@@ -36,7 +41,6 @@ esp32:
   board: esp32-s3-devkitc-1
   framework:
     type: esp-idf
-    version: recommended
     sdkconfig_options:
       # need to set a s3 compatible board for the adf-sdk to compile
       # board specific code is not used though
@@ -168,8 +172,10 @@ media_player:
             old_volume = new_volume;
 
 micro_wake_word:
-  model: github://AntorFr/esphome-projects/micro-wake-word/models/Nestor.json@master
-  probability_cutoff: 66%
+  model: |-
+    github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}@master
+  #https://raw.githubusercontent.com/AntorFr/esphome-projects/master/micro-wake-word/models/Ok_Nestor.json
+  probability_cutoff: ${probability_cutoff}
   on_wake_word_detected:
     - if:
         condition: media_player.is_playing

@@ -68,7 +68,7 @@ sensor:
       icon: mdi:current-ac
       filters:
         - or:
-          - throttle: 1s
+          - throttle: 60s
           - delta: 0.1
         # Map from sensor -> measured value
         - calibrate_linear:
@@ -113,8 +113,8 @@ sensor:
         # Furthermore it corrects 1.14W for the power usage of the plug.
         - lambda: if (x < (2 + 2.2)) return 0; else return (x - 2.2);
         - or:
-          - throttle: 1s
-          - delta: 0.1
+          - throttle: 60s
+          - delta: 1
 
     energy:
       name: "Energie"
@@ -127,7 +127,7 @@ sensor:
         - multiply: 0.001
         - or:
           - throttle: 60s
-          - delta: 0.01
+          - delta: 0.1
 
 status_led:
   pin:
@@ -150,7 +150,7 @@ switch:
       - switch.turn_on: relay1
     turn_off_action:
       - switch.turn_off: relay1
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: template
     name: "Switch 2"
     icon: ${icon_switch2}
@@ -165,7 +165,7 @@ switch:
       - switch.turn_on: relay2
     turn_off_action:
       - switch.turn_off: relay2
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: template
     name: "Switch 3"
     icon: ${icon_switch3}
@@ -180,7 +180,7 @@ switch:
       - switch.turn_on: relay3
     turn_off_action:
       - switch.turn_off: relay3
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: template
     name: "Switch USB"
     icon: ${icon_usb}
@@ -195,21 +195,21 @@ switch:
       - switch.turn_on: relay4
     turn_off_action:
       - switch.turn_off: relay4
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: gpio
     pin: GPIO14
     id: relay1
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: gpio
     pin: GPIO12
     id: relay2
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: gpio
     pin: GPIO13
     id: relay3
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: gpio
     pin: GPIO5
     inverted: True
     id: relay4
-    restore_mode: ALWAYS_ON
+    restore_mode: RESTORE_DEFAULT_ON

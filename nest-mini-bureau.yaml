@@ -2,6 +2,8 @@ substitutions:
   device_name: nest-mini-bureau
   friendly_name: Nest mini bureau
   area: Bureau
+  model_name: "OK_Nestor.json"
+  probability_cutoff: "66%"
 
 esphome:
   name: ${device_name}
@@ -18,6 +20,7 @@ wifi:
     password: !secret ap_password
 
 ota:
+  platform: esphome
   password: !secret ota_password
 
 api:

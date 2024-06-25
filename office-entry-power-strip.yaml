@@ -8,8 +8,6 @@ esphome:
 
 esp8266:
   board: esp8285
-  #framework:
-  #  type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -26,6 +24,7 @@ api:
     key: !secret api_encryption
 
 ota:
+  platform: esphome
   password: !secret ota_password
 
 #captive_portal:

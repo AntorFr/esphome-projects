@@ -32,6 +32,7 @@ api:
     key: !secret api_encryption
   
 ota:
+  platform: esphome
   password: !secret ota_password
 
 
@@ -53,7 +54,7 @@ i2c:
   scan: true
 
 sensor:
-  - platform: ens160
+  - platform: ens160_i2c
     eco2:
       name: "eCO2"
     tvoc:
