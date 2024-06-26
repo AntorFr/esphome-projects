@@ -1,6 +1,6 @@
 
 substitutions:
-  model_name: "Nestor.json"
+  model_name: "Nestor.json@master"
   probability_cutoff: "66%"
 
 
@@ -173,7 +173,7 @@ media_player:
 
 micro_wake_word:
   model: |-
-    github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}@master
+    github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}
   probability_cutoff: ${probability_cutoff}
   on_wake_word_detected:
     - if:

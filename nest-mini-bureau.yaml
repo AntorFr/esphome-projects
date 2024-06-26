@@ -2,7 +2,7 @@ substitutions:
   device_name: nest-mini-bureau
   friendly_name: Nest mini bureau
   area: Bureau
-  model_name: "Ok_Nestor.json"
+  model_name: "Ok_Nestor.json@mww_oknestor_0.0.1"
   probability_cutoff: "66%"
 
 esphome:
