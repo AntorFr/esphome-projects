@@ -1,7 +1,9 @@
 substitutions:
   device_name: nest-mini-salon
   friendly_name: Nest mini salon
-  
+  model_name: "Ok_Nestor.json@mww_oknestor_0.0.2"
+  probability_cutoff: "66%"  
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
