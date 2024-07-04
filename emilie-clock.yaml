@@ -71,6 +71,8 @@ sensor:
     temperature:
       id: id_temperature_sensor
       name: "Temperature"
+      filters:
+        - offset: -7.6
     humidity:
       id: id_humidity_sensor
       name: "Humidity"
