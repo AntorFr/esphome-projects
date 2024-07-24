@@ -2,8 +2,9 @@ substitutions:
   device_name: nest-mini-cuisine
   friendly_name: Nest mini cuisine
   area: Cuisine
-  model_name: "Ok_Nestor.json@mww_oknestor_0.0.2"
-  probability_cutoff: "66%"
+  model_name: "Ok_Nestor.json@mww_oknestor_0.0.5"
+  probability_cutoff: "50%"
+  default_volume: "40%"
 
 esphome:
   name: ${device_name}

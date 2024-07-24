@@ -47,5 +47,5 @@ packages:
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
-  #sonoff_mini: !include packages/sonoff_mini.yaml
+  sonoff_mini: !include packages/sonoff_mini.yaml
 
