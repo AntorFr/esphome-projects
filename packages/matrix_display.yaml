@@ -6,25 +6,8 @@ esphome:
   on_boot:
     - priority: -20
       then: 
-        - lambda: |-
-            auto index = id(display_mode).active_index();
-            if (!(index.has_value())) {
-              ESP_LOGD("custom", "Turn off led_matrix_display (default)");
-              id(led_matrix_display).set_enabled(false);            
-            } else {
-              int i = index.value();
-              switch (i) { // index of the choosen value
-                case 0:
-                  ESP_LOGD("custom", " Turn off led_matrix_display");
-                  id(led_matrix_display).set_enabled(false);
-                  break;
-                case 1: 
-                  ESP_LOGD("custom", " Turn on led_matrix_display");
-                  id(led_matrix_display).set_enabled(true);
-                  break;
-              }
-            }
-            id(init_done)= true;
+        - script.execute:
+            id: init_display_mode
 
 sensor:
   - platform: homeassistant
@@ -62,16 +45,7 @@ select:
     on_value:
       lambda: |-
         if(id(init_done)) {
-          switch (i) { // index of the choosen value
-            case 0:
-              ESP_LOGD("custom", " Turn off led_matrix_display");
-              id(led_matrix_display).set_enabled(false);
-              break;
-            default: 
-              ESP_LOGD("custom", " Turn on led_matrix_display");
-              id(led_matrix_display).set_enabled(true);
-              break;
-          }
+          id(set_display_mode)->execute(i);
         }
 
 light:
@@ -164,8 +138,9 @@ display:
           float r,g,b,brightness;
           auto state = id(led_matrix_light).current_values;
           state.as_rgb(&r,&g,&b);
-          brightness = state.get_brightness();
+          float raw_brightness = state.get_brightness();
           auto index = id(display_mode).active_index();
+          brightness = std::max(raw_brightness, (float)0.25); // Brightness lower than 20% in not visible
           if (index.has_value()) {
             switch (index.value())
             {
@@ -203,3 +178,32 @@ display:
             }
           }
     
+script:
+  - id: init_display_mode
+    then:
+      - lambda: |-
+          auto index = id(display_mode).active_index();
+          if (!(index.has_value())) {
+            ESP_LOGD("custom", "Turn off led_matrix_display (default)");
+            id(led_matrix_display).set_enabled(false);            
+          } else {
+            int i = index.value();
+            id(set_display_mode)->execute(i);
+          }
+          id(init_done)= true;
+  - id: set_display_mode
+    parameters:
+      display_mode: int
+    then:
+      - lambda: |-
+            switch (display_mode) { // index of the choosen value
+              case 0:
+                ESP_LOGD("custom", " Turn off led_matrix_display");
+                id(led_matrix_display).set_enabled(false);
+                break;
+              default: 
+                ESP_LOGD("custom", " Turn on led_matrix_display");
+                id(led_matrix_display).set_enabled(true);
+                break;
+            }
+          
