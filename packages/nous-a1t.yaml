@@ -4,7 +4,7 @@ substitutions:
   current_res: "0.00203"
   # Lower value gives lower voltage readout
   voltage_div: "775"
-
+  restore_mode: RESTORE_DEFAULT_ON
 
 esp8266:
   board: esp8285
@@ -56,7 +56,7 @@ switch:
   - platform: gpio
     pin: GPIO14
     id: relay
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
 
 sensor:
   - platform: total_daily_energy
