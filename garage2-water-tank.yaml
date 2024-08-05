@@ -7,6 +7,10 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   area: ${area}  
+  on_boot: 
+    then:
+      - switch.turn_on: relay
+
 esp32:
   board: esp32dev
   variant: esp32

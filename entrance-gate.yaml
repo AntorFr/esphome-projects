@@ -9,6 +9,7 @@ esphome:
   
 esp8266:
   board: esp8285
+  restore_from_flash: true
 
 wifi:
   ssid: !secret wifi_ssid
@@ -36,12 +37,8 @@ captive_portal:
 web_server:
   port: 80 
 
-sensor:
-  - platform: wifi_signal
-    name: ${device_name} Wifi Strength
-    update_interval: 60s
-  - platform: uptime
-    name: ${device_name} Uptime
+packages:
+  device_base: !include packages/device_base.yaml
 #######################################
 # Device specific Config Begins Below #
 #######################################
@@ -54,6 +51,21 @@ switch:
   - platform: gpio
     pin: GPIO12
     id: relay
+    on_turn_on:
+      - script.execute: "count_move"
+
+sensor:
+  - platform: template
+    id: "last_moves"
+    name: "Nb last move"
+    update_interval: never
+    internal: False
+    entity_category: diagnostic
+    filters: 
+      - throttle: 2s
+      - timeout:
+          timeout: 10min
+          value: 0
 
 script:
   - id: open_cover
@@ -71,6 +83,7 @@ script:
                 (id(my_cover).position > 0.)
                 and (id(my_cover).position < 1.)
                 and (id(last_move)==true)
+                and (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
               );
           then:
             - script.execute: invert_last_move
@@ -83,12 +96,12 @@ script:
                 and (id(my_cover).position != 1.)
               );
           then:
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
             - cover.template.publish:
                 id: my_cover
                 current_operation: OPENING
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
             - delay: 12s
             - cover.template.publish:
                 id: my_cover
@@ -110,6 +123,7 @@ script:
                 (id(my_cover).position > 0.)
                 and (id(my_cover).position < 1.)
                 and (id(last_move)==false)
+                and (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
               );
           then:
             - script.execute: invert_last_move
@@ -122,12 +136,12 @@ script:
                 and (id(my_cover).position != 0.)
               );
           then:
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
             - cover.template.publish:
                 id: my_cover
                 current_operation: CLOSING
+            - switch.turn_on: relay
+            - delay: 500ms
+            - switch.turn_off: relay
             - delay: 20s
             - cover.template.publish:
                 id: my_cover
@@ -150,6 +164,16 @@ script:
                   - script.is_running: close_cover
                 then:
                   - script.stop: close_cover
+            - if:
+                condition:
+                  - script.is_running: remote_open
+                then:
+                  - script.stop: remote_open
+            - if:
+                condition:
+                  - script.is_running: remote_close
+                then:
+                  - script.stop: remote_close
             - if:
                 condition:
                   - script.is_running: invert_last_move
@@ -188,7 +212,37 @@ script:
             - switch.turn_off: relay
             - lambda: 'id(last_move) = !id(last_move);'
             - delay: 800ms
-            
+
+  - id: remote_close
+    then:
+      - globals.set:
+          id: last_move
+          value: 'false'
+
+  - id: remote_open
+    then:
+      - cover.template.publish:
+          id: my_cover
+          current_operation: OPENING
+          position: 0.5
+      - globals.set:
+          id: last_move
+          value: 'true'
+      - delay: 12s
+      - cover.template.publish:
+          id: my_cover
+          current_operation: IDLE
+          position: 1.
+
+  - id: count_move
+    then:
+      - lambda: |-
+          float state = 0.0f;
+          if (!isnan(id(last_moves).state)) {
+            state = id(last_moves).state;
+          }
+          id(last_moves).publish_state(state+1.0f);
+
 binary_sensor:
   - platform: gpio
     id: closed_sensor
@@ -200,16 +254,42 @@ binary_sensor:
     entity_category: "diagnostic"
     icon: "mdi:gate"
     filters:
-      - delayed_on_off: 5s
+      - delayed_on_off: 1s
+    on_press:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE;'
+            then:
+              - script.execute: remote_close
+    on_release:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE;'
+            then:
+              - script.execute: remote_open
       
   - platform: gpio
     pin: 
       number: GPIO5
       inverted: true
     name: "Obstruction"
+    device_class: problem
+    entity_category: diagnostic
     disabled_by_default: true
     filters:
       - delayed_on: 50ms
+
+  - platform: template
+    name: "Open/Close loop"
+    device_class: problem
+    lambda: |-
+      if (id(last_moves).state >= 10) {
+        return true;
+      } else {
+        return false;
+      }
 
 cover:
   - platform: template

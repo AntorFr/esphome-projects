@@ -138,18 +138,26 @@ display:
           float r,g,b,brightness;
           auto state = id(led_matrix_light).current_values;
           state.as_rgb(&r,&g,&b);
-          float raw_brightness = state.get_brightness();
+          brightness = state.get_brightness();
+
+          // If brightness lower than 22 set to 22 (bellow nothing is displayed)
+          if(brightness<0.22f){
+            auto call = id(led_matrix_light).turn_on();
+            call.set_brightness(0.22f);
+            call.perform();
+          }
+
+          Color light_color = Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness));
           auto index = id(display_mode).active_index();
-          brightness = std::max(raw_brightness, (float)0.25); // Brightness lower than 20% in not visible
           if (index.has_value()) {
             switch (index.value())
             {
                 case 1:
                   if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
-                    it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                    it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   } else {
-                    it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                    it.strftime(7, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   }
                   break;
                 case 2:
@@ -172,7 +180,7 @@ display:
                   else if (id(weather).state == "exceptional")
                     { it.image(0, 0, id(warning));}
                   
-                  it.printf(12, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
+                  it.printf(12, -4, id(monobit), light_color, "%4.1f°", id(weather_temp).state);
                   break;
 
             }
