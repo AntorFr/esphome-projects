@@ -1,7 +1,6 @@
 substitutions:
   rotation: 180°
 
-
 esphome:
   on_boot:
     - priority: -20
@@ -15,7 +14,6 @@ sensor:
     entity_id: weather.petit_mars
     attribute: temperature
     internal: True
-
 
 text_sensor:
   - platform: homeassistant
