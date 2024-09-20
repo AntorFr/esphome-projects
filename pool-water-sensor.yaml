@@ -76,7 +76,11 @@ sensor:
           - 0.0 -> 0.0
           - 1.08 -> 100.0
       - multiply: 320
+      - clamp:
+          min_value: 0
+          max_value: 21000
       - sliding_window_moving_average:
-          window_size: 60
-          send_every: 30
-      - timeout: 30s
+          window_size: 300
+          send_every: 60
+          send_first_at: 30
+      - timeout: 300s

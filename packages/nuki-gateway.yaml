@@ -1,0 +1,53 @@
+
+esphome:
+  libraries:
+  - Preferences
+  - https://github.com/vinmenn/Crc16.git
+  #- h2zero/NimBLE-Arduino@^1.4.0
+  - h2zero/NimBLE-Arduino@^1.4.2
+  #- https://github.com/I-Connect/NukiBleEsp32
+  #- https://github.com/I-Connect/NukiBleEsp32@2.0.0
+  #- https://github.com/I-Connect/NukiBleEsp32#pair-and-unpair-refactor
+  - https://github.com/AntorFr/NukiBleEsp32#test
+  platformio_options:
+    build_flags: 
+      - -DDEBUG_NUKI_CONNECT
+      - -DDEBUG_NUKI_COMMUNICATION
+      - -DDEBUG_NUKI_READABLE_DATA
+      - -DDEBUG_NUKI_HEX_DATA
+      #- -DNUKI_USE_LATEST_NIMBLE
+
+esp32:
+  framework:
+    type: arduino
+    version: 2.0.3
+    platform_version: 5.3.0
+
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+external_components:
+  - source: github://uriyacovy/ESPHome_nuki_lock
+  #- source: github://AntorFr/ESPHome_nuki_lock#fix-pairing-watchdog-reset
+
+lock:
+  # Required:
+  - platform: nuki_lock
+    name: Nuki Lock
+    unpair: false
+    is_connected: 
+      name: "Nuki Connected"
+    is_paired: 
+      name: "Nuki Paired"      
+  # Optional:
+    battery_critical:
+      name: "Nuki Battery Critical"
+    battery_level:
+      name: "Nuki Battery Level"
+    #door_sensor:
+    #  name: "Nuki Door Sensor"
+    #door_sensor_state:
+    #  name: "Nuki Door Sensor State"
+    

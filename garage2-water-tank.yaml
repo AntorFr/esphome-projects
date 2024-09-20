@@ -73,12 +73,12 @@ sensor:
     accuracy_decimals: 0
     filters:
       - lambda: |- 
-          if (x < 0.7) {return NAN; } //sensor disconnected / not powered
+          if (x < 0.2) {return NAN; } //sensor disconnected / not powered
           else {return x;}
       - calibrate_linear:
-          - 0.75 -> 0.0
-          - 2.42 -> 340.0
-          - 3.12 -> 650.0
+          - 0.2 -> 0.0
+          #- 2.42 -> 340.0
+          - 1.1 -> 650.0
       - sliding_window_moving_average:
           window_size: 60
           send_every: 30

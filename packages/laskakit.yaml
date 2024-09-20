@@ -75,7 +75,20 @@ switch:
     restore_mode: ALWAYS_ON
     disabled_by_default: true
     entity_category: diagnostic
-  
+  - platform: template
+    name: "Desable LED"
+    id: desable_led
+    optimistic: true
+    icon: "mdi:led-variant-off"
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: "config"
+    turn_on_action:
+      then:
+        - script.execute: refresh_led_default
+    turn_off_action:
+      then:
+        - script.execute: refresh_led_default
+
 light:
   - platform: neopixelbus
     type: GRB
@@ -144,7 +157,9 @@ script:
     then:
       - if:
           condition:
-            binary_sensor.is_off: presence
+            or:
+             - binary_sensor.is_off: presence
+             - switch.is_on: desable_led
           then:
             - script.execute: turn_off_led
           else:
@@ -166,17 +181,21 @@ script:
   - id: presence_led
     mode: restart
     then:
-      - light.turn_on:
-          id: led_status
-          brightness: !lambda 'return id(sun_elevation).state > 0 ? 1.0 : 0.5;'
-          red: 0
-          green: 0
-          blue:  1.0
-          effect: Scan
-      - delay: 1s
-      - light.turn_off:
-          id: led_status
-          transition_length: 0s
+      - if:
+          condition:
+           - switch.is_off: desable_led
+          then: 
+            - light.turn_on:
+                id: led_status
+                brightness: !lambda 'return id(sun_elevation).state > 0 ? 1.0 : 0.5;'
+                red: 0
+                green: 0
+                blue:  1.0
+                effect: Scan
+            - delay: 1s
+            - light.turn_off:
+                id: led_status
+                transition_length: 0s
       - script.execute: refresh_led_default
 
   - id: refresh_led_humidity
