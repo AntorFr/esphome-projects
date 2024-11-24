@@ -260,11 +260,6 @@ number:
       - switch.turn_on: mmwave_sensor
 
 button:
-  - platform: factory_reset
-    name: Restart with Factory Default Settings
-    id: Reset
-    entity_category: config
-    internal: true
   - platform: template
     name: "Reset device"
     id: "factory_reset_device"
