@@ -109,11 +109,11 @@ esphome:
       - binary_sensor.template.publish:
           id: long_press
           state: OFF
-      - script.execute: init_relays
+      #- script.execute: init_relays
       - script.execute: refresh_nightlight
 
 logger:
-# hardware_uart: UART2
+#  hardware_uart: UART2
   level: DEBUG
   logs:
     binary_sensor: INFO
@@ -137,11 +137,11 @@ external_components:
       url: https://github.com/SmartHome-yourself/sonoff-tx-ultimate-for-esphome
       ref: main
     components: [tx_ultimate_touch]
-  - source:
-      type: git
-      url: https://github.com/AntorFr/esphome-i2c-audio
-      ref: main
-    components: [i2s_audio]
+  #- source:
+  #   type: git
+  #   url: https://github.com/AntorFr/esphome-i2c-audio
+  #   ref: main
+  #  components: [i2s_audio]
   - source: github://AntorFr/esphome-addressable-effetcs
     components: [ custom-addressable-effetcs ]
 
@@ -262,14 +262,14 @@ binary_sensor:
     entity_id: ${nightlight_sensor_id}
     internal: true
     on_state:
-      - script.execute: refresh_nightlight
+     - script.execute: refresh_nightlight
   - id: sleep_mode
     platform: homeassistant
     name: sleep_mode
     entity_id: ${nightlight_sleep_id}
     internal: true
     on_state:
-      - script.execute: refresh_nightlight
+     - script.execute: refresh_nightlight
   - platform: status
     name: "API Status"
     id: api_connected
@@ -277,7 +277,7 @@ binary_sensor:
     filters:
      - delayed_off: 30s
     on_press:
-      - script.execute: init_relays
+     - script.execute: init_relays
 
 output:
   - id: l1_output
@@ -304,7 +304,7 @@ switch:
     platform: gpio
     pin: ${pa_power_pin}
     name: "PA Power"
-    internal: true
+    #internal: true
     restore_mode: ALWAYS_ON
   - id: touch_power
     platform: gpio
@@ -321,11 +321,11 @@ switch:
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     on_turn_on:
-      then:
-        - script.execute: refresh_nightlight
+     then:
+       - script.execute: refresh_nightlight
     on_turn_off:
-      then:
-        - script.execute: refresh_nightlight
+     then:
+       - script.execute: refresh_nightlight
 
   - id: nightlight_active
     platform: template
@@ -334,11 +334,11 @@ switch:
     optimistic: true
     restore_mode: ${nightlight_restore_mode}
     on_turn_on:
-      then:
-        - script.execute: refresh_led_default
+     then:
+       - script.execute: refresh_led_default
     on_turn_off:
-      then:
-        - script.execute: refresh_led_default
+     then:
+       - script.execute: refresh_led_default
 
 light:
   - id: relay_1
@@ -349,11 +349,11 @@ light:
     entity_category: ${light_1_entity_category}
     internal: ${light_1_internal}  
     on_turn_on:
-      then:
-        - script.execute: refresh_led_default
+     then:
+       - script.execute: refresh_led_default
     on_turn_off:
-      then:
-        - script.execute: refresh_led_default
+     then:
+       - script.execute: refresh_led_default
   - id: relay_2
     platform: binary
     name: "L2"
@@ -450,15 +450,15 @@ light:
         from: 0
         to: 6
     effects:
-      - addressable_christmas:
-          blank_size: 1
-          bit_size: 1
-      - addressable_stars: 
-          stars_probability: 30%
-          color:
-            red: 100%
-            green: 100%
-            blue: 100%
+     - addressable_christmas:
+         blank_size: 1
+         bit_size: 1
+     - addressable_stars: 
+         stars_probability: 30%
+         color:
+           red: 100%
+           green: 100%
+           blue: 100%
   - id: leds_top
     platform: partition
     name: "LEDs Top"  
@@ -476,20 +476,20 @@ light:
           width: 20
 
 media_player:
-  - platform: i2s_audio
-    id: media_out
-    name: Player
-    dac_type: external
-    i2s_dout_pin: ${audio_sdata_pin}
-    i2s_audio_id: audio_i2s
-    i2s_comm_fmt: lsb
-    mode: mono
-    redirect_https: true
+ - platform: i2s_audio
+   id: media_out
+   name: Player
+   dac_type: external
+   i2s_dout_pin: ${audio_sdata_pin}
+   i2s_audio_id: audio_i2s
+   i2s_comm_fmt: lsb
+   mode: mono
+   #redirect_https: true
 
 i2s_audio:
-  id: audio_i2s
-  i2s_lrclk_pin: ${audio_lrclk_pin}
-  i2s_bclk_pin: ${audio_bclk_pin}
+ id: audio_i2s
+ i2s_lrclk_pin: ${audio_lrclk_pin}
+ i2s_bclk_pin: ${audio_bclk_pin}
 
 uart:
   tx_pin: ${uart_tx_pin}
@@ -500,13 +500,13 @@ uart:
   stop_bits: 1
   parity: NONE
   debug:
-    direction: RX
-    dummy_receiver: false
-    after:
-      timeout: 2s
-      bytes: 2048
-    sequence:
-      - lambda: UARTDebug::log_hex(direction, bytes, ' ');
+   direction: RX
+   dummy_receiver: false
+   after:
+     timeout: 2s
+     bytes: 2048
+   sequence:
+     - lambda: UARTDebug::log_hex(direction, bytes, ' ');
 
 tx_ultimate_touch:
   id: tx_touch
@@ -553,24 +553,21 @@ tx_ultimate_touch:
 
   on_long_touch_release:
     - script.execute: led_on_long_touch
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: long_press
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_long_touch_release", "Long Touch Release Position: %d / State: %d", touch.x, touch.state);
 
 time:
   - platform: homeassistant
-    on_time:
-      # Every 5 minutes
+    on_time: 
+      #Every 5 minutes
       - seconds: 0
         minutes: /5
         then:
-          - script.execute: refresh_nightlight
+        - script.execute: refresh_nightlight
 
 select:
   - platform: template

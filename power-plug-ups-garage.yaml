@@ -1,32 +1,21 @@
 substitutions:
-  device_name: laundry-switch
-  friendly_name: Bouton buanderie
-  area: "Buanderie"
-
-  ## TX Ultimate ##
-  button_count: "1"
-
-  light_1_internal: "false"
-  light_1_entity_category: "config"
-  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
-
-  light_2_internal: "true" 
-  light_3_internal: "true"
-
-  button_1_switch_relay: "false" 
-  button_2_switch_relay: "false"
-  button_3_switch_relay: "false"
-
+  device_name: power-plug-ups-garage
+  friendly_name: "Prise onduleur garage"
+  icon: mdi:power-plug-battery-outline
+  current_res: "0.00204"
+  voltage_div: "775"
+  area: "Garage"
+  
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  area: ${area}  
+  area: ${area}
+  on_boot:
+    - switch.turn_on: button_switch
 
-
-esp32:
-  board: esp32dev
-  #framework:
-  #  type: arduino
+esp8266:
+  board: esp8285
+  restore_from_flash: true
 
 wifi:
   ssid: !secret wifi_ssid
@@ -46,12 +35,12 @@ ota:
   platform: esphome
   password: !secret ota_password
 
-#captive_portal:
-
-#logger:
-#  level: INFO
+captive_portal:
 
 #web_server:
+
+logger:
+  level: WARN
 
 #######################################
 # Device specific Config Begins Below #
@@ -60,6 +49,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate.yaml
-
-    
+  nous-a1t: !include packages/nous-a1t.yaml

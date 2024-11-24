@@ -69,7 +69,7 @@ uart:
 
 
 sensor:
-  - platform: bmp280
+  - platform: bmp280_i2c
     temperature:
       name: "BME280 Temperature"
       oversampling: 16x
