@@ -2,12 +2,12 @@ substitutions:
   device_name: linky
   friendly_name: Linky
 
-  HCJB_price: "0.1296"
-  HPJB_price: "0.1609"
-  HCJW_price: "0.1486"
-  HPJW_price: "0.1894"
-  HCJR_price: "0.1568"
-  HPJR_price: "0.7562"
+  HCJB_price: "0.1288"
+  HPJB_price: "0.1552"
+  HCJW_price: "0.1447"
+  HPJW_price: "0.1792"
+  HCJR_price: "0.1512"
+  HPJR_price: "0.6586"
 
 esphome:
   name: ${device_name}

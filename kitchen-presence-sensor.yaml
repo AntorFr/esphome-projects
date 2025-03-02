@@ -47,6 +47,8 @@ packages:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
 
+bluetooth_proxy:
+  active: true
 
 external_components:
   - source: github://TillFleisch/ESPHome-HLK-LD2450@main

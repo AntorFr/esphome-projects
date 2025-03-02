@@ -89,34 +89,34 @@ font:
 image:
   - file: "images/warning.png"
     id: warning
-    type: RGB24
+    type: RGB
   - file: "images/sun.png"
     id: sun
-    type: RGB24
+    type: RGB
   - file: "images/clock.png"
     id: _clock
-    type: RGB24
+    type: RGB
   - file: "images/moon.png"
     id: moon
-    type: RGB24
+    type: RGB
   - file: "images/cloud.png"
     id: cloud
-    type: RGB24
+    type: RGB
   - file: "images/lightning.png"
     id: lightning
-    type: RGB24
+    type: RGB
   - file: "images/lightning_rain.png"
     id: lightning_rain
-    type: RGB24
+    type: RGB
   - file: "images/partcloud.png"
     id: partcloud
-    type: RGB24
+    type: RGB
   - file: "images/rain.png"
     id: rain
-    type: RGB24
+    type: RGB
   - file: "images/pouring.png"
     id: pouring
-    type: RGB24
+    type: RGB
 
 display:
   - platform: addressable_light

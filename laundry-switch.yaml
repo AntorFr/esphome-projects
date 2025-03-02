@@ -61,5 +61,3 @@ packages:
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
   tx_ultimate: !include packages/tx_ultimate.yaml
-
-    

@@ -35,8 +35,7 @@ ota:
   password: !secret ota_password
 
 captive_portal:
-web_server:
-
+#web_server:
 
 #######################################
 # Device specific Config Begins Below #
@@ -54,6 +53,8 @@ output:
   - platform: ledc
     pin: GPIO19
     id: gpio_19
+    min_power: 0.01
+    zero_means_zero: True
 
 # Example usage in a light
 light:

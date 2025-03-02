@@ -17,6 +17,7 @@ logger:
 uart:
   rx_pin: GPIO3
   baud_rate: 4800
+  parity: EVEN
 
 time:
   - platform: homeassistant

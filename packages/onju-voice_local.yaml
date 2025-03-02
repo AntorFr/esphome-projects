@@ -177,10 +177,10 @@ media_player:
 
 micro_wake_word:
   models: 
-    - model: github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}
-      probability_cutoff: ${probability_cutoff}
-    #- model: hey_jarvis
-  #vad:
+    #- model: github://AntorFr/esphome-projects/micro-wake-word/models/${model_name}
+    #  probability_cutoff: ${probability_cutoff}
+    - model: ${model_name} 
+  vad:
 
   on_wake_word_detected:
     - if:
@@ -396,8 +396,8 @@ light:
     chipset: SK6812
     num_leds: 6
     rgb_order: grb
-    rmt_channel: 0
-    default_transition_length: 0s
+    #rmt_channel: 0
+    #default_transition_length: 0s
     gamma_correct: 2.8
   - platform: partition
     id: left_led
