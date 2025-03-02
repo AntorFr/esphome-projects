@@ -32,8 +32,8 @@ substitutions:
   nightlight_sleep_id: "input_boolean.night_mode"
   nightlight_restore_mode: "ALWAYS_ON"
   nightlight_brightness: "0.2"
-  nightlight_color: "{100,100,100}" #"{80,70,0}"
-  nightlight_effect: "Stars"
+  nightlight_color:  "{80,70,0}" #"{100,100,100}"
+  nightlight_effect: "Default"
 
   touch_brightness: "1"
   touch_color: "{0,100,100}"
@@ -63,28 +63,24 @@ substitutions:
   vibra_motor_pin: GPIO21
   pa_power_pin: GPIO26
 
-  led_pin: GPIO13
   status_led_pin: GPIO33
 
   uart_tx_pin: GPIO19
   uart_rx_pin: GPIO22
 
-  audio_lrclk_pin: GPIO4
-  audio_bclk_pin: GPIO2
-  audio_sdata_pin: GPIO15
-
   touchpanel_power_pin: GPIO5
 
-  led_variant: WS2811
 
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5
 
-esphome:
-  platformio_options:
-    board_build.f_cpu: 240000000L
+
+esphome:  
   on_boot:
     priority: -100
     then:
@@ -137,14 +133,9 @@ external_components:
       url: https://github.com/SmartHome-yourself/sonoff-tx-ultimate-for-esphome
       ref: main
     components: [tx_ultimate_touch]
-  - source:
-      type: git
-      url: https://github.com/AntorFr/esphome-i2c-audio
-      ref: main
-    components: [i2s_audio]
-    refresh: 1s
-  - source: github://AntorFr/esphome-addressable-effetcs
+  - source: github://AntorFr/esphome-addressable-effetcs@main
     components: [ custom-addressable-effetcs ]
+    #refresh: 1s
 
 custom-addressable-effetcs:  
 
@@ -382,15 +373,16 @@ light:
       then:
         - script.execute: refresh_led_default
   - id: leds
-    platform: neopixelbus
-    type: GRB
-    variant: ${led_variant}
-    pin: ${led_pin}
+    platform: esp32_rmt_led_strip
+    chipset: WS2812
+    max_refresh_rate: 15ms
+    rgb_order: GRB
+    pin: GPIO13
     num_leds: 28
     name: "NeoPixel Light"
     internal: true
     entity_category: "config"
-    default_transition_length: 0s
+    default_transition_length: 0ms
     effects:
       - addressable_rainbow:
           name: "Rainbow"
@@ -456,6 +448,10 @@ light:
           bit_size: 1
       - addressable_stars: 
           stars_probability: 30%
+          color:
+            red: 100%
+            green: 100%
+            blue: 100%
   - id: leds_top
     platform: partition
     name: "LEDs Top"  
@@ -472,22 +468,76 @@ light:
           speed: 10
           width: 20
 
-media_player:
+speaker:
+  # Hardware speaker output
   - platform: i2s_audio
+    id: i2s_audio_speaker
+    sample_rate: 48000
+    channel: mono
+    #i2s_mode: secondary
+    i2s_dout_pin: GPIO15
+    bits_per_sample: 16bit
+    i2s_audio_id: i2s_output
+    dac_type: external
+    i2s_comm_fmt: i2s_lsb
+    #timeout: never
+    buffer_duration: 100ms
+    #audio_dac: aic3204_dac
+
+
+  # Virtual speakers to combine the announcement and media streams together into one output
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: i2s_audio_speaker
+    num_channels: 1
+    source_speakers:
+      - id: announcement_mixing_input
+        timeout: never
+      - id: media_mixing_input
+        timeout: never
+
+  # Vritual speakers to resample each pipelines' audio, if necessary, as the mixer speaker requires the same sample rate
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+media_player:
+  - platform: speaker
     id: media_out
     name: Player
-    dac_type: external
-    i2s_dout_pin: ${audio_sdata_pin}
-    i2s_audio_id: audio_i2s
-    i2s_comm_fmt: lsb
-    mode: mono
-    redirect_https: true
+    internal: False
+    volume_increment: 0.05
+    volume_min: 0.5
+    volume_max: 1
+    announcement_pipeline:
+      speaker:  announcement_resampling_speaker
+      format: FLAC     # FLAC is the least processor intensive codec
+      num_channels: 1  # Stereo audio is unnecessary for announcements
+      #sample_rate: 48000
+    media_pipeline:
+      speaker: media_resampling_speaker
+      format: FLAC     # FLAC is the least processor intensive codec
+      num_channels: 1
+      #sample_rate: 48000
+
+    files:
+      - id: center_button_press_sound
+        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_press.flac
 
 i2s_audio:
-  id: audio_i2s
-  i2s_lrclk_pin: ${audio_lrclk_pin}
-  i2s_bclk_pin: ${audio_bclk_pin}
-  
+  - id: i2s_output
+    i2s_lrclk_pin:
+      number: GPIO4
+    i2s_bclk_pin:
+      number: GPIO2
+
 
 uart:
   tx_pin: ${uart_tx_pin}
@@ -514,50 +564,38 @@ tx_ultimate_touch:
     - script.execute: led_on_touch
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_press", "Touch Position: %d / State: %d", touch.x, touch.state);
-
   on_release:
     - script.execute:
         id: handle_release
         pos: !lambda "return touch.x;"
-
     - switch.turn_on: vibra
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
 
   on_swipe_left:
     - script.execute: led_on_swipe_left
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: swipe_left
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_left", "Swipe Left Position: %d / State: %d", touch.x, touch.state);
 
   on_swipe_right:
     - script.execute: led_on_swipe_right
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: swipe_right
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_right", "Swipe Right Position: %d / State: %d", touch.x, touch.state);
 
   on_full_touch_release:
     - script.execute: led_on_full_touch
-
     - switch.turn_on: vibra
-
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
-
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_full_touch_release", "Full Touch Release Position: %d / State: %d", touch.x, touch.state);
 
@@ -588,12 +626,12 @@ select:
     id: nightlight_effect
     entity_category: "config"
     options:
-     - "None"
+     - "Default"
      - "Christmas"
      - "Stars"
     initial_option: ${nightlight_effect}
     optimistic: true
-    set_action:
+    on_value:
       - script.execute: refresh_nightlight
 
 script:
@@ -612,6 +650,7 @@ script:
           else:
             - switch.turn_off:
                 id: nightlight
+      - script.execute: refresh_led_default
   - id: refresh_led_default
     mode: restart
     then:
@@ -659,8 +698,6 @@ script:
                   - script.execute: led_on_button_right
                 else:
                   - script.execute: led_off_button_right
-
-
   - id: led_on_button_left
     mode: restart
     then:
@@ -701,7 +738,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
-                effect: !lambda "return id(nightlight_effect).state.c_str();"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default") {
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_left
@@ -718,7 +761,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
-                effect: !lambda "return id(nightlight_effect).state.c_str();"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default") {
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_middle
@@ -735,7 +784,13 @@ script:
                 red: !lambda "return id(nightlight_color)[0]/100.0;"
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
-                effect: !lambda "return id(nightlight_effect).state.c_str();"
+                effect: !lambda |-
+                  auto effect = id(nightlight_effect).state;
+                  if(effect == "Default"){
+                    return "None";
+                  } else {
+                    return effect.c_str();
+                  }
           else:
             - light.turn_off:
                 id: leds_button_right
@@ -748,7 +803,13 @@ script:
           red: !lambda "return id(nightlight_color)[0]/100.0;"
           green: !lambda "return id(nightlight_color)[1]/100.0;"
           blue:  !lambda "return id(nightlight_color)[2]/100.0;"
-          effect: !lambda "return id(nightlight_effect).state.c_str();"
+          effect: !lambda |-
+            auto effect = id(nightlight_effect).state;
+            if(effect == "Default"){
+              return "None";
+            } else {
+              return effect.c_str();
+            }
   - id: led_on_release
     mode: restart
     then:
@@ -764,6 +825,10 @@ script:
           green: !lambda "return id(touch_color)[1]/100.0;"
           blue:  !lambda "return id(touch_color)[2]/100.0;"
           effect: ${touch_effect}
+      - script.execute:
+          id: play_sound
+          priority: true
+          sound_file: !lambda return id(center_button_press_sound);
       - delay: 6s
       - script.execute: refresh_led_default
   - id: led_on_swipe_left
@@ -936,4 +1001,22 @@ script:
           }
           if (!${button_3_switch_relay}) {
             id(relay_${button_3_light_id}).turn_on();
+          }
+  # Script executed when we want to play sounds on the device.
+  - id: play_sound
+    parameters:
+      priority: bool
+      sound_file: "audio::AudioFile*"
+    then:
+      - lambda: |-
+          if (priority) {
+            id(media_out)
+              ->make_call()
+              .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_STOP)
+              .set_announcement(true)
+              .perform();
+          }
+          if ( (id(media_out).state != media_player::MediaPlayerState::MEDIA_PLAYER_STATE_ANNOUNCING ) || priority) {
+            id(media_out)
+              ->play_file(sound_file, true, false);
           }
