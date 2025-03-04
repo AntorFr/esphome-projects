@@ -538,7 +538,6 @@ i2s_audio:
     i2s_bclk_pin:
       number: GPIO2
 
-
 uart:
   tx_pin: ${uart_tx_pin}
   rx_pin: ${uart_rx_pin}
@@ -569,12 +568,14 @@ tx_ultimate_touch:
         id: handle_release
         pos: !lambda "return touch.x;"
     - switch.turn_on: vibra
+    - script.execute: touch_sound
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
 
   on_swipe_left:
     - script.execute: led_on_swipe_left
     - switch.turn_on: vibra
+    - script.execute: touch_sound
     - binary_sensor.template.publish:
         id: swipe_left
         state: ON
@@ -584,6 +585,7 @@ tx_ultimate_touch:
   on_swipe_right:
     - script.execute: led_on_swipe_right
     - switch.turn_on: vibra
+    - script.execute: touch_sound
     - binary_sensor.template.publish:
         id: swipe_right
         state: ON
@@ -593,6 +595,7 @@ tx_ultimate_touch:
   on_full_touch_release:
     - script.execute: led_on_full_touch
     - switch.turn_on: vibra
+    - script.execute: touch_sound
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
@@ -603,7 +606,7 @@ tx_ultimate_touch:
     - script.execute: led_on_long_touch
 
     - switch.turn_on: vibra
-
+    - script.execute: touch_sound
     - binary_sensor.template.publish:
         id: long_press
         state: ON
@@ -825,10 +828,6 @@ script:
           green: !lambda "return id(touch_color)[1]/100.0;"
           blue:  !lambda "return id(touch_color)[2]/100.0;"
           effect: ${touch_effect}
-      - script.execute:
-          id: play_sound
-          priority: true
-          sound_file: !lambda return id(center_button_press_sound);
       - delay: 6s
       - script.execute: refresh_led_default
   - id: led_on_swipe_left
@@ -1020,3 +1019,10 @@ script:
             id(media_out)
               ->play_file(sound_file, true, false);
           }
+
+  - id: touch_sound
+    then:
+      - script.execute:
+          id: play_sound
+          priority: true
+          sound_file: !lambda return id(center_button_press_sound);

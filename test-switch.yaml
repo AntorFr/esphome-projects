@@ -15,7 +15,6 @@ substitutions:
   button_2_switch_relay: "false"
   button_3_switch_relay: "false"
 
-  #led_variant: TM1914
 
 esphome:
   name: ${device_name}
@@ -29,8 +28,8 @@ esp32:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  #use_address: ${device_name}.intra.sberard.fr
-  use_address: 192.168.10.92
+  use_address: ${device_name}.intra.sberard.fr
+
 
   ap:
     ssid: ${device_name}
