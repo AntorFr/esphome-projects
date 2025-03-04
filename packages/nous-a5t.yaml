@@ -5,6 +5,11 @@ substitutions:
   icon_switch2: mdi:power
   icon_switch3: mdi:power
   icon_usb: mdi:usb-port
+  restore_mode: RESTORE_DEFAULT_ON
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
 
 logger:
   baud_rate: 0
@@ -12,6 +17,7 @@ logger:
 uart:
   rx_pin: GPIO3
   baud_rate: 4800
+  parity: EVEN
 
 time:
   - platform: homeassistant
@@ -150,7 +156,7 @@ switch:
       - switch.turn_on: relay1
     turn_off_action:
       - switch.turn_off: relay1
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: template
     name: "Switch 2"
     icon: ${icon_switch2}
@@ -165,7 +171,7 @@ switch:
       - switch.turn_on: relay2
     turn_off_action:
       - switch.turn_off: relay2
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: template
     name: "Switch 3"
     icon: ${icon_switch3}
@@ -180,7 +186,7 @@ switch:
       - switch.turn_on: relay3
     turn_off_action:
       - switch.turn_off: relay3
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: template
     name: "Switch USB"
     icon: ${icon_usb}
@@ -195,21 +201,21 @@ switch:
       - switch.turn_on: relay4
     turn_off_action:
       - switch.turn_off: relay4
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: gpio
     pin: GPIO14
     id: relay1
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: gpio
     pin: GPIO12
     id: relay2
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: gpio
     pin: GPIO13
     id: relay3
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}
   - platform: gpio
     pin: GPIO5
     inverted: True
     id: relay4
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: ${restore_mode}

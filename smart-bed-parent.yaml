@@ -48,6 +48,9 @@ packages:
     file: packages/device_base.yaml
   ld2410: !include packages/ld2410.yaml
 
+bluetooth_proxy:
+  active: true
+
 binary_sensor:
   - name: "Mouvement gauche"
     platform: gpio
@@ -64,25 +67,25 @@ binary_sensor:
   - name: "Presence gauche"
     platform: gpio
     pin:
-      number: GPIO17
-      inverted: true
-      mode:
-          input: true
-          pullup: true
-    filters:
-      - delayed_on: 15s
-      - delayed_off: 15s
-    device_class: occupancy
-  - name: "Presence droite"
-    platform: gpio
-    pin:
       number: GPIO04
       inverted: true
       mode:
           input: true
           pullup: true
     filters:
-      - delayed_on: 15s
+      - delayed_on: 50ms
+      - delayed_off: 15s
+    device_class: occupancy
+  - name: "Presence droite"
+    platform: gpio
+    pin:
+      number: GPIO17
+      inverted: true
+      mode:
+          input: true
+          pullup: true
+    filters:
+      - delayed_on: 50ms
       - delayed_off: 15s
 
     device_class: occupancy

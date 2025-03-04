@@ -1,14 +1,12 @@
 substitutions:
-  device_name: nest-mini-salon
-  friendly_name: Nest mini salon
-  model_name: "okay_nabu"
-  probability_cutoff: "50%"
-  default_volume: "40%"
+  device_name: "ceiling-light-timothee"
+  friendly_name: "Plafonnier Timothée"
+  area: "Chambre Timothée"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  
+  area: ${area}  
 
 wifi:
   ssid: !secret wifi_ssid
@@ -19,8 +17,11 @@ wifi:
     ssid: ${device_name}
     password: !secret ap_password
 
+logger:
+  level: DEBUG
+  
 api:
-  reboot_timeout: 15min
+  reboot_timeout: 30min
   encryption:
     key: !secret api_encryption
 
@@ -29,9 +30,7 @@ ota:
   password: !secret ota_password
 
 captive_portal:
-
-logger:
-  level: DEBUG
+web_server:
 
 #######################################
 # Device specific Config Begins Below #
@@ -40,6 +39,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  onju-voice: !include packages/onju-voice_local.yaml
-#https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
-
+  athom-rgbct-light: !include packages/athom-rgbct-light.yaml

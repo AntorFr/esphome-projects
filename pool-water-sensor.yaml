@@ -1,15 +1,16 @@
 substitutions:
-  device_name: "garage3-water-tank"
-  friendly_name: "Réservoir eau garage 3"
-  area: "Garage"
-
-
-
+  device_name: "pool-water-sensor"
+  friendly_name: "Niveau piscine"
+  area: "Piscine"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   area: ${area}  
+  on_boot: 
+    then:
+      - switch.turn_on: relay
+
 esp32:
   board: esp32dev
   variant: esp32
@@ -65,20 +66,21 @@ sensor:
     id: "water_level"
     icon: "mdi:cup-water"
     state_class: "measurement"
-    device_class: "volume_storage"
+    device_class: "water"
     update_interval: 1s
     attenuation: auto
     unit_of_measurement: "L"
     accuracy_decimals: 0
     filters:
-      - lambda: |- 
-          if (x < 0.7) {return NAN; } //sensor disconnected / not powered
-          else {return x;}
       - calibrate_linear:
-          - 0.75 -> 0.0
-          - 2.42 -> 340.0
-          - 3.12 -> 650.0
+          - 0.0 -> 0.0
+          - 1.08 -> 100.0
+      - multiply: 320
+      - clamp:
+          min_value: 0
+          max_value: 21000
       - sliding_window_moving_average:
-          window_size: 60
-          send_every: 30
-      - timeout: 30s
+          window_size: 300
+          send_every: 60
+          send_first_at: 30
+      - timeout: 300s

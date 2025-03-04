@@ -49,10 +49,14 @@ output:
     pin: GPIO14
     frequency: 1000 Hz
     id: pwm1
+    min_power: 0.01
+    zero_means_zero: True
   - platform: esp8266_pwm
     pin: GPIO12
     frequency: 1000 Hz
     id: pwm2
+    min_power: 0.01
+    zero_means_zero: True
   - platform: esp8266_pwm
     pin: GPIO13
     frequency: 1000 Hz

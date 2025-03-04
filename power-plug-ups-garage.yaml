@@ -1,14 +1,21 @@
 substitutions:
-  device_name: nest-mini-salon
-  friendly_name: Nest mini salon
-  model_name: "okay_nabu"
-  probability_cutoff: "50%"
-  default_volume: "40%"
-
+  device_name: power-plug-ups-garage
+  friendly_name: "Prise onduleur garage"
+  icon: mdi:power-plug-battery-outline
+  current_res: "0.00204"
+  voltage_div: "775"
+  area: "Garage"
+  
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name}
-  
+  friendly_name: ${friendly_name} 
+  area: ${area}
+  on_boot:
+    - switch.turn_on: button_switch
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
 
 wifi:
   ssid: !secret wifi_ssid
@@ -30,8 +37,10 @@ ota:
 
 captive_portal:
 
+#web_server:
+
 logger:
-  level: DEBUG
+  level: WARN
 
 #######################################
 # Device specific Config Begins Below #
@@ -40,6 +49,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  onju-voice: !include packages/onju-voice_local.yaml
-#https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
-
+  nous-a1t: !include packages/nous-a1t.yaml

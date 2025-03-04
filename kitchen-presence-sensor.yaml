@@ -47,6 +47,8 @@ packages:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
 
+bluetooth_proxy:
+  active: true
 
 external_components:
   - source: github://TillFleisch/ESPHome-HLK-LD2450@main
@@ -69,7 +71,7 @@ uart:
 
 
 sensor:
-  - platform: bmp280
+  - platform: bmp280_i2c
     temperature:
       name: "BME280 Temperature"
       oversampling: 16x
@@ -81,7 +83,7 @@ sensor:
     name: "BH1750 Illuminance"
     address: 0x23
     update_interval: 10s
-  - platform: ens160
+  - platform: ens160_i2c
     eco2:
       name: "ENS160 eCO2"
     tvoc:

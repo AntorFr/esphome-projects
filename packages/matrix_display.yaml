@@ -1,30 +1,12 @@
 substitutions:
   rotation: 180°
 
-
 esphome:
   on_boot:
     - priority: -20
       then: 
-        - lambda: |-
-            auto index = id(display_mode).active_index();
-            if (!(index.has_value())) {
-              ESP_LOGD("custom", "Turn off led_matrix_display (default)");
-              id(led_matrix_display).set_enabled(false);            
-            } else {
-              int i = index.value();
-              switch (i) { // index of the choosen value
-                case 0:
-                  ESP_LOGD("custom", " Turn off led_matrix_display");
-                  id(led_matrix_display).set_enabled(false);
-                  break;
-                case 1: 
-                  ESP_LOGD("custom", " Turn on led_matrix_display");
-                  id(led_matrix_display).set_enabled(true);
-                  break;
-              }
-            }
-            id(init_done)= true;
+        - script.execute:
+            id: init_display_mode
 
 sensor:
   - platform: homeassistant
@@ -32,7 +14,6 @@ sensor:
     entity_id: weather.petit_mars
     attribute: temperature
     internal: True
-
 
 text_sensor:
   - platform: homeassistant
@@ -62,16 +43,7 @@ select:
     on_value:
       lambda: |-
         if(id(init_done)) {
-          switch (i) { // index of the choosen value
-            case 0:
-              ESP_LOGD("custom", " Turn off led_matrix_display");
-              id(led_matrix_display).set_enabled(false);
-              break;
-            default: 
-              ESP_LOGD("custom", " Turn on led_matrix_display");
-              id(led_matrix_display).set_enabled(true);
-              break;
-          }
+          id(set_display_mode)->execute(i);
         }
 
 light:
@@ -111,40 +83,40 @@ font:
   - file: fonts/monobit.ttf
     id: monobit
     size: 16
-    glyphs:  |
+    glyphs:  >-
       !"%()+*=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz@
 
 image:
   - file: "images/warning.png"
     id: warning
-    type: RGB24
+    type: RGB
   - file: "images/sun.png"
     id: sun
-    type: RGB24
+    type: RGB
   - file: "images/clock.png"
     id: _clock
-    type: RGB24
+    type: RGB
   - file: "images/moon.png"
     id: moon
-    type: RGB24
+    type: RGB
   - file: "images/cloud.png"
     id: cloud
-    type: RGB24
+    type: RGB
   - file: "images/lightning.png"
     id: lightning
-    type: RGB24
+    type: RGB
   - file: "images/lightning_rain.png"
     id: lightning_rain
-    type: RGB24
+    type: RGB
   - file: "images/partcloud.png"
     id: partcloud
-    type: RGB24
+    type: RGB
   - file: "images/rain.png"
     id: rain
-    type: RGB24
+    type: RGB
   - file: "images/pouring.png"
     id: pouring
-    type: RGB24
+    type: RGB
 
 display:
   - platform: addressable_light
@@ -165,6 +137,15 @@ display:
           auto state = id(led_matrix_light).current_values;
           state.as_rgb(&r,&g,&b);
           brightness = state.get_brightness();
+
+          // If brightness lower than 22 set to 22 (bellow nothing is displayed)
+          if(brightness<0.22f){
+            auto call = id(led_matrix_light).turn_on();
+            call.set_brightness(0.22f);
+            call.perform();
+          }
+
+          Color light_color = Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness));
           auto index = id(display_mode).active_index();
           if (index.has_value()) {
             switch (index.value())
@@ -172,9 +153,9 @@ display:
                 case 1:
                   if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
-                    it.strftime(11, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                    it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   } else {
-                    it.strftime(7, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)) , "%H:%M", id(_time).now());
+                    it.strftime(7, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   }
                   break;
                 case 2:
@@ -197,9 +178,38 @@ display:
                   else if (id(weather).state == "exceptional")
                     { it.image(0, 0, id(warning));}
                   
-                  it.printf(12, -4, id(monobit), Color(int(255*r/brightness),int(255*g/brightness),int(255*b/brightness)), "%4.1f°", id(weather_temp).state);
+                  it.printf(12, -4, id(monobit), light_color, "%4.1f°", id(weather_temp).state);
                   break;
 
             }
           }
     
+script:
+  - id: init_display_mode
+    then:
+      - lambda: |-
+          auto index = id(display_mode).active_index();
+          if (!(index.has_value())) {
+            ESP_LOGD("custom", "Turn off led_matrix_display (default)");
+            id(led_matrix_display).set_enabled(false);            
+          } else {
+            int i = index.value();
+            id(set_display_mode)->execute(i);
+          }
+          id(init_done)= true;
+  - id: set_display_mode
+    parameters:
+      display_mode: int
+    then:
+      - lambda: |-
+            switch (display_mode) { // index of the choosen value
+              case 0:
+                ESP_LOGD("custom", " Turn off led_matrix_display");
+                id(led_matrix_display).set_enabled(false);
+                break;
+              default: 
+                ESP_LOGD("custom", " Turn on led_matrix_display");
+                id(led_matrix_display).set_enabled(true);
+                break;
+            }
+          

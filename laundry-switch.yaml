@@ -1,14 +1,32 @@
 substitutions:
-  device_name: nest-mini-salon
-  friendly_name: Nest mini salon
-  model_name: "okay_nabu"
-  probability_cutoff: "50%"
-  default_volume: "40%"
+  device_name: laundry-switch
+  friendly_name: Bouton buanderie
+  area: "Buanderie"
+
+  ## TX Ultimate ##
+  button_count: "1"
+
+  light_1_internal: "false"
+  light_1_entity_category: "config"
+  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
+
+  light_2_internal: "true" 
+  light_3_internal: "true"
+
+  button_1_switch_relay: "false" 
+  button_2_switch_relay: "false"
+  button_3_switch_relay: "false"
 
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name}
-  
+  friendly_name: ${friendly_name} 
+  area: ${area}  
+
+
+esp32:
+  board: esp32dev
+  #framework:
+  #  type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -28,10 +46,12 @@ ota:
   platform: esphome
   password: !secret ota_password
 
-captive_portal:
+#captive_portal:
 
-logger:
-  level: DEBUG
+#logger:
+#  level: INFO
+
+#web_server:
 
 #######################################
 # Device specific Config Begins Below #
@@ -40,6 +60,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  onju-voice: !include packages/onju-voice_local.yaml
-#https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
-
+  tx_ultimate: !include packages/tx_ultimate.yaml

@@ -1,10 +1,13 @@
 substitutions:
   device_name: esp-assistant-office
-  friendly_name: Esp Assistant Bureau
-  
+  friendly_name: Atom Bureau
+  area: "Bureau"  
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
+  area: ${area}  
+  name_add_mac_suffix: False
 
 wifi:
   ssid: !secret wifi_ssid
@@ -26,14 +29,13 @@ ota:
 
 captive_portal:
 
-logger:
-  level: DEBUG
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
 packages:
-  device_base: !include packages/device_base.yaml
+  #device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  m5stack-atom-echo: !include packages/m5stack-atom-echo.yaml
+  home-assistant-atom: !include packages/home-assistant-atom.yaml
+

@@ -80,9 +80,10 @@ light:
     type: GRB
     variant: WS2812
     pin: GPIO27
-    num_leds: 63
+    num_leds: 82
     internal: False
     id: led
+    color_correct: [70%, 70%, 70%]
     method:
       type: esp32_i2s
       bus: 0
@@ -133,7 +134,7 @@ light:
     segments:
       - id: led
         from: 0
-        to: 30
+        to: 49
     effects:
       - addressable_rainbow:
       - addressable_color_wipe:
@@ -174,8 +175,8 @@ light:
     entity_category: config
     segments:
       - id: led
-        from: 31
-        to: 35
+        from: 50
+        to: 54
     effects:
       - addressable_rainbow:
       - addressable_color_wipe:
@@ -214,8 +215,8 @@ light:
     entity_category: config  
     segments:
       - id: led
-        from: 36
-        to: 62
+        from: 55
+        to: 81
     effects:
       - addressable_rainbow:
       - addressable_color_wipe:

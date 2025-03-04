@@ -29,6 +29,7 @@ text_sensor:
 
 button:
   - platform: restart
+    id: Reset
     name: Restart
     entity_category: config
   - platform: safe_mode
