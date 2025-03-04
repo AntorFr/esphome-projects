@@ -545,7 +545,6 @@ i2s_audio:
     i2s_bclk_pin:
       number: GPIO2
 
-
 uart:
   tx_pin: ${uart_tx_pin}
   rx_pin: ${uart_rx_pin}
@@ -578,7 +577,6 @@ tx_ultimate_touch:
     - switch.turn_on: vibra
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
-
   on_swipe_left:
     - script.execute: led_on_swipe_left
     - switch.turn_on: vibra
@@ -587,7 +585,6 @@ tx_ultimate_touch:
         state: ON
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_left", "Swipe Left Position: %d / State: %d", touch.x, touch.state);
-
   on_swipe_right:
     - script.execute: led_on_swipe_right
     - switch.turn_on: vibra
@@ -596,7 +593,6 @@ tx_ultimate_touch:
         state: ON
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_swipe_right", "Swipe Right Position: %d / State: %d", touch.x, touch.state);
-
   on_full_touch_release:
     - script.execute: led_on_full_touch
     - switch.turn_on: vibra
@@ -605,7 +601,6 @@ tx_ultimate_touch:
         state: ON
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_full_touch_release", "Full Touch Release Position: %d / State: %d", touch.x, touch.state);
-
   on_long_touch_release:
     - script.execute: led_on_long_touch
 
