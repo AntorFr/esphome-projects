@@ -49,7 +49,7 @@ packages:
   ld2410: !include packages/ld2410.yaml
 
 bluetooth_proxy:
-  active: true
+  active: False
 
 binary_sensor:
   - name: "Mouvement gauche"

@@ -1,7 +1,7 @@
 substitutions:
-  device_name: garage-ble-relay
-  friendly_name: "Garage Relay BLE"
-  area: Garage
+  device_name: portail-ble-relay
+  friendly_name: "Portail Relay BLE"
+  area: Jardin
 
 esphome:
   name: ${device_name}
@@ -22,7 +22,9 @@ ethernet:
   mdio_pin: GPIO18
   clk_mode: GPIO17_OUT
   phy_addr: 0
-  power_pin: GPIO12
+  power_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
   use_address: ${device_name}.intra.sberard.fr
 
 api:
@@ -45,6 +47,7 @@ packages:
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
 
+
 dashboard_import:
   package_import_url: github://esphome/firmware/bluetooth-proxy/olimex-esp32-poe-iso.yaml@main
 
@@ -53,17 +56,6 @@ esp32_ble_tracker:
     interval: 1100ms
     window: 1100ms
     active: true
-
-binary_sensor:
-  - platform: ble_presence
-    mac_address: 45:c6:6a:f1:71:41
-    name: "Poubelle Emballages"
-    icon: mdi:trash-can
-  - platform: ble_presence
-    mac_address: 45:c6:6a:c3:45:31
-    name: "Poubelle Ménagères"
-    icon: mdi:trash-can
-
 
 bluetooth_proxy:
   active: true
