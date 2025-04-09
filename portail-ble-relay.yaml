@@ -47,7 +47,6 @@ packages:
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
 
-
 dashboard_import:
   package_import_url: github://esphome/firmware/bluetooth-proxy/olimex-esp32-poe-iso.yaml@main
 
@@ -59,3 +58,17 @@ esp32_ble_tracker:
 
 bluetooth_proxy:
   active: true
+
+binary_sensor:
+  - platform: ble_presence
+    mac_address: ff:ff:10:db:8e:30
+    name: "Badge Emilie"
+    icon: mdi:key-chain
+    timeout: 1min
+
+sensor:
+  - platform: ble_rssi
+    mac_address: ff:ff:10:db:8e:30
+    name: "Badge Emilie"
+    icon: mdi:key-chain
+

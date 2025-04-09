@@ -57,3 +57,16 @@ esp32_ble_tracker:
 
 bluetooth_proxy:
   active: true
+
+binary_sensor:
+  - platform: ble_presence
+    mac_address: ff:ff:10:db:8e:30
+    name: "Badge Emilie"
+    icon: mdi:key-chain
+    timeout: 1min
+
+sensor:
+  - platform: ble_rssi
+    mac_address: ff:ff:10:db:8e:30
+    name: "Badge Emilie"
+    icon: mdi:key-chain

@@ -64,6 +64,15 @@ binary_sensor:
     name: "Poubelle Ménagères"
     icon: mdi:trash-can
 
+sensor:
+  - platform: ble_rssi
+    mac_address: 45:c6:6a:f1:71:41
+    name: "Poubelle Emballages"
+  - platform: ble_rssi
+    mac_address: 45:c6:6a:c3:45:31
+    name: "Poubelle Ménagères"
+    icon: mdi:trash-can
+
 
 bluetooth_proxy:
   active: true

@@ -73,6 +73,7 @@ uart:
   tx_pin: GPIO01
   rx_pin: GPIO03
   baud_rate: 4800
+  parity: EVEN
 
 sensor:
   - platform: cse7766

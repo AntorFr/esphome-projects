@@ -1,0 +1,59 @@
+# DIY Sonoff Basic R3 config
+substitutions:
+  icon: "mdi:power"
+  restore_mode: RESTORE_DEFAULT_OFF
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
+
+debug:
+  update_interval: 30s
+    
+####################################
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+# Device Specific Config
+binary_sensor:
+  - platform: gpio
+    id: push_button
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    internal: true
+    on_press:
+      # Prevents unintended LED lit states.
+      if:
+        condition:
+          - switch.is_off: relay
+        then:
+          - light.turn_on: blue_led
+          - switch.turn_on: relay
+        else:
+          - switch.turn_off: relay
+
+light:
+  - platform: status_led
+    id: blue_led
+    internal: True
+    pin:
+      number: GPIO13
+      inverted: True
+
+switch:
+  # The relay switches on the red side of the LED when active.
+  - platform: gpio
+    name: "None"
+    pin: GPIO12
+    id: relay
+    restore_mode: ${restore_mode}
+    on_turn_off:
+      if:
+        condition:
+          - light.is_on: blue_led
+        then:
+          - light.turn_off: blue_led
