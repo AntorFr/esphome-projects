@@ -11,6 +11,9 @@ esphome:
 esp32:
   board: esp32-poe-iso
 
+#psram:
+#  mode: octal
+#  speed: 80MHz
 
 #wifi:
 #  ssid: !secret wifi_ssid
@@ -28,7 +31,6 @@ ethernet:
   phy_addr: 0
   power_pin: GPIO12
   use_address: ${device_name}.intra.sberard.fr
-#  use_address: 192.168.10.56
 
 api:
   reboot_timeout: 15min

@@ -1,12 +1,13 @@
 substitutions:
-  device_name: nest-mini-bureau
-  friendly_name: Nest mini bureau
-  area: Bureau
+  device_name: ha-voice-garage2
+  friendly_name: Voice Garage
+  area: "Garage 2"  
 
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name}
-  area: ${area}
+  friendly_name: ${friendly_name} 
+  area: ${area}  
+  name_add_mac_suffix: False
 
 wifi:
   ssid: !secret wifi_ssid
@@ -17,14 +18,14 @@ wifi:
     ssid: ${device_name}
     password: !secret ap_password
 
-ota:
-  platform: esphome
-  password: !secret ota_password
-
 api:
   reboot_timeout: 15min
   encryption:
     key: !secret api_encryption
+
+ota:
+  platform: esphome
+  password: !secret ota_password
 
 captive_portal:
 
@@ -33,5 +34,4 @@ captive_portal:
 # Device specific Config Begins Below #
 #######################################
 packages:
-  onju-voice: !include packages/onju-voice_dev.yaml
-
+  home-assistant-voice: !include packages/home-assistant-voice.yaml

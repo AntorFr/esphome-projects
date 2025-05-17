@@ -190,7 +190,6 @@ micro_wake_word:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
 
-
 voice_assistant:
   id: va
   microphone: onju_microphone

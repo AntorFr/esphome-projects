@@ -11,6 +11,18 @@ esphome:
 esp32:
   board: esp32-poe-iso
 
+#psram:
+#  mode: octal
+#  speed: 80MHz
+
+#wifi:
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+#  use_address: ${device_name}.intra.sberard.fr
+#  ap:
+#    ssid: ${device_name}
+#    password: !secret ap_password
+
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
@@ -19,6 +31,8 @@ ethernet:
   phy_addr: 0
   power_pin: GPIO12
   use_address: ${device_name}.intra.sberard.fr
+
+
 
 api:
   reboot_timeout: 15min
@@ -39,4 +53,5 @@ logger:
 #######################################
 packages:
   device_base: !include packages/device_base_eth.yaml
+  #device_base: !include packages/device_base.yaml
   nuki_gateway: !include packages/nuki-gateway.yaml
