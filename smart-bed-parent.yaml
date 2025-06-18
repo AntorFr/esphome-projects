@@ -10,7 +10,8 @@ esp32:
   board: esp32dev
   variant: esp32
   framework:
-    type: arduino
+    type: esp-idf
+    version: recommended
 
 wifi:
   ssid: !secret wifi_ssid
@@ -33,11 +34,7 @@ ota:
 captive_portal:
 
 logger:
-  level: INFO
-
-web_server:
-
-
+  level: DEBUG
 
 #######################################
 # Device specific Config Begins Below #
@@ -48,8 +45,8 @@ packages:
     file: packages/device_base.yaml
   ld2410: !include packages/ld2410.yaml
 
-bluetooth_proxy:
-  active: False
+#bluetooth_proxy:
+#  active: False
 
 binary_sensor:
   - name: "Mouvement gauche"
@@ -98,14 +95,13 @@ light:
     name: "lumière gauche"
     #icon: "mdi:heart"
     #entity_category: config
-    platform: neopixelbus
-    type: GRB
-    variant: WS2812
+    platform: esp32_rmt_led_strip
+    chipset: WS2812
+    max_refresh_rate: 15ms
+    rgb_order: GRB
     pin: GPIO27
     num_leds: 120
-    method:
-      type: esp32_i2s
-      bus: 0
+    #rmt_channel: 0
     effects:
       - pulse:
           name: "Fast Pulse"
@@ -130,14 +126,13 @@ light:
     name: "lumière droite"
     #icon: "mdi:heart"
     #entity_category: config
-    platform: neopixelbus
-    type: GRB
-    variant: WS2812
+    platform: esp32_rmt_led_strip
+    chipset: WS2812
+    max_refresh_rate: 15ms
+    rgb_order: GRB
     pin: GPIO25
     num_leds: 120
-    method:
-      type: esp32_i2s
-      bus: 1
+    #rmt_channel: 1
     effects:
       - pulse:
           name: "Fast Pulse"
