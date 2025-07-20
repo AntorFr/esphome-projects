@@ -23,9 +23,6 @@ light:
       inverted: true
 
 binary_sensor:
-  - platform: status
-    name: "Status"
-
   # toggle relay on/off
   - platform: gpio
     pin:

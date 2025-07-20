@@ -267,6 +267,7 @@ sensor:
     id: puiss_used
     name: "Puissance utilisée"
     unit_of_measurement: "%"
+    accuracy_decimals: 2
     state_class: measurement
     icon: mdi:gauge
 
