@@ -1,5 +1,4 @@
 #https://github.com/esphome/wake-word-voice-assistants/blob/main/m5stack-atom-echo/m5stack-atom-echo.yaml
-
 substitutions:
   name: m5stack-atom-echo
   friendly_name: M5Stack Atom Echo
