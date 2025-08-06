@@ -11,6 +11,12 @@ esp8266:
   board: esp8285
   restore_from_flash: true
 
+# Import du composant impulse_cover
+external_components:
+  - source: github://AntorFr/esphome-impulse-cover@dev
+    components: [ impulse_cover ]
+    refresh: 1s
+
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -21,7 +27,7 @@ wifi:
     password: !secret ap_password
 
 logger:
-  level: DEBUG
+  level: VERBOSE
   
 api:
   reboot_timeout: 15min
@@ -34,283 +40,110 @@ ota:
 
 captive_portal:
 
-
 web_server:
   port: 80 
 
 packages:
   device_base: !include packages/device_base.yaml
-#######################################
-# Device specific Config Begins Below #
-#######################################
-globals:
-  - id: last_move 
-    type: bool #true: openning / false: closing
-    restore_value: true
 
-switch:
+#######################################
+# Configuration simplifiée avec impulse_cover #
+#######################################
+
+# Output pour le relais (remplace votre switch GPIO12)
+output:
   - platform: gpio
     pin: GPIO12
-    id: relay
-    on_turn_on:
-      - script.execute: "count_move"
+    id: gate_relay_output
 
-sensor:
-  - platform: template
-    id: "last_moves"
-    name: "Nb last move"
-    update_interval: never
-    internal: False
+# Capteurs de fin de course et diagnostic
+binary_sensor:
+  # Capteur de porte fermée (votre GPIO4)
+  - platform: gpio
+    id: closed_sensor
+    pin: 
+      number: GPIO4
+      inverted: false
+    name: "Gate Closed Sensor"
+    device_class: "garage_door"
+    entity_category: "diagnostic"
+    icon: "mdi:gate"
+    filters:
+      - delayed_on_off: 1s
+      
+  # Capteur d'obstruction (votre GPIO5)
+  - platform: gpio
+    pin: 
+      number: GPIO5
+      inverted: true
+    name: "Gate Obstruction Sensor"
+    device_class: problem
     entity_category: diagnostic
+    filters:
+      - delayed_on: 50ms
+
+  # Capteur pour détecter les boucles de mouvement
+  - platform: template
+    name: "Gate Movement Loop Detection"
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      // Utilise le compteur de mouvements
+      return id(movement_counter).state >= 10;
+    on_press:
+      - logger.log:
+          level: WARN
+          format: "Movement loop detected! Gate may be obstructed."
+
+# Capteurs de diagnostic
+sensor:
+  # Compteur de mouvements (maintenu depuis votre config)
+  - platform: template
+    id: "movement_counter"
+    name: "Gate Movement Counter"
+    update_interval: never
+    internal: false
+    entity_category: diagnostic
+    unit_of_measurement: "moves"
+    icon: "mdi:counter"
     filters: 
       - throttle: 2s
       - timeout:
           timeout: 10min
           value: 0
 
-script:
-  - id: open_cover
-    then:
-      - if:
-          condition:
-            lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_CLOSING;'
-          then:
-            - script.execute: stop_cover
-            - script.wait: stop_cover
-      - if:
-          condition:
-            lambda: |-
-              return (
-                (id(my_cover).position > 0.)
-                and (id(my_cover).position < 1.)
-                and (id(last_move)==true)
-                and (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
-              );
-          then:
-            - script.execute: invert_last_move
-            - script.wait: invert_last_move
-      - if:
-          condition:
-            lambda: |-
-              return (
-                (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
-                and (id(my_cover).position != 1.)
-              );
-          then:
-            - cover.template.publish:
-                id: my_cover
-                current_operation: OPENING
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
-            - delay: 12s
-            - cover.template.publish:
-                id: my_cover
-                current_operation: IDLE
-                position: 1.
- 
-  - id: close_cover
-    then:
-      - if:
-          condition:
-            lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_OPENING;'
-          then:
-            - script.execute: stop_cover
-            - script.wait: stop_cover
-      - if:
-          condition:
-            lambda: |-
-              return (
-                (id(my_cover).position > 0.)
-                and (id(my_cover).position < 1.)
-                and (id(last_move)==false)
-                and (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
-              );
-          then:
-            - script.execute: invert_last_move
-            - script.wait: invert_last_move
-      - if:
-          condition:
-            lambda: |-
-              return (
-                (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE)
-                and (id(my_cover).position != 0.)
-              );
-          then:
-            - cover.template.publish:
-                id: my_cover
-                current_operation: CLOSING
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
-            - delay: 20s
-            - cover.template.publish:
-                id: my_cover
-                current_operation: IDLE
-                position: 0.
-                  
-  - id: stop_cover
-    then:
-      - if:
-          condition:
-            lambda: 'return id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE;'
-          then:
-            - if:
-                condition:
-                  - script.is_running: open_cover
-                then:
-                  - script.stop: open_cover
-            - if:
-                condition:
-                  - script.is_running: close_cover
-                then:
-                  - script.stop: close_cover
-            - if:
-                condition:
-                  - script.is_running: remote_open
-                then:
-                  - script.stop: remote_open
-            - if:
-                condition:
-                  - script.is_running: remote_close
-                then:
-                  - script.stop: remote_close
-            - if:
-                condition:
-                  - script.is_running: invert_last_move
-                then:
-                  - script.wait: invert_last_move
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
-            - lambda: |-
-                if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_OPENING) {
-                  id(last_move) = true;
-                } else if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_CLOSING) {
-                  id(last_move) = false;
-                }
-            - cover.template.publish:
-                id: my_cover
-                current_operation: IDLE
-                position: 0.5
-            - delay: 800ms
-  
-  - id: invert_last_move
-    then:
-      - if:
-          condition:
-            lambda: |-
-              if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) { return false;}
-              if ((id(my_cover).position == 1.) or (id(my_cover).position == 0.)) { return false;}
-              return true;
-          then:
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
-            - delay: 800ms
-            - switch.turn_on: relay
-            - delay: 500ms
-            - switch.turn_off: relay
-            - lambda: 'id(last_move) = !id(last_move);'
-            - delay: 800ms
-
-  - id: remote_close
-    then:
-      - globals.set:
-          id: last_move
-          value: 'false'
-
-  - id: remote_open
-    then:
-      - cover.template.publish:
-          id: my_cover
-          current_operation: OPENING
-          position: 0.5
-      - globals.set:
-          id: last_move
-          value: 'true'
-      - delay: 12s
-      - cover.template.publish:
-          id: my_cover
-          current_operation: IDLE
-          position: 1.
-
-  - id: count_move
-    then:
-      - lambda: |-
-          float state = 0.0f;
-          if (!isnan(id(last_moves).state)) {
-            state = id(last_moves).state;
-          }
-          id(last_moves).publish_state(state+1.0f);
-
-binary_sensor:
-  - platform: gpio
-    id: closed_sensor
-    pin: 
-      number: GPIO4
-      inverted: false
-    name: "Gate closed"
-    device_class: "garage_door"
-    entity_category: "diagnostic"
-    icon: "mdi:gate"
-    filters:
-      - delayed_on_off: 1s
-    on_press:
-      then:
-        - if:
-            condition:
-              lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE;'
-            then:
-              - script.execute: remote_close
-    on_release:
-      then:
-        - if:
-            condition:
-              lambda: 'return id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE;'
-            then:
-              - script.execute: remote_open
-      
-  - platform: gpio
-    pin: 
-      number: GPIO5
-      inverted: true
-    name: "Obstruction"
-    device_class: problem
-    entity_category: diagnostic
-    disabled_by_default: true
-    filters:
-      - delayed_on: 50ms
-
-  - platform: template
-    name: "Open/Close loop"
-    device_class: problem
-    lambda: |-
-      if (id(last_moves).state >= 10) {
-        return true;
-      } else {
-        return false;
-      }
-
+# Le composant impulse_cover remplace tous vos scripts !
 cover:
-  - platform: template
-    id: my_cover
-    name: None
-    has_position: true
-    device_class: gate
-    open_action:
-      - script.execute: open_cover
-    close_action:
-      - script.execute: close_cover
-    stop_action:
-      - script.execute: stop_cover
-    lambda: |-
-      if (id(closed_sensor).state) {
-        return 1.;
-      } else if (id(my_cover).current_operation != CoverOperation::COVER_OPERATION_IDLE) {
-        return 0.5;
-      }
-      else {
-        return 0.;
-      }
+  - platform: impulse_cover
+    name: "${friendly_name}"
+    id: gate_cover
     
+    # Configuration de base
+    output: gate_relay_output
+    open_duration: 12s    # Durée d'ouverture (votre delay de 12s)
+    close_duration: 20s   # Durée de fermeture (votre delay de 20s)
+    
+    # Configuration du pulse
+    pulse_delay: 500ms    # Votre delay de 500ms
+    
+    # Sécurité (équivalent à votre détection de boucle)
+    safety_timeout: 30s
+    safety_max_cycles: 20  # Remplace votre détection à 10 mouvements
+    
+    # Capteurs de fin de course
+    close_sensor: closed_sensor
+    close_sensor_inverted: true  # Le capteur est actif quand ouvert
+    
+    # Automation triggers (remplacent vos scripts)
+    on_open:
+      - logger.log: "Gate opening started"
+      - lambda: |-
+          // Incrémenter le compteur de mouvements
+          float state = 0.0f;
+          if (!isnan(id(movement_counter).state)) {
+            state = id(movement_counter).state;
+          }
+          id(movement_counter).publish_state(state + 1.0f);
+        
+
+
