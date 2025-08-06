@@ -33,5 +33,5 @@ captive_portal:
 # Device specific Config Begins Below #
 #######################################
 packages:
-  onju-voice: !include packages/onju-voice_dev.yaml
+  onju-voice: !include packages/onju-voice.yaml
 

@@ -40,6 +40,6 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  onju-voice: !include packages/onju-voice_local.yaml
+  onju-voice: !include packages/onju-voice.yaml
 #https://gist.github.com/tetele/75815c53cfd2a02412ef153f9c2d24e2
 
