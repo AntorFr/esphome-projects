@@ -6,12 +6,6 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
 
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-    #type: arduino
-
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
