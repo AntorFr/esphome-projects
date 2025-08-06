@@ -13,7 +13,7 @@ esp8266:
 
 # Import du composant impulse_cover
 external_components:
-  - source: github://AntorFr/esphome-impulse-cover@dev
+  - source: github://AntorFr/esphome-impulse-cover
     components: [ impulse_cover ]
     refresh: 1s
 
@@ -27,7 +27,7 @@ wifi:
     password: !secret ap_password
 
 logger:
-  level: VERBOSE
+  level: WARN
   
 api:
   reboot_timeout: 15min
