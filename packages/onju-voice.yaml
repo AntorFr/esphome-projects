@@ -35,6 +35,12 @@ esphome:
       - delay: 1s
       - script.execute: reset_led
 
+# Import fix esp32_touch
+external_components:
+  - source: github://AntorFr/esphome@esp32_touch
+    components: [ esp32_touch ]
+    refresh: 1s
+
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -588,15 +594,15 @@ script:
           uint32_t* calibration_values;
           switch(button) {
             case 0:
-              newval = id(volume_down).get_value();
+              newval = id(volume_down).get_benchmark();
               calibration_values = id(touch_calibration_values_left);
               break;
             case 1:
-              newval = id(action).get_value();
+              newval = id(action).get_benchmark();
               calibration_values = id(touch_calibration_values_center);
               break;
             case 2:
-              newval = id(volume_up).get_value();
+              newval = id(volume_up).get_benchmark();
               calibration_values = id(touch_calibration_values_right);
               break;
             default:
