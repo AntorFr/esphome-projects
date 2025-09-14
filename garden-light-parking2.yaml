@@ -1,17 +1,20 @@
 substitutions:
-  device_name: "ceiling-light-timothee"
-  friendly_name: "Plafonnier Timothée"
-  area: "Chambre Timothée"
+  device_name: "garden-light-parking2"
+  friendly_name: "Lampe Jardin Parking 2"
+  light_restore_mode: ALWAYS_ON
+  area: "Jardin"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  name_add_mac_suffix: false
   area: ${area}  
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
+  #use_address: ${device_name}.intra.sberard.fr
+  use_address: "192.168.10.124"
 
   ap:
     ssid: ${device_name}
@@ -30,13 +33,10 @@ ota:
   password: !secret ota_password
 
 captive_portal:
-web_server:
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
 packages:
   #device_base: !include packages/device_base.yaml
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/device_base.yaml
   athom-rgbct-light: !include packages/athom-rgbct-light.yaml

@@ -1,0 +1,166 @@
+substitutions:
+  device_name: esp-heishamon
+  friendly_name: Pompe à challeur Garage
+  area: "Garage 1"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}  
+  comment: HeishaMon v5
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+# Configuration for W5500 Ethernet module
+ethernet:
+  type: W5500
+  clk_pin: GPIO12    # ETH_SPI_SCK
+  mosi_pin: GPIO11   # ETH_SPI_MOSI
+  miso_pin: GPIO13   # ETH_SPI_MISO
+  cs_pin: GPIO10     # ETH_CS
+  interrupt_pin: GPIO15  # ETH_IRQ
+  reset_pin: GPIO14  # ETH_RST
+  clock_speed: 26.67MHz
+  use_address: ${device_name}.intra.sberard.fr
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+logger:
+  level: DEBUG #ERROR #DEBUG  
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base_eth: !include packages/device_base_eth.yaml
+
+external_components:
+  - source: github://AntorFr/esphome-heishamon@dev
+    components: [ heishamon ]
+    refresh: 0s
+
+uart:
+  id: heisha_uart
+  tx_pin: GPIO17     # TX pin for ESP32
+  rx_pin: GPIO18     # RX pin for ESP32
+  baud_rate: 9600
+  parity: EVEN
+  stop_bits: 1
+
+heishamon:
+  id: heisha_main
+  uart_id: heisha_uart
+  update_interval: 30s
+  listen_only: true
+  optional_pcb: false
+
+
+# Temperature sensors
+sensor:
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "main_inlet_temp"
+    name: "Main Inlet Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "main_outlet_temp"
+    name: "Main Outlet Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "main_target_temp"
+    name: "Main Target Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "dhw_temp"
+    name: "DHW Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "dhw_target_temp"
+    name: "DHW Target Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "outside_temp"
+    name: "Outside Temperature"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "compressor_freq"
+    name: "Compressor Frequency"
+    
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "operation_mode"
+    name: "Operation Mode"
+
+# Binary sensors for states  
+binary_sensor:
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "heatpump_state"
+    name: "Heat Pump State"
+    device_class: running
+
+# Numbers for temperature setpoints (available only in active mode)
+number:
+  - platform: heishamon
+    heishamon_id: heisha_main
+    command: "SetZ1HeatRequestTemperature"
+    name: "Zone 1 Heat Target"
+    min_value: 15
+    max_value: 30
+    step: 0.5
+    unit_of_measurement: "°C"
+    mode: box
+
+  - platform: heishamon
+    heishamon_id: heisha_main
+    type: "dhw_target_temp"
+    command: "SetDHWTemp"
+    name: "DHW Target Temperature"
+    min_value: 40
+    max_value: 75
+    step: 1
+    unit_of_measurement: "°C"
+    mode: box
+
+# Relay configuration
+switch:
+  - platform: gpio
+    pin: GPIO21
+    name: "Relay 1"
+    id: relay_1
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: gpio
+    pin: GPIO47
+    name: "Relay 2"
+    id: relay_2
+    restore_mode: RESTORE_DEFAULT_OFF
+
+# Status LED configuration
+light:
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO42
+    num_leds: 1
+    chipset: ws2812
+    name: "Status LED"
+    id: status_led

@@ -1,0 +1,75 @@
+substitutions:
+  device_name: "hcpbridge-garage"
+  friendly_name: "Test HCP Bridge Garage"
+  area: "Garage 3"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  libraries:
+    - emelianov/modbus-esp8266 # Required for communication with the modbus
+  platformio_options:
+    board_build.f_cpu: 240000000L
+    board_build.flash_mode: qio
+    monitor_speed: 9600
+    monitor_filters: esp32_exception_decoder
+    #lib_ldf_mode: deep+
+    # board_build.f_flash: 40000000L
+
+external_components:
+  - source: github://mapero/esphome-hcpbridge
+    refresh: 0s # Ensure you always get the latest version
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+logger:
+  level: DEBUG
+  
+api:
+  reboot_timeout: 30min
+  encryption:
+    key: !secret api_encryption
+  custom_services: true
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+captive_portal:
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+
+hcpbridge:
+  is_connected: # Sensor to display the connection status to the motor
+    name: "HCPBridge Connected"
+  tx_pin: GPIO17
+  rx_pin: GPIO18
+
+cover:
+  - platform: hcpbridge
+    name: None
+
+switch:
+  - platform: hcpbridge
+    name: "${friendly_name} Light"
