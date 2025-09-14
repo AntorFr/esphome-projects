@@ -4,12 +4,12 @@ esp32:
   framework:
     type: esp-idf
 
-esphome:
-  platformio_options:
-    build_flags:
-      - "-DDEBUG_NUKI_CONNECT"
-      - "-DDEBUG_NUKI_COMMUNICATION"
-      - "-DDEBUG_NUKI_READABLE_DATA"
+#esphome:
+  #platformio_options:
+    #build_flags:
+    #  - "-DDEBUG_NUKI_CONNECT"
+    #  - "-DDEBUG_NUKI_COMMUNICATION"
+    #  - "-DDEBUG_NUKI_READABLE_DATA"
 
 api:
   custom_services: true
