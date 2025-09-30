@@ -13,7 +13,7 @@ esp8266:
 
 # Import du composant impulse_cover
 external_components:
-  - source: github://AntorFr/esphome-impulse-cover
+  - source: github://AntorFr/esphome-impulse-cover@dev
     components: [ impulse_cover ]
     refresh: 1s
 
@@ -89,7 +89,7 @@ binary_sensor:
     entity_category: diagnostic
     lambda: |-
       // Utilise le compteur de mouvements
-      return id(movement_counter).state >= 10;
+      return id(movement_counter).state >= 5;
     on_press:
       - logger.log:
           level: WARN
@@ -127,8 +127,8 @@ cover:
     pulse_delay: 500ms    # Votre delay de 500ms
     
     # Sécurité (équivalent à votre détection de boucle)
-    safety_timeout: 30s
-    safety_max_cycles: 20  # Remplace votre détection à 10 mouvements
+    safety_timeout: 5s
+    safety_max_cycles: 5  # Remplace votre détection à 10 mouvements
     
     # Capteurs de fin de course
     close_sensor: closed_sensor
