@@ -3,7 +3,7 @@ substitutions:
   friendly_name: Bouton applique bureau
   
   ## TX Ultimate ##
-  button_count: "1"
+  button_count: "3"
 
   nightlight_sleep_id: input_boolean.away_mode
 
@@ -11,7 +11,7 @@ substitutions:
   light_1_entity_category: "config"
   light_1_restore_mode: "RESTORE_DEFAULT_ON" 
 
-  light_2_internal: "true" 
+  light_2_internal: "true"
   light_3_internal: "true"
 
   button_1_switch_relay: "false" 

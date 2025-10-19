@@ -5,7 +5,7 @@ substitutions:
   ## TX Ultimate ##
   button_count: "2"
 
-  nightlight_sleep_id: input_boolean.night_mode_emilie
+  nightlight_sleep_id: input_boolean.away_mode
 
   light_1_internal: "true"
   light_2_internal: "true" 
@@ -47,7 +47,7 @@ ota:
 captive_portal:
 
 logger:
-  level: INFO
+  level: VERBOSE
 
 web_server:
 
@@ -58,5 +58,5 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate_dev.yaml
+  tx_ultimate: !include packages/tx_ultimate.yaml
 

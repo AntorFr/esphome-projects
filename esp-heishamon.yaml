@@ -37,7 +37,13 @@ ota:
   password: !secret ota_password
 
 logger:
-  level: DEBUG #ERROR #DEBUG  
+  level: DEBUG  # Changez WARN en DEBUG
+  logs:
+    heishamon: DEBUG
+    heishamon.number: DEBUG
+    api: DEBUG  # Masquer les erreurs API
+    api.connection: DEBUG  # Masquer aussi les erreurs de connexion
+
 
 web_server:
 
@@ -122,7 +128,7 @@ binary_sensor:
 number:
   - platform: heishamon
     heishamon_id: heisha_main
-    command: "SetZ1HeatRequestTemperature"
+    type: z1_heat_target_temp
     name: "Zone 1 Heat Target"
     min_value: 15
     max_value: 30
@@ -133,7 +139,6 @@ number:
   - platform: heishamon
     heishamon_id: heisha_main
     type: "dhw_target_temp"
-    command: "SetDHWTemp"
     name: "DHW Target Temperature"
     min_value: 40
     max_value: 75
