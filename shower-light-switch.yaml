@@ -8,7 +8,7 @@ substitutions:
   light_1_internal: "false"
   light_1_entity_category: "config"
   light_1_restore_mode: "RESTORE_DEFAULT_ON" 
-  button_1_switch_relay: "false"
+  button_1_switch_relay: "true"
 
   light_2_internal: "false"
   light_2_entity_category: ""
