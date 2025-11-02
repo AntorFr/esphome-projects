@@ -1,13 +1,12 @@
 substitutions:
   device_name: hallway-light-relay
-  friendly_name: "Telerupteur entree"
-  area: "Entrée"
+  friendly_name: "Telerupteur etage couloir"
+  area: "Couloir étage"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  area: ${area}
-
+  area: ${area}  
 
 esp32:
   board: esp32dev

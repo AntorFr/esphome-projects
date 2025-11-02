@@ -1,4 +1,5 @@
 #https://raw.githubusercontent.com/esphome/home-assistant-voice-pe/refs/heads/dev/home-assistant-voice.yaml
+#https://github.com/esphome/home-assistant-voice-pe/blob/dev/home-assistant-voice.yaml
 
 substitutions:
   # Phases of the Voice Assistant
