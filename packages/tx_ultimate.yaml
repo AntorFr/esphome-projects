@@ -1,7 +1,7 @@
 substitutions:
-  button_count: "3"
+  button_count: 3
 
-  button_1_switch_relay: "true" 
+  button_1_switch_relay: "true"
   button_1_light_id: "1"
 
   button_2_switch_relay: "true"
@@ -1025,14 +1025,20 @@ script:
   - id: init_relays
     then:
        - lambda: >
-          if (!${button_1_switch_relay}) {
-            id(relay_${button_1_light_id}).turn_on();
+          if (!(${button_1_switch_relay})) {
+            ESP_LOGD("Init relays ", "Relay 1");
+            auto call = id(relay_${button_1_light_id}).turn_on();
+            call.perform();
           }
-          if (!${button_2_switch_relay}) {
-            id(relay_${button_2_light_id}).turn_on();
+          if (!(${button_2_switch_relay})) {
+            ESP_LOGD("Init relays ", "Relay 2");
+            auto call = id(relay_${button_2_light_id}).turn_on();
+            call.perform();
           }
-          if (!${button_3_switch_relay}) {
-            id(relay_${button_3_light_id}).turn_on();
+          if (!(${button_3_switch_relay})) {
+            ESP_LOGD("Init relays ", "Relay 3");
+            auto call = id(relay_${button_3_light_id}).turn_on();
+            call.perform();
           }
   # Script executed when we want to play sounds on the device.
   - id: play_sound
@@ -1056,3 +1062,4 @@ script:
             id(media_out)
               ->play_file(sound_file, true, false);
           }
+
