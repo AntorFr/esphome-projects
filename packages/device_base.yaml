@@ -1,3 +1,7 @@
+wifi:
+  min_auth_mode: WPA2
+
+
 sensor:
   - platform: wifi_signal
     name: Wifi Strength
