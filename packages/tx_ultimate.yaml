@@ -775,7 +775,7 @@ script:
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
                 effect: !lambda |-
-                  auto effect = id(nightlight_effect).state;
+                  auto effect = id(nightlight_effect).current_option();
                   if(effect == "Default") {
                     return "None";
                   } else {
@@ -798,7 +798,7 @@ script:
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
                 effect: !lambda |-
-                  auto effect = id(nightlight_effect).state;
+                  auto effect = id(nightlight_effect).current_option();
                   if(effect == "Default") {
                     return "None";
                   } else {
@@ -821,7 +821,7 @@ script:
                 green: !lambda "return id(nightlight_color)[1]/100.0;"
                 blue:  !lambda "return id(nightlight_color)[2]/100.0;"
                 effect: !lambda |-
-                  auto effect = id(nightlight_effect).state;
+                  auto effect = id(nightlight_effect).current_option();
                   if(effect == "Default"){
                     return "None";
                   } else {
@@ -840,7 +840,7 @@ script:
           green: !lambda "return id(nightlight_color)[1]/100.0;"
           blue:  !lambda "return id(nightlight_color)[2]/100.0;"
           effect: !lambda |-
-            auto effect = id(nightlight_effect).state;
+            auto effect = id(nightlight_effect).current_option();
             if(effect == "Default"){
               return "None";
             } else {
