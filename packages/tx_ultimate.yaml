@@ -779,7 +779,7 @@ script:
                   if(effect == "Default") {
                     return "None";
                   } else {
-                    return effect.c_str();
+                    return effect;
                   }
           else:
             - light.turn_off:
@@ -802,7 +802,7 @@ script:
                   if(effect == "Default") {
                     return "None";
                   } else {
-                    return effect.c_str();
+                    return effect;
                   }
           else:
             - light.turn_off:
@@ -825,7 +825,7 @@ script:
                   if(effect == "Default"){
                     return "None";
                   } else {
-                    return effect.c_str();
+                    return effect;
                   }
           else:
             - light.turn_off:
@@ -844,7 +844,7 @@ script:
             if(effect == "Default"){
               return "None";
             } else {
-              return effect.c_str();
+              return effect;
             }
   - id: led_on_release
     mode: restart
