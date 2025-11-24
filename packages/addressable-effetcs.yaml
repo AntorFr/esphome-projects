@@ -1,7 +1,7 @@
 external_components:
   - source: github://AntorFr/esphome-addressable-effetcs
-    components: [ custom-addressable-effetcs ]
+    components: [ custom_addressable_effetcs ]
     refresh: 1s
 
 
-custom-addressable-effetcs:  
+custom_addressable_effetcs:  

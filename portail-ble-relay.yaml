@@ -69,6 +69,6 @@ binary_sensor:
 sensor:
   - platform: ble_rssi
     mac_address: ff:ff:10:db:8e:30
-    name: "Badge Emilie"
+    name: "Badge Emilie signal"
     icon: mdi:key-chain
 

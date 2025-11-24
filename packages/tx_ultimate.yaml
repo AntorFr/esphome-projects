@@ -136,7 +136,7 @@ external_components:
       ref: main
     components: [tx_ultimate_touch]
   - source: github://AntorFr/esphome-addressable-effetcs@main
-    components: [ custom-addressable-effetcs ]
+    components: [ custom_addressable_effetcs ]
     #refresh: 1s
   #- source:
   #    type: git
@@ -144,7 +144,7 @@ external_components:
   #    ref: 2025.7.5
   #  components: [ speaker,media_player, api,sensor,text_sensor]
 
-custom-addressable-effetcs:  
+custom_addressable_effetcs:  
 
 psram:
   mode: quad

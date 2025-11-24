@@ -1,0 +1,42 @@
+substitutions:
+  device_name: tv-presence-sensor
+  friendly_name: capteur presence TV
+  area: salon
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area} 
+  name_add_mac_suffix: false
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+logger:
+  level: INFO
+
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+  athom-ld2450-sensor: !include packages/athom-ld2450-sensor.yaml
+
