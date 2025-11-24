@@ -315,6 +315,7 @@ switch:
     pin:
       number: ${touchpanel_power_pin}
       inverted: true
+      ignore_strapping_warning: true
     internal: true
     restore_mode: RESTORE_DEFAULT_OFF
   - id: nightlight
@@ -486,7 +487,9 @@ speaker:
     sample_rate: 48000
     channel: mono
     #i2s_mode: secondary
-    i2s_dout_pin: GPIO15
+    i2s_dout_pin: 
+      number: GPIO15
+      ignore_strapping_warning: true
     bits_per_sample: 16bit
     i2s_audio_id: i2s_output
     dac_type: external
@@ -556,6 +559,7 @@ i2s_audio:
       number: GPIO4
     i2s_bclk_pin:
       number: GPIO2
+      ignore_strapping_warning: true
 
 uart:
   tx_pin: ${uart_tx_pin}
