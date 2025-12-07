@@ -37,9 +37,12 @@ captive_portal:
 web_server:
 
 external_components:
-  - source: github://AntorFr/esphome-addressable-effects
-    components: [ custom_addressable_effects ]
-    refresh: 1s
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-addressable-effetcs
+      ref: dev-new-motifs
+    components: [custom_addressable_effects]
+    refresh: 0s
   #- source:
   #    type: local
   #    path: components
@@ -109,3 +112,117 @@ light:
               }
             }
             step++;
+
+      # ===== STARS EFFECT =====
+      - addressable_stars:
+          name: "Stars Default"
+      - addressable_stars:
+          name: "Stars Blue"
+          stars_probability: 20%
+          color:
+            red: 0%
+            green: 0%
+            blue: 100%
+      - addressable_stars:
+          name: "Stars Gold"
+          stars_probability: 15%
+          color:
+            red: 100%
+            green: 80%
+            blue: 0%
+
+      # ===== CHRISTMAS EFFECT =====
+      - addressable_christmas:
+          name: "Christmas Default"
+      - addressable_christmas:
+          name: "Christmas Wide"
+          bit_size: 3
+          blank_size: 1
+
+      # ===== TWINKLEFOX EFFECT =====
+      - addressable_twinklefox:
+          name: "TwinkleFox Party"
+          palette: party_colors
+          twinkle_speed: 4
+          twinkle_density: 5
+      - addressable_twinklefox:
+          name: "TwinkleFox Ocean"
+          palette: ocean_colors
+          twinkle_speed: 3
+          twinkle_density: 4
+      - addressable_twinklefox:
+          name: "TwinkleFox Lava"
+          palette: lava_colors
+          twinkle_speed: 5
+          twinkle_density: 6
+      - addressable_twinklefox:
+          name: "TwinkleFox Forest"
+          palette: forest_colors
+          twinkle_speed: 3
+          twinkle_density: 4
+      - addressable_twinklefox:
+          name: "TwinkleFox Rainbow"
+          palette: rainbow_colors
+          twinkle_speed: 4
+          twinkle_density: 5
+      - addressable_twinklefox:
+          name: "TwinkleFox Snow"
+          palette: snow_colors
+          twinkle_speed: 3
+          twinkle_density: 4
+          cool_like_incandescent: false
+      - addressable_twinklefox:
+          name: "TwinkleFox Holly"
+          palette: holly_colors
+          twinkle_speed: 4
+          twinkle_density: 5
+      - addressable_twinklefox:
+          name: "TwinkleFox Ice"
+          palette: ice_colors
+          twinkle_speed: 3
+          twinkle_density: 4
+      - addressable_twinklefox:
+          name: "TwinkleFox Fairy"
+          palette: fairy_light
+          twinkle_speed: 3
+          twinkle_density: 4
+          cool_like_incandescent: true
+      - addressable_twinklefox:
+          name: "TwinkleFox Retro C9"
+          palette: retro_c9
+          twinkle_speed: 4
+          twinkle_density: 5
+
+      # ===== COLOR TWINKLES EFFECT =====
+      - addressable_color_twinkles:
+          name: "Color Twinkles Cloud"
+          palette: cloud_colors
+      - addressable_color_twinkles:
+          name: "Color Twinkles Rainbow"
+          palette: rainbow_colors
+          fade_in_speed: 40
+          fade_out_speed: 25
+      - addressable_color_twinkles:
+          name: "Color Twinkles Snow"
+          palette: snow_colors
+          starting_brightness: 80
+      - addressable_color_twinkles:
+          name: "Color Twinkles Incandescent"
+          palette: incandescent
+          fade_in_speed: 20
+          fade_out_speed: 10
+      - addressable_color_twinkles:
+          name: "Color Twinkles Party"
+          palette: party_colors
+          density: 200
+      - addressable_color_twinkles:
+          name: "Color Twinkles Ocean"
+          palette: ocean_colors
+      - addressable_color_twinkles:
+          name: "Color Twinkles Forest"
+          palette: forest_colors
+      - addressable_color_twinkles:
+          name: "Color Twinkles Lava"
+          palette: lava_colors
+          fade_in_speed: 50
+          fade_out_speed: 30
