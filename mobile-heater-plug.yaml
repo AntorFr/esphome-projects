@@ -44,7 +44,7 @@ packages:
 sensor:
   - platform: homeassistant
     id: office_temperature
-    entity_id: sensor.bureau_capteur_temperature_temperature
+    entity_id: sensor.blu_temperature_bureau_temperature
     internal: true
 
 climate:

@@ -1,15 +1,13 @@
 substitutions:
-  device_name: office-solder-iron-switch
-  friendly_name: "Fer à souder"
-  icon: mdi:soldering-iron
-  area: "Bureau"
-  current_res: "0.00204"
-  voltage_div: "775"
-  
+  device_name: desk-presence-sensor
+  friendly_name: capteur presence bureau
+  area: Bureau
+
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name} 
-  area: ${area}  
+  friendly_name: ${friendly_name}
+  area: ${area} 
+  name_add_mac_suffix: false
 
 wifi:
   ssid: !secret wifi_ssid
@@ -29,12 +27,8 @@ ota:
   platform: esphome
   password: !secret ota_password
 
-captive_portal:
-
-#web_server:
-
 logger:
-  #level: DEBUG
+  level: INFO
 
 #######################################
 # Device specific Config Begins Below #
@@ -43,4 +37,4 @@ packages:
   device_base: !include packages/device_base.yaml
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  athom-presence-sensor: !include packages/athom-presence-sensor-v3.yaml

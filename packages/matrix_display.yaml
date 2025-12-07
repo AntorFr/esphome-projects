@@ -47,12 +47,12 @@ select:
         }
 
 light:
-  - platform: neopixelbus
-    variant: WS2811
+  - platform: esp32_rmt_led_strip
+    chipset: WS2811
     icon: "mdi:clock-digital"
     pin: ${matrix_led_pin}
     num_leds: 256
-    type: GRB
+    rgb_order: GRB
     name: "led_matrix"
     id: led_matrix_light
     default_transition_length: 0s

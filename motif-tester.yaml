@@ -1,0 +1,89 @@
+esphome:
+  name: test-wemos-twinklefox
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Test-Wemos-Fallback"
+    password: "12345678"
+
+captive_portal:
+
+logger:
+
+web_server:
+  port: 80
+
+api:
+
+ota:
+  platform: esphome
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-addressable-effects
+      ref: dev-new-motifs
+    refresh: 0s
+    components: [custom_addressable_effects]
+
+custom_addressable_effects:
+
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: D1
+    num_leds: 60
+    name: "LED Strip"
+    effects:
+      - addressable_stars:
+          name: "Stars"
+          stars_probability: 50%
+      - addressable_christmas:
+          name: "Christmas"
+      - addressable_rainbow:
+          name: "Halo Arc-en-ciel"
+          speed: 2
+          width: 3
+      - addressable_twinklefox:
+          name: "TwinkleFox Party"
+          palette: party_colors
+          twinkle_speed: 4
+          twinkle_density: 5
+          cool_like_incandescent: true
+      - addressable_twinklefox:
+          name: "TwinkleFox Snow"
+          palette: snow_colors
+          twinkle_speed: 3
+          twinkle_density: 4
+      - addressable_twinklefox:
+          name: "TwinkleFox Holly"
+          palette: holly_colors
+          twinkle_speed: 5
+          twinkle_density: 6
+      - addressable_twinklefox:
+          name: "TwinkleFox Fairy"
+          palette: fairy_light
+          twinkle_speed: 3
+          twinkle_density: 4
+      - addressable_twinklefox:
+          name: "TwinkleFox Rainbow"
+          palette: rainbow_colors
+      - addressable_twinklefox:
+          name: "TwinkleFox Lava"
+          palette: lava_colors
+      - addressable_twinklefox:
+          name: "TwinkleFox Ocean"
+          palette: ocean_colors
+      - addressable_twinklefox:
+          name: "TwinkleFox Ice"
+          palette: ice_colors
+      - addressable_twinklefox:
+          name: "TwinkleFox Retro C9"
+          palette: retro_c9
+

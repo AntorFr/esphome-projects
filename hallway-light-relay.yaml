@@ -2,6 +2,7 @@ substitutions:
   device_name: hallway-light-relay
   friendly_name: "Telerupteur entree"
   area: "Entrée"
+  icon: mdi:bulkhead-light
 
 esphome:
   name: ${device_name}

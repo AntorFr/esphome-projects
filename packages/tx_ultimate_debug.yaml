@@ -137,11 +137,11 @@ external_components:
       url: https://github.com/SmartHome-yourself/sonoff-tx-ultimate-for-esphome
       ref: main
     components: [tx_ultimate_touch]
-  - source: github://AntorFr/esphome-addressable-effetcs@main
-    components: [ custom_addressable_effetcs ]
+  - source: github://AntorFr/esphome-addressable-effects@main
+    components: [ custom_addressable_effects ]
     #refresh: 1s
 
-custom_addressable_effetcs:  
+custom_addressable_effects:  
 
 psram:
   mode: quad

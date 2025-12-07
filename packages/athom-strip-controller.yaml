@@ -4,12 +4,14 @@ substitutions:
 
 esp32:
   board: esp32dev
+  framework:
+    type: esp-idf
 
 external_components:
-  - source: github://AntorFr/esphome-addressable-effetcs
-    components: [ custom_addressable_effetcs ]
+  - source: github://AntorFr/esphome-addressable-effects
+    components: [ custom_addressable_effects ]
 
-custom_addressable_effetcs: 
+custom_addressable_effects: 
 
 i2s_audio:
   i2s_lrclk_pin: GPIO15
@@ -42,11 +44,11 @@ binary_sensor:
     id: bouton
 
 light:
-  - platform: neopixelbus
+  - platform: esp32_rmt_led_strip
     power_supply: relay
     name: none
-    type: GRB
-    variant: WS2812X
+    rgb_order: GRB
+    chipset: WS2812
     pin: GPIO18
     num_leds: ${num_leds}
     id: led

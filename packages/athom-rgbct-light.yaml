@@ -116,8 +116,8 @@ logger:
 mdns:
   disabled: false
 
-web_server:
-  port: 80
+#web_server:
+#  port: 80
 
 network:
   enable_ipv6: ${ipv6_enable}

@@ -1,15 +1,14 @@
 substitutions:
-  device_name: office-solder-iron-switch
-  friendly_name: "Fer à souder"
-  icon: mdi:soldering-iron
-  area: "Bureau"
-  current_res: "0.00204"
-  voltage_div: "775"
-  
+  device_name: "garage1-ceilling-light"
+  friendly_name: "Plafonnier Garage 1"
+  area: "Garage 1"
+  icon: mdi:bulkhead-light
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
-  area: ${area}  
+  area: ${area}
+
 
 wifi:
   ssid: !secret wifi_ssid
@@ -31,16 +30,14 @@ ota:
 
 captive_portal:
 
-#web_server:
-
 logger:
   #level: DEBUG
+
 
 #######################################
 # Device specific Config Begins Below #
 #######################################
 packages:
   device_base: !include packages/device_base.yaml
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/device_base.yaml
-  nous-a1t: !include packages/nous-a1t.yaml
+  shelly-1-pm: !include packages/shelly-1pm-gen-4-light.yaml
+
