@@ -22,7 +22,7 @@ wifi:
     password: !secret ap_password
 
 logger:
-  level: INFO
+  level: DEBUG
   
 api:
   reboot_timeout: 30min
