@@ -101,26 +101,29 @@ sensor:
       accuracy_decimals: 3
 
 binary_sensor:
-  - id: shelly_add_on_digital_in
-    name: addon digital in
-    platform: gpio
-    pin: GPIO12
-    filters:
-      - delayed_off: 50ms
+  # - id: shelly_add_on_digital_in
+  #   name: addon digital in
+  #   disabled_by_default: true
+  #   platform: gpio
+  #   pin: GPIO12
+  #   filters:
+  #     - delayed_off: 50ms
 
-  - id: shelly_add_on_data
-    name: addon data
-    platform: gpio
-    pin: GPIO16
-    filters:
-      - delayed_off: 50ms
+  # - id: shelly_add_on_data
+  #   name: addon data
+  #   disabled_by_default: true
+  #   platform: gpio
+  #   pin: GPIO16
+  #   filters:
+  #     - delayed_off: 50ms
 
-  - id: shelly_add_on_analog_in
-    name: addon analog in
-    platform: gpio
-    pin: GPIO17
-    filters:
-      - delayed_off: 50ms
+  # - id: shelly_add_on_analog_in
+  #   name: addon analog in
+  #   disabled_by_default: true
+  #   platform: gpio
+  #   pin: GPIO17
+  #   filters:
+  #     - delayed_off: 50ms
 
   - id: shelly_1pm_gen4_switch
     name: Switch
@@ -139,6 +142,7 @@ binary_sensor:
     name: Button
     platform: gpio
     pin: GPIO1
+    entity_category: diagnostic
     filters:
       - delayed_off: 50ms
 

@@ -30,7 +30,7 @@ ota:
 captive_portal:
 
 logger:
-  #level: DEBUG
+  level: INFO
 
 
 #######################################
