@@ -1,0 +1,420 @@
+substitutions:
+  input1_default_mode: "direct"  # direct / backup / disconnect
+  input2_default_mode: "direct"  # direct / backup / disconnect
+
+  relay1_name: "Relay 1"
+  relay1_icon: "mdi:toggle-switch-variant-off"
+
+  relay2_name: "Relay 2"
+  relay2_icon: "mdi:toggle-switch-variant-off"
+
+
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - script.execute: init_relays_on_boot
+      - script.execute: led_update
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  on_connect:
+    then:
+      - script.execute: led_update
+  on_disconnect:
+    then:
+      - script.execute: led_update
+
+api:
+  on_client_connected:
+    then:
+      - script.execute: restore_on_api_connect
+      - script.execute: led_update
+  on_client_disconnected:
+    then:
+      - script.execute: led_update
+
+# ethernet:
+#   type: LAN8720
+#   mdc_pin: GPIO23
+#   mdio_pin: GPIO18
+#   clk_mode: GPIO17_OUT
+
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+button:
+  - platform: shutdown
+    id: do_shutdown
+
+# Entités de configuration pour les modes d'entrée
+select:
+  - platform: template
+    name: "Input 1 Mode"
+    id: input1_mode
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    initial_option: ${input1_default_mode}
+    options:
+      - direct
+      - backup
+      - disconnect
+    icon: mdi:gesture-tap-button
+
+  - platform: template
+    name: "Input 2 Mode"
+    id: input2_mode
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    initial_option: ${input2_default_mode}
+    options:
+      - direct
+      - backup
+      - disconnect
+    icon: mdi:gesture-tap-button
+
+binary_sensor:
+  - platform: status
+    id: status_1
+    on_press:
+      then:
+        switch.turn_on: wifi_led_blue
+    on_release:
+      then:
+        switch.turn_off: wifi_led_blue
+  - platform: gpio
+    id: reset_button
+    pin:
+      number: 35
+      inverted: true
+    on_release:
+      then:
+        button.press: Reset
+
+  - platform: gpio
+    id: input1
+    pin:
+      number: 38
+    on_press:
+      then:
+        - script.execute: handle_input1
+
+  - platform: gpio
+    id: input2
+    pin:
+      number: 39
+    on_press:
+      then:
+        - script.execute: handle_input2
+
+sensor:
+  - platform: adc
+    id: temp_voltage1
+    pin: GPIO36
+    attenuation: auto
+  - platform: resistance
+    id: temp_resistance1
+    sensor: temp_voltage1
+    configuration: DOWNSTREAM
+    resistor: 10kOhm
+  - platform: ntc
+    sensor: temp_resistance1
+    name: Temperature 1
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer"
+    calibration:
+      b_constant: 3350
+      reference_resistance: 10kOhm
+      reference_temperature: 298.15K
+    on_value_range:
+      - above: 90
+        then:
+          - switch.turn_off: relay1
+          - switch.turn_off: relay2
+          - button.press: do_shutdown
+
+  - platform: adc
+    id: temp_voltage2
+    pin: GPIO37
+    attenuation: auto
+  - platform: resistance
+    id: temp_resistance2
+    sensor: temp_voltage2
+    configuration: DOWNSTREAM
+    resistor: 10kOhm
+  - platform: ntc
+    sensor: temp_resistance2
+    name: Temperature 2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer"
+    calibration:
+      b_constant: 3350
+      reference_resistance: 10kOhm
+      reference_temperature: 298.15K
+    on_value_range:
+      - above: 90
+        then:
+          - switch.turn_off: relay1
+          - switch.turn_off: relay2
+          - button.press: do_shutdown
+
+  - platform: ade7953_spi
+    id: ade7953_1
+    cs_pin:
+      number: GPIO0
+      ignore_strapping_warning: true
+    voltage_pga_gain: 2x
+    current_pga_gain_a: 2x
+    current_pga_gain_b: 2x
+    active_power_gain_a: 0x200000
+    active_power_gain_b: 0x200000
+    voltage:
+      id: voltage1
+      name: "Voltage ${relay1_name}"
+    current_a:
+      id: current1
+      name: "Current ${relay1_name}"
+      filters:
+        - lambda: |-
+            if (x <= 0.02) return 0;
+            return x;
+    active_power_a:
+      id: power1
+      name: "Power ${relay1_name}"
+      filters:
+        - multiply: -1
+        - lambda: |-
+            if (x <= 0.2) return 0;
+            return x;
+
+  - platform: ade7953_spi
+    id: ade7953_2
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    voltage_pga_gain: 2x
+    current_pga_gain_a: 2x
+    current_pga_gain_b: 2x
+    active_power_gain_a: 0x200000
+    active_power_gain_b: 0x200000
+    voltage:
+      id: voltage2
+      name: "Voltage ${relay2_name}"
+    current_a:
+      id: current2
+      name: "Current ${relay2_name}"
+      filters:
+        - lambda: |-
+            if (x <= 0.02) return 0;
+            return x;
+    active_power_a:
+      id: power2
+      name: "Power ${relay2_name}"
+      filters:
+        - multiply: -1
+        - lambda: |-
+            if (x <= 0.2) return 0;
+            return x;
+
+  - platform: total_daily_energy
+    name: "Energy ${relay1_name}"
+    power_id: power1
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    method: trapezoid
+    filters:
+      # W -> kW, pour que l'intégration donne des kWh
+      - multiply: 0.001
+  - platform: total_daily_energy
+    name: "Energy ${relay2_name}"
+    power_id: power2
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    method: trapezoid
+    filters:
+      # W -> kW, pour que l'intégration donne des kWh
+      - multiply: 0.001
+
+# Necessary for ADE7953s to come out of reset
+# The reset pin is common to both ADE7953 chips
+output:
+  - platform: gpio
+    id: ade7953_reset
+    pin:
+      number: GPIO2
+      inverted: true
+      ignore_strapping_warning: true
+
+sn74hc595:
+  - id: 'sn74hc595_hub'
+    type: spi
+    latch_pin: GPIO4
+    sr_count: 1
+
+switch:
+  - platform: gpio
+    name: ${relay1_name}
+    icon: ${relay1_icon}
+    id: relay1
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 0
+      inverted: false
+
+  - platform: gpio
+    name: ${relay2_name}
+    icon: ${relay2_icon}
+    id: relay2
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 1
+      inverted: false
+
+  - platform: gpio
+    id: wifi_led_blue
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 2
+      inverted: true
+
+  - platform: gpio
+    id: wifi_led_green
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 3
+      inverted: true
+
+  - platform: gpio
+    id: wifi_led_red
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 4
+      inverted: true
+
+script:
+  - id: led_off
+    then:
+      - switch.turn_off: wifi_led_red
+      - switch.turn_off: wifi_led_green
+      - switch.turn_off: wifi_led_blue
+
+  - id: led_red
+    then:
+      - script.execute: led_off
+      - switch.turn_on: wifi_led_red
+
+  - id: led_green
+    then:
+      - script.execute: led_off
+      - switch.turn_on: wifi_led_green
+
+  - id: led_blue
+    then:
+      - script.execute: led_off
+      - switch.turn_on: wifi_led_blue
+
+  - id: led_update
+    then:
+      - if:
+          condition:
+            api.connected:
+          then:
+            - script.execute: led_blue
+          else:
+            - if:
+                condition:
+                  wifi.connected:
+                then:
+                  - script.execute: led_green
+                else:
+                  - script.execute: led_red
+
+  - id: handle_input1
+    then:
+      - if:
+          condition:
+            lambda: 'return id(input1_mode).current_option() == "direct";'
+          then:
+            - switch.toggle: relay1
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(input1_mode).current_option() == "backup";'
+              - not:
+                  api.connected:
+          then:
+            - switch.toggle: relay1
+      # disconnect = rien faire
+
+  - id: handle_input2
+    then:
+      - if:
+          condition:
+            lambda: 'return id(input2_mode).current_option() == "direct";'
+          then:
+            - switch.toggle: relay2
+      - if:
+          condition:
+            and:
+              - lambda: 'return id(input2_mode).current_option() == "backup";'
+              - not:
+                  api.connected:
+          then:
+            - switch.toggle: relay2
+      # disconnect = rien faire
+  - id: restore_on_api_connect
+    then:
+      - if:
+          condition:
+            lambda: 'return id(input1_mode).current_option() == "backup";'
+          then:
+            - switch.turn_on: relay1
+      - if:
+          condition:
+            lambda: 'return id(input2_mode).current_option() == "backup";'
+          then:
+            - switch.turn_on: relay2
+
+  - id: init_relays_on_boot
+    then:
+      - if:
+          condition:
+            or:
+              - lambda: 'return id(input1_mode).current_option() == "backup";'
+              - lambda: 'return id(input1_mode).current_option() == "disconnect";'
+          then:
+            - switch.turn_on: relay1
+      - if:
+          condition:
+            or:
+              - lambda: 'return id(input2_mode).current_option() == "backup";'
+              - lambda: 'return id(input2_mode).current_option() == "disconnect";'
+          then:
+            - switch.turn_on: relay2

@@ -1,23 +1,25 @@
 substitutions:
   device_name: pool-filtering-relay
-  friendly_name: "Filtration"
+  friendly_name: "Filtration Piscine"
   area: "Piscine"
+
+  relay1_name: "Filtration"
+  relay1_icon: "mdi:air-filter"
+
+  relay2_name: "Électrolyse"
+  relay2_icon: "mdi:meter-electric"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
   area: ${area}
 
-
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
+  #use_address: ${device_name}.intra.sberard.fr
+  use_address: 192.168.10.152
+
 
   ap:
     ssid: ${device_name}
@@ -43,3 +45,4 @@ logger:
 #######################################
 packages:
   device_base: !include packages/device_base.yaml
+  shelly-pro-2-pm : !include packages/shelly-pro-2-pm.yaml
