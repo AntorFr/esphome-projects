@@ -7,11 +7,17 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
   area: ${area}
+  on_boot:
+    priority: -10
+    then:
+      - script.execute:
+          id: request_refresh
+          mode: 0  # normal to show waiting screen if HA not ready
 
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
 wifi:
   ssid: !secret wifi_ssid
@@ -26,6 +32,13 @@ api:
   reboot_timeout: 15min
   encryption:
     key: !secret api_encryption
+  on_client_connected:
+    then:
+      - lambda: 'id(ha_ready) = true;'
+      - delay: 10s
+      - script.execute:
+          id: request_refresh
+          mode: 2  # forced initial draw after HA ready
 
 ota:
   platform: esphome
@@ -37,7 +50,54 @@ logger:
   level: DEBUG
   baud_rate: 0
 
-web_server:
+globals:
+  - id: last_refresh_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: ha_ready
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+script:
+  - id: request_refresh
+    parameters:
+      mode: int  # 0=normal, 1=update, 2=forced (no guard)
+    then:
+      - lambda: |-
+          const uint32_t MIN_REFRESH_MS_NORMAL = 1200000;  // 20 min
+          const uint32_t MIN_REFRESH_MS_UPDATE = 120000;   // 2 min
+          const uint32_t now = millis();
+          if (!id(kitchen_frame_display).is_ready()) return;
+          switch (mode) {
+            case 2:  // forced, no guard
+              id(last_refresh_ms) = now;
+              id(kitchen_frame_display).update();
+              break;
+            case 1:  // update
+              if (!id(ha_ready)) return;
+              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_UPDATE) {
+                id(last_refresh_ms) = now;
+                id(kitchen_frame_display).update();
+              }
+              break;
+            default:  // normal
+              if (!id(ha_ready)) return;
+              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_NORMAL) {
+                id(last_refresh_ms) = now;
+                id(kitchen_frame_display).update();
+              }
+              break;
+          }
+
+interval:
+  - interval: 10s
+    then:
+      - script.execute:
+          id: request_refresh
+          mode: 0
+
 
 #######################################
 # Device specific Config Begins Below #
@@ -51,6 +111,13 @@ font:
   - file: 'fonts/Roboto-Medium.ttf'
     id: roboto_med_30
     size: 30
+    glyphs:
+      ['&', '@', '!', ',', '.', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
+       '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+       'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+       'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
+       'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³','é','è','ê','à','ù','ç','É','À']
   - file: 'fonts/Roboto-Regular.ttf'
     id: footer_font
     size: 15
@@ -60,7 +127,7 @@ font:
        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³']
+       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³','é','è','ê','à','ù','ç','É','À']
   - file: 'fonts/Roboto-Regular.ttf'
     id: main_sensor_unit
     size: 20
@@ -70,7 +137,7 @@ font:
        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³']   
+       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³','é','è','ê','à','ù','ç','É','À']   
   - file: 'fonts/Roboto-Medium.ttf'
     id: sub_sensor_font
     size: 30
@@ -80,7 +147,7 @@ font:
        'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³'] 
+       'u', 'v', 'w', 'x', 'y', 'z','å', 'ä', 'ö', '/','º','µ','³','é','è','ê','à','ù','ç','É','À'] 
   - file: 'fonts/Roboto-Bold.ttf'
     id: main_sensor_font
     size: 80
@@ -139,13 +206,74 @@ sensor:
     entity_id: weather.petit_mars
     attribute: temperature
     internal: True
-
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+  - platform: homeassistant
+    id: temp_salon
+    entity_id: sensor.station_salon_temperature
+    internal: True
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+  - platform: homeassistant
+    id: temp_timothee
+    entity_id: sensor.blu_temperature_timothee_temperature
+    internal: True
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+  - platform: homeassistant
+    id: temp_emilie
+    entity_id: sensor.blu_temperature_emilie_temperature
+    internal: True
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+  - platform: homeassistant
+    id: temp_bureau
+    entity_id: sensor.blu_temperature_bureau_temperature
+    internal: True
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+  - platform: wifi_signal
+    id: wifi_signal_dbm
+    update_interval: 60s
+    internal: true
 
 text_sensor:
   - platform: homeassistant
     id: weather
     entity_id: weather.petit_mars
     internal: True
+    on_value:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 1  # update
+
+switch:
+  - platform: template
+    id: dark_mode_switch
+    name: "Kitchen Frame Dark Mode"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_state:
+      then:
+        - script.execute:
+            id: request_refresh
+            mode: 2  # forced
 
 spi:
   clk_pin: 13
@@ -153,16 +281,29 @@ spi:
 
 display:
   - platform: waveshare_epaper
-    cs_pin: 15
+    id: kitchen_frame_display
+    cs_pin:
+      number: 15
+      ignore_strapping_warning: true
     dc_pin: 27
     busy_pin:
       inverted: true
       number: 25
     reset_pin: 26
     model: 7.50inV2
-    update_interval: 30s
+    update_interval: never
     rotation: 270°
     lambda: |-
+      auto normalize_state = [](std::string value) {
+        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return value;
+      };
+
+      const bool dark_mode = id(dark_mode_switch).state;
+      const Color color_fg = dark_mode ? COLOR_OFF : COLOR_ON;   // text/lines
+      const Color color_bg = dark_mode ? COLOR_ON : COLOR_OFF;   // background
+      it.fill(color_bg);
+
       std::map<std::string, std::string> weather_icon_map
         {
           {"cloudy", "\U000F0590"},
@@ -175,6 +316,7 @@ display:
           {"lightning", "\U000F0593"},
           {"lightning-rainy", "\U000F067E"},
           {"night", "\U000F0594"},
+          {"clear-night", "\U000F0594"},
           {"night-partly-cloudy", "\U000F0F31"},
           {"partlycloudy", "\U000F0595"},
           {"partly-lightning", "\U000F0F32"},
@@ -195,6 +337,7 @@ display:
           {"tornado", "\U000F0F38"},
           {"windy", "\U000F059D"},
           {"windy-variant", "\U000F059E"},
+          {"exceptional", "\U000F05D6"},
         };
       std::map<std::string, std::string> weather_traduction
         {
@@ -208,6 +351,7 @@ display:
           {"lightning", "Orage"},
           {"lightning-rainy", "Orageux"},
           {"night", "Nuit"},
+          {"clear-night", "Nuit claire"},
           {"night-partly-cloudy", "Nuageux"},
           {"partlycloudy", "Nuageux"},
           {"partly-lightning", "Orageux"},
@@ -228,25 +372,154 @@ display:
           {"tornado", "Tornade"},
           {"windy", "Venteux"},
           {"windy-variant", "Venteux"},
+          {"exceptional", "Alerte"},
         };
 
       // Resolution 480px x 800px
       int width = it.get_width();
       int height = it.get_height();
 
+      const std::string raw_weather = normalize_state(id(weather).state);
+      const bool has_weather = id(weather).has_state() && !raw_weather.empty();
+      const std::string weather_state = has_weather ? raw_weather : "unknown";
+      const std::string weather_icon = weather_icon_map.count(weather_state) ? weather_icon_map[weather_state] : "\U000F05D6";
+      const std::string weather_label = has_weather
+        ? (weather_traduction.count(weather_state) ? weather_traduction[weather_state] : raw_weather)
+        : "Attente HA";
 
-      it.start_clipping(0,0,480,80);
-        it.strftime(240, 20, id(roboto_med_30),TextAlign::CENTER_HORIZONTAL, "%A %d %B %Y", id(homeassistant_time).now());
-        it.filled_rectangle(20, 70, width-(2*20), 3);
+      const float temperature = id(weather_temp).state;
+      const bool has_temperature = !isnan(temperature);
+      const bool ha_time_valid = id(homeassistant_time).now().is_valid();
+      const bool weather_has_state = id(weather).has_state();
+      const float temp_salon_v = id(temp_salon).state;
+      const float temp_timothee_v = id(temp_timothee).state;
+      const float temp_emilie_v = id(temp_emilie).state;
+      const float temp_bureau_v = id(temp_bureau).state;
+      const int temp_font_size = 30;  // used with main_sensor_font/ unit? keep existing font but small layout
+      const bool ha_ready_flag = id(ha_ready);
+
+      if (!ha_ready_flag) {
+        it.printf(width / 2, height / 2 - 20, id(sub_sensor_font), color_fg, TextAlign::CENTER_HORIZONTAL, "En attente de");
+        it.printf(width / 2, height / 2 + 20, id(sub_sensor_font), color_fg, TextAlign::CENTER_HORIZONTAL, "connexion Home Assistant...");
+        return;
+      }
+
+      // Calibration frame to visualize the visible area behind the matte
+      const int margin_top = 35;
+      const int margin_bottom = 80;
+      const int margin_left = 20;
+      const int margin_right = 25;
+      it.rectangle(margin_left, margin_top, width - margin_left - margin_right, height - margin_top - margin_bottom, color_fg);
+
+      // Global offsets to shift all elements if the frame hides part of the display
+      const int offset_x = 0;
+      const int offset_y = 0;
+      auto ox = [&](int x) { return x + offset_x; };
+      auto oy = [&](int y) { return y + offset_y; };
+
+      // Header: French date rendering
+      auto now = id(homeassistant_time).now();
+      static const char *jours[] = {"Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"};
+      static const char *mois[] = {"", "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"};
+      int dow = now.day_of_week % 7;
+      if (dow < 0)
+        dow = 0;
+      int month_idx = now.month;
+      if (month_idx < 1 || month_idx > 12)
+        month_idx = 1;
+      char date_buf[48];
+      snprintf(date_buf, sizeof(date_buf), "%s %02d %s %04d", jours[dow], now.day_of_month, mois[month_idx], now.year);
+
+      const int content_width = width - margin_left - margin_right;
+      const int header_height = 90;
+      const int header_text_y = margin_top + 8;    // start a bit below top to avoid clipping
+      const int header_line_thickness = 4;
+      const int header_line_y = header_text_y + 39;  // small gap under the date
+      it.start_clipping(margin_left, margin_top, content_width, header_height);
+      it.printf(margin_left + content_width / 2, header_text_y, id(roboto_med_30), color_fg, TextAlign::TOP_CENTER, "%s", date_buf);
       it.end_clipping();
-      it.draw_pixel_at(500, 60,COLOR_ON);
 
-      it.printf(105, 135, id(mdi120), TextAlign::TOP_CENTER, "%s", weather_icon_map["cloudy"].c_str());
-      it.printf(180, 145, id(sub_sensor_font), TextAlign::TOP_LEFT, "%s", weather_traduction["cloudy"].c_str());
-      //it.printf(105, 135, id(mdi120), TextAlign::TOP_CENTER, "%s", weather_icon_map[id(weather).state].c_str());
-      //it.printf(180, 145, id(sub_sensor_font), TextAlign::TOP_LEFT, "%s", weather_traduction[id(weather).state].c_str());
-      it.printf(20, 200, id(sub_sensor_font), TextAlign::TOP_LEFT, "Meteo: %s", id(weather).state.c_str());
+      int line_start_x = margin_left - 10;
+      if (line_start_x < 0)
+        line_start_x = 0;
+      int line_width = width - margin_left - margin_right + 20;
+      if (line_start_x + line_width > width)
+        line_width = width - line_start_x;
+      it.filled_rectangle(line_start_x, header_line_y, line_width, header_line_thickness, color_fg);
 
+      // Weather block (icon, label, temperature)
+      const int weather_top = header_line_y + header_line_thickness + 10;
+      const int icon_center_x = 110;
+      const int text_center_x = 330;
 
-      //it.rectangle(50, 60, 30, 42);
-      //it.filled_circle(25, 25, 10);
+      // Larger weather icon
+      it.printf(ox(icon_center_x), oy(weather_top), id(mdi120), color_fg, TextAlign::TOP_CENTER, "%s", weather_icon.c_str());
+      it.printf(ox(text_center_x), oy(weather_top), id(sub_sensor_font), color_fg, TextAlign::TOP_CENTER, "%s", weather_label.c_str());
+
+      if (has_temperature) {
+        const int temp_y = weather_top + 32;
+        const int unit_x = text_center_x + 55;
+        const int unit_y = temp_y + 8;
+        it.printf(ox(text_center_x), oy(temp_y), id(main_sensor_font), color_fg, TextAlign::TOP_CENTER, "%.1f", temperature);
+        it.printf(ox(unit_x), oy(unit_y), id(main_sensor_unit), color_fg, TextAlign::TOP_LEFT, "°C");
+      } else {
+        it.printf(ox(text_center_x), oy(weather_top + 32), id(sub_sensor_font), color_fg, TextAlign::TOP_CENTER, "--");
+      }
+
+      // Tighter gap before last update time
+      it.strftime(ox(text_center_x - 40), oy(weather_top + 112), id(footer_font), color_fg, TextAlign::TOP_LEFT, "Maj: %H:%M", id(homeassistant_time).now());
+
+      // Separator below weather block
+      const int weather_block_bottom = weather_top + 140;
+      const int separator_thickness = 3;
+      int sep_start_x = margin_left - 10;
+      if (sep_start_x < 0)
+        sep_start_x = 0;
+      int sep_width = width - margin_left - margin_right + 20;
+      if (sep_start_x + sep_width > width)
+        sep_width = width - sep_start_x;
+      it.filled_rectangle(sep_start_x, weather_block_bottom, sep_width, separator_thickness, color_fg);
+
+      // Room temperatures block in one row: labels on first line, temps on second
+      const int temps_start_y = weather_block_bottom + separator_thickness + 12;  // gap above block
+      const int temps_label_y = temps_start_y;
+      const int temps_value_y = temps_start_y + 28;
+      const int col_width = (width - margin_left - margin_right) / 4;
+      const int base_x = margin_left;
+
+      auto draw_room_column = [&](const char *label, float value, int col_idx) {
+        const int col_x = base_x + col_width * col_idx;
+        const bool valid = !isnan(value);
+        it.printf(col_x + col_width / 2, temps_label_y, id(main_sensor_unit), color_fg, TextAlign::TOP_CENTER, "%s", label);
+        if (valid) {
+          it.printf(col_x + col_width / 2, temps_value_y, id(sub_sensor_font), color_fg, TextAlign::TOP_CENTER, "%.1f°", value);
+        } else {
+          it.printf(col_x + col_width / 2, temps_value_y, id(sub_sensor_font), color_fg, TextAlign::TOP_CENTER, "--");
+        }
+      };
+
+      draw_room_column("Salon", temp_salon_v, 0);
+      draw_room_column("Timothée", temp_timothee_v, 1);
+      draw_room_column("Émilie", temp_emilie_v, 2);
+      draw_room_column("Bureau", temp_bureau_v, 3);
+
+      // Separator below room temperatures
+      // Place the bottom separator below the temperature row (font ~30px high) plus gap
+      const int temps_block_bottom = temps_value_y + 44;
+      const int temps_sep_thickness = 3;
+      int temps_sep_start_x = margin_left - 10;
+      if (temps_sep_start_x < 0)
+        temps_sep_start_x = 0;
+      int temps_sep_width = width - margin_left - margin_right + 20;
+      if (temps_sep_start_x + temps_sep_width > width)
+        temps_sep_width = width - temps_sep_start_x;
+      it.filled_rectangle(temps_sep_start_x, temps_block_bottom, temps_sep_width, temps_sep_thickness, color_fg);
+
+      ESP_LOGD("kitchen-frame", "HA time_valid=%s weather_has_state=%s raw='%s' normalized='%s' icon='%s' temp=%.1f has_temp=%s",
+        ha_time_valid ? "yes" : "no",
+        weather_has_state ? "yes" : "no",
+        id(weather).state.c_str(),
+        weather_state.c_str(),
+        weather_icon.c_str(),
+        temperature,
+        has_temperature ? "yes" : "no");
