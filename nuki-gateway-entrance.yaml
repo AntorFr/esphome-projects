@@ -10,6 +10,8 @@ esphome:
 
 esp32:
   board: esp32-poe-iso
+  framework:
+    type: esp-idf  
 
 #psram:
 #  mode: octal
@@ -27,12 +29,14 @@ ethernet:
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
-  clk_mode: GPIO17_OUT
+  clk:
+    pin: GPIO17
+    mode: CLK_OUT
+  power_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
   phy_addr: 0
-  power_pin: GPIO12
   use_address: ${device_name}.intra.sberard.fr
-
-
 
 api:
   reboot_timeout: 15min
@@ -54,4 +58,20 @@ logger:
 packages:
   device_base: !include packages/device_base_eth.yaml
   #device_base: !include packages/device_base.yaml
-  nuki_gateway: !include packages/nuki-gateway.yaml
+  #nuki_gateway: !include packages/nuki-gateway.yaml
+
+water_heater:
+  - platform: template
+    name: "Mon Chauffe-eau"
+    optimistic: true
+    
+    # Actions quand l'utilisateur change les valeurs depuis HA
+    set_mode_action:
+      - logger.log:
+          format: "Mode changé vers: %d"
+          args: [ '(int)mode' ]
+    
+    set_target_temperature_action:
+      - logger.log:
+          format: "Température cible changée vers: %.1f°C"
+          args: [ 'target_temperature' ]

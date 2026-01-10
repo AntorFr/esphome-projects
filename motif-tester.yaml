@@ -7,9 +7,6 @@ esp8266:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  ap:
-    ssid: "Test-Wemos-Fallback"
-    password: "12345678"
 
 captive_portal:
 

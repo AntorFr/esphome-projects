@@ -20,9 +20,12 @@ ethernet:
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
-  clk_mode: GPIO17_OUT
-  phy_addr: 0
-  power_pin: GPIO12
+  clk:
+    pin: GPIO17
+    mode: CLK_OUT
+  power_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
   use_address: ${device_name}.intra.sberard.fr
 
 api:
@@ -33,6 +36,9 @@ api:
 ota:
   platform: esphome
   password: !secret ota_password
+
+logger:
+  
 
 
 #web_server:

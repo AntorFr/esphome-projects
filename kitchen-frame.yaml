@@ -12,7 +12,8 @@ esphome:
     then:
       - script.execute:
           id: request_refresh
-          mode: 0  # normal to show waiting screen if HA not ready
+          mode: 2  # forced
+          source: "boot"
 
 esp32:
   board: esp32dev
@@ -34,11 +35,12 @@ api:
     key: !secret api_encryption
   on_client_connected:
     then:
-      - lambda: 'id(ha_ready) = true;'
       - delay: 10s
-      - script.execute:
-          id: request_refresh
-          mode: 2  # forced initial draw after HA ready
+      - lambda: |-
+          if (!id(ha_ready)) {
+            id(ha_ready) = true;
+            id(request_refresh)->execute(2, "api_connected");
+          }
 
 ota:
   platform: esphome
@@ -49,54 +51,6 @@ ota:
 logger:
   level: DEBUG
   baud_rate: 0
-
-globals:
-  - id: last_refresh_ms
-    type: uint32_t
-    restore_value: no
-    initial_value: '0'
-  - id: ha_ready
-    type: bool
-    restore_value: no
-    initial_value: 'false'
-
-script:
-  - id: request_refresh
-    parameters:
-      mode: int  # 0=normal, 1=update, 2=forced (no guard)
-    then:
-      - lambda: |-
-          const uint32_t MIN_REFRESH_MS_NORMAL = 1200000;  // 20 min
-          const uint32_t MIN_REFRESH_MS_UPDATE = 120000;   // 2 min
-          const uint32_t now = millis();
-          if (!id(kitchen_frame_display).is_ready()) return;
-          switch (mode) {
-            case 2:  // forced, no guard
-              id(last_refresh_ms) = now;
-              id(kitchen_frame_display).update();
-              break;
-            case 1:  // update
-              if (!id(ha_ready)) return;
-              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_UPDATE) {
-                id(last_refresh_ms) = now;
-                id(kitchen_frame_display).update();
-              }
-              break;
-            default:  // normal
-              if (!id(ha_ready)) return;
-              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_NORMAL) {
-                id(last_refresh_ms) = now;
-                id(kitchen_frame_display).update();
-              }
-              break;
-          }
-
-interval:
-  - interval: 10s
-    then:
-      - script.execute:
-          id: request_refresh
-          mode: 0
 
 
 #######################################
@@ -196,6 +150,63 @@ font:
 
       - "\U000F05D6" # mdi-alert-circle-outline  
 
+globals:
+  - id: last_refresh_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: ha_ready
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+script:
+  - id: request_refresh
+    parameters:
+      mode: int  # 0=normal, 1=update, 2=forced (no guard)
+      source: string
+    then:
+      - lambda: |-
+          const uint32_t MIN_REFRESH_MS_NORMAL = 600000;  // 10 min
+          const uint32_t MIN_REFRESH_MS_UPDATE = 300000;   // 5 min
+          const uint32_t now = millis();
+          if (!id(kitchen_frame_display).is_ready()) return;
+          auto log_refresh = [&](const char *reason, int refresh_mode) {
+            ESP_LOGD("kitchen-frame", "Refresh from %s mode=%d ha_ready=%s delta_ms=%lu", reason, refresh_mode, id(ha_ready) ? "yes" : "no",
+                     id(last_refresh_ms) == 0 ? 0UL : now - id(last_refresh_ms));
+          };
+          switch (mode) {
+            case 2:  // forced, no guard
+              id(last_refresh_ms) = now;
+              log_refresh(source.c_str(), mode);
+              id(kitchen_frame_display).update();
+              break;
+            case 1:  // update
+              if (!id(ha_ready)) return;
+              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_UPDATE) {
+                id(last_refresh_ms) = now;
+                log_refresh(source.c_str(), mode);
+                id(kitchen_frame_display).update();
+              }
+              break;
+            default:  // normal
+              if (!id(ha_ready)) return;
+              if (id(last_refresh_ms) == 0 || now - id(last_refresh_ms) >= MIN_REFRESH_MS_NORMAL) {
+                id(last_refresh_ms) = now;
+                log_refresh(source.c_str(), mode);
+                id(kitchen_frame_display).update();
+              }
+              break;
+          }
+
+interval:
+  - interval: 10s
+    then:
+      - script.execute:
+          id: request_refresh
+          mode: 0
+          source: "interval"
+
 time:
   - platform: homeassistant
     id: homeassistant_time
@@ -211,6 +222,7 @@ sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "weather_temp"
   - platform: homeassistant
     id: temp_salon
     entity_id: sensor.station_salon_temperature
@@ -220,6 +232,7 @@ sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "temp_salon"
   - platform: homeassistant
     id: temp_timothee
     entity_id: sensor.blu_temperature_timothee_temperature
@@ -229,6 +242,7 @@ sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "temp_timothee"
   - platform: homeassistant
     id: temp_emilie
     entity_id: sensor.blu_temperature_emilie_temperature
@@ -238,6 +252,7 @@ sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "temp_emilie"
   - platform: homeassistant
     id: temp_bureau
     entity_id: sensor.blu_temperature_bureau_temperature
@@ -247,6 +262,7 @@ sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "temp_bureau"
   - platform: wifi_signal
     id: wifi_signal_dbm
     update_interval: 60s
@@ -262,6 +278,7 @@ text_sensor:
         - script.execute:
             id: request_refresh
             mode: 1  # update
+            source: "weather_state"
 
 switch:
   - platform: template
@@ -274,6 +291,7 @@ switch:
         - script.execute:
             id: request_refresh
             mode: 2  # forced
+            source: "dark_mode_switch"
 
 spi:
   clk_pin: 13
@@ -514,12 +532,3 @@ display:
       if (temps_sep_start_x + temps_sep_width > width)
         temps_sep_width = width - temps_sep_start_x;
       it.filled_rectangle(temps_sep_start_x, temps_block_bottom, temps_sep_width, temps_sep_thickness, color_fg);
-
-      ESP_LOGD("kitchen-frame", "HA time_valid=%s weather_has_state=%s raw='%s' normalized='%s' icon='%s' temp=%.1f has_temp=%s",
-        ha_time_valid ? "yes" : "no",
-        weather_has_state ? "yes" : "no",
-        id(weather).state.c_str(),
-        weather_state.c_str(),
-        weather_icon.c_str(),
-        temperature,
-        has_temperature ? "yes" : "no");
