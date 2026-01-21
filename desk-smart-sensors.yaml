@@ -8,12 +8,22 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   area: ${area} 
+  platformio_options:
+    build_flags:
+      - -DCFG_TUD_HID=1
+
+
 
 esp32:
   board: lolin_s3
   framework:
     type: esp-idf
-    
+    sdkconfig_options:
+      CONFIG_USJ_ENABLE_USB_SERIAL_JTAG: "n"
+      CONFIG_TINYUSB_HID_COUNT: "1"
+      CONFIG_ESP_CONSOLE_UART_DEFAULT: "y"
+    components:
+      - espressif/esp_tinyusb~2.0.0
 
 wifi:
   ssid: !secret wifi_ssid
@@ -49,6 +59,16 @@ packages:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
 
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-hid
+      ref: main
+    components: [hid_composite]
+
+hid_composite:
+  id: my_hid
+
 globals:
   - id: source
     type: std::string
@@ -56,6 +76,45 @@ globals:
     type: std::string
   - id: info
     type: std::string
+
+binary_sensor:
+  - platform: hid_composite
+    type: connected
+    name: "PC Connected"
+    id: pc_connected
+  
+  - platform: hid_composite
+    type: muted
+    name: "Muted"
+    id: is_muted
+  
+  - platform: hid_composite
+    type: in_call
+    name: "In Call"
+    id: is_in_call
+  
+  - platform: hid_composite
+    type: ringing
+    name: "Ringing"
+    id: is_ringing
+
+switch:
+  - platform: hid_composite
+    type: mouse
+    name: "Mouse Keep Awake"
+    interval: 30s
+    jitter: 5s
+  
+  - platform: hid_composite
+    type: keyboard
+    name: "Keyboard Keep Awake"
+    key: "F15"
+    interval: 45s
+    jitter: 10s
+  
+  - platform: hid_composite
+    type: mute
+    name: "Mute"
 
 i2c:
   sda: GPIO20

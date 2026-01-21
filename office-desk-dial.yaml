@@ -1,0 +1,279 @@
+substitutions:
+  device_name: office-desk-dial
+  friendly_name: Molette bureau
+  area: Bureau
+
+  # Menu items count
+  menu_items_count: "2"
+
+  # MDI Icons (Home Assistant style)
+  icon_desk: "\U000F0134"        # mdi:desk
+  icon_media: "\U000F075A"       # mdi:speaker
+  icon_check: "\U000F012C"       # mdi:check
+ 
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  on_boot:
+    priority: -100
+    then:
+      - delay: 500ms
+      - pcf8563.read_time:
+  platformio_options:
+    board_build.flash_mode: dio
+
+
+esp32:
+  variant: esp32s3
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_SPIRAM_SUPPORT: "y"
+      CONFIG_SPIRAM_MODE_OCT: "y"
+      CONFIG_SPIRAM_SPEED_80M: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+captive_portal:
+
+logger:
+  level: INFO
+
+#######################################
+# Globals - Menu State
+#######################################
+globals:
+  - id: menu_index
+    type: int
+    initial_value: '0'
+  - id: current_mode
+    type: int
+    initial_value: '0'  # 0 = menu, 1 = desk control, 2 = media control
+
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+packages:
+  device_base: !include packages/device_base.yaml
+    #url: https://github.com/AntorFr/esphome-projects
+    #file: packages/device_base.yaml
+
+#######################################
+# Fonts
+#######################################
+font:
+  - file: "gfonts://Roboto"
+    id: font_title
+    size: 24
+    
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 14
+    
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 18
+
+  # MDI Icons font
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: font_icons
+    size: 40
+    glyphs:
+      - "\U000F0134"  # mdi:desk
+      - "\U000F075A"  # mdi:speaker
+      - "\U000F012C"  # mdi:check
+      - "\U000F004B"  # mdi:arrow-left (back)
+
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: font_icons_large
+    size: 80
+    glyphs:
+      - "\U000F0134"  # mdi:desk
+      - "\U000F075A"  # mdi:speaker
+
+i2c:
+  - id: internal_i2c
+    sda: GPIO11
+    scl: GPIO12
+
+rc522_i2c:
+  - id: nfc_reader
+    i2c_id: internal_i2c
+    address: 0x28
+
+output:
+  - platform: ledc
+    pin: GPIO3
+    id: buzzer
+  - platform: ledc
+    pin: GPIO9
+    id: backlight_output
+
+rtttl:
+  output: buzzer
+
+sensor:
+  - platform: rotary_encoder
+    id: encoder
+    pin_a: GPIO40
+    pin_b: GPIO41
+    on_clockwise:
+      then:
+        - lambda: |-
+            if (id(current_mode) == 0) {
+              // Menu navigation
+              id(menu_index) = (id(menu_index) + 1) % ${menu_items_count};
+            }
+        - component.update: round_display
+    on_anticlockwise:
+      then:
+        - lambda: |-
+            if (id(current_mode) == 0) {
+              // Menu navigation
+              id(menu_index) = (id(menu_index) - 1 + ${menu_items_count}) % ${menu_items_count};
+            }
+        - component.update: round_display
+
+time:
+  # RTC
+  - platform: pcf8563
+    id: rtctime
+    i2c_id: internal_i2c
+    address: 0x51
+    update_interval: never
+  - platform: homeassistant
+    id: esptime
+    on_time_sync:
+      then:
+        - pcf8563.write_time:
+
+binary_sensor:
+  - platform: gpio
+    name: Button
+    id: front_button
+    pin: GPIO42
+    on_press:
+      then:
+        - lambda: |-
+            if (id(current_mode) == 0) {
+              // Select menu item
+              id(current_mode) = id(menu_index) + 1;
+              ESP_LOGI("menu", "Selected mode: %d", id(current_mode));
+            } else {
+              // Return to menu
+              id(current_mode) = 0;
+              ESP_LOGI("menu", "Back to menu");
+            }
+        - component.update: round_display
+
+  - platform: gpio
+    name: Hold Button
+    pin: GPIO46
+
+spi:
+  id: spi_bus
+  mosi_pin: GPIO5
+  clk_pin: GPIO6
+
+display:
+  - platform: ili9xxx
+    id: round_display
+    model: GC9A01A
+    cs_pin: GPIO7
+    reset_pin: GPIO8
+    dc_pin: GPIO4
+    invert_colors: False
+    update_interval: never
+    lambda: |-
+      int center_x = it.get_width() / 2;
+      int center_y = it.get_height() / 2;
+      
+      // Clear screen
+      it.fill(Color(0x1a, 0x1a, 0x2e));
+      
+      if (id(current_mode) == 0) {
+        // === MENU MODE ===
+        // Draw title
+        it.printf(center_x, 30, id(font_title), Color(0xFF, 0xFF, 0xFF), TextAlign::CENTER, "Menu");
+        
+        // Menu items configuration
+        const char* menu_labels[] = {"Bureau", "Media"};
+        const char* menu_icons[] = {"${icon_desk}", "${icon_media}"};
+        Color colors_active[] = {Color(0x00, 0xd9, 0xff), Color(0xff, 0x6b, 0x6b)};
+        
+        // Draw menu items in a circular layout
+        for (int i = 0; i < ${menu_items_count}; i++) {
+          int item_y = 80 + i * 70;
+          bool is_selected = (i == id(menu_index));
+          
+          if (is_selected) {
+            // Highlight background for selected item
+            it.filled_circle(center_x, item_y + 15, 45, Color(0x30, 0x30, 0x50));
+            // Draw selection indicator
+            it.circle(center_x, item_y + 15, 47, colors_active[i]);
+          }
+          
+          // Draw icon
+          Color icon_color = is_selected ? colors_active[i] : Color(0x80, 0x80, 0x80);
+          it.printf(center_x, item_y, id(font_icons), icon_color, TextAlign::CENTER, menu_icons[i]);
+          
+          // Draw label
+          Color label_color = is_selected ? Color(0xFF, 0xFF, 0xFF) : Color(0x80, 0x80, 0x80);
+          it.printf(center_x, item_y + 35, id(font_small), label_color, TextAlign::CENTER, menu_labels[i]);
+        }
+        
+        // Navigation hint
+        it.printf(center_x, 220, id(font_small), Color(0x60, 0x60, 0x60), TextAlign::CENTER, "Tourner pour naviguer");
+        
+      } else if (id(current_mode) == 1) {
+        // === DESK MODE ===
+        it.printf(center_x, 30, id(font_title), Color(0x00, 0xd9, 0xff), TextAlign::CENTER, "Bureau");
+        it.printf(center_x, center_y, id(font_icons_large), Color(0x00, 0xd9, 0xff), TextAlign::CENTER, "${icon_desk}");
+        it.printf(center_x, 200, id(font_small), Color(0x60, 0x60, 0x60), TextAlign::CENTER, "Appuyer pour retour");
+        
+      } else if (id(current_mode) == 2) {
+        // === MEDIA MODE ===
+        it.printf(center_x, 30, id(font_title), Color(0xff, 0x6b, 0x6b), TextAlign::CENTER, "Media");
+        it.printf(center_x, center_y, id(font_icons_large), Color(0xff, 0x6b, 0x6b), TextAlign::CENTER, "${icon_media}");
+        it.printf(center_x, 200, id(font_small), Color(0x60, 0x60, 0x60), TextAlign::CENTER, "Appuyer pour retour");
+      }
+
+touchscreen:
+  - platform: ft5x06
+    id: touch
+    i2c_id: internal_i2c
+    address: 0x38
+    interrupt_pin: GPIO14
+    on_touch:
+      - lambda: |-
+          ESP_LOGI("touch", "Touch at x=%d, y=%d", touch.x, touch.y);
+
+light:
+  - platform: monochromatic
+    name: "Backlight"
+    output: backlight_output
+    id: display_backlight
+    default_transition_length: 0s

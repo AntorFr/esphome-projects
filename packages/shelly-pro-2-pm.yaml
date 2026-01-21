@@ -108,10 +108,26 @@ binary_sensor:
     pin:
       number: 35
       inverted: true
-    on_release:
-      then:
-        button.press: Reset
-
+    on_multi_click:
+      # Simple clic
+      - timing:
+          - ON for 30ms to 500ms
+          - OFF for at least 250ms
+        then:
+          - switch.toggle: relay1
+      # Double clic
+      - timing:
+          - ON for 30ms to 500ms
+          - OFF for 30ms to 300ms
+          - ON for 30ms to 500ms
+          - OFF for at least 250ms
+        then:
+          - switch.toggle: relay2
+      # Long press
+      - timing:
+          - ON for 1s to 5s
+        then:
+          - button.press: Reset
   - platform: gpio
     id: input1
     pin:

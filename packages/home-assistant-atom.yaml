@@ -129,7 +129,7 @@ voice_assistant:
     - if:
         condition:
           - lambda: |-
-              return strcmp(id(wake_word_engine_location).current_option(), "On device") == 0;
+              return id(wake_word_engine_location).current_option() == "On device";
         then:
           - wait_until:
               - and:
@@ -233,7 +233,7 @@ script:
       - if:
           condition:
             - lambda: |-
-                return strcmp(id(wake_word_engine_location).current_option(), "On device") == 0;
+                return id(wake_word_engine_location).current_option() == "On device";
             - switch.is_on: use_listen_light
           then:
             - light.turn_on:
@@ -247,7 +247,7 @@ script:
             - if:
                 condition:
                   - lambda: |-
-                      return strcmp(id(wake_word_engine_location).current_option(), "On device") == 0;
+                      return id(wake_word_engine_location).current_option() == "On device";
                   - switch.is_on: use_listen_light
                 then:
                   - light.turn_on:
@@ -267,7 +267,7 @@ script:
               - not:
                   - voice_assistant.is_running:
               - lambda: |-
-                  return strcmp(id(wake_word_engine_location).current_option(), "On device") == 0;
+                  return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -277,7 +277,7 @@ script:
               - not:
                   - voice_assistant.is_running:
               - lambda: |-
-                  return strcmp(id(wake_word_engine_location).current_option(), "In Home Assistant") == 0;
+                  return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -286,14 +286,14 @@ script:
       - if:
           condition:
             lambda: |-
-                  return strcmp(id(wake_word_engine_location).current_option(), "In Home Assistant") == 0;
+                  return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
             lambda: |-
-              return strcmp(id(wake_word_engine_location).current_option(), "On device") == 0;
+              return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
 
