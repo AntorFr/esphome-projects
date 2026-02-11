@@ -632,7 +632,7 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-      sound_file: !lambda return id(sound_multi_press);
+        sound_file: !lambda return id(sound_multi_press);
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
@@ -645,7 +645,7 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-      sound_file: !lambda return id(sound_long_press);
+        sound_file: !lambda return id(sound_long_press);
     - binary_sensor.template.publish:
         id: long_press
         state: ON
