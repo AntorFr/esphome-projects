@@ -12,8 +12,6 @@ esphome:
     build_flags:
       - -DCFG_TUD_HID=1
 
-
-
 esp32:
   board: lolin_s3
   framework:
@@ -64,10 +62,38 @@ external_components:
       type: git
       url: https://github.com/AntorFr/esphome-hid
       ref: main
+    refresh: 0s
     components: [hid_composite]
 
 hid_composite:
   id: my_hid
+
+button:
+  - platform: template
+    name: "Move Mouse"
+    on_press:
+      - hid_composite.move:
+          x: 10
+          y: 10
+
+  - platform: template
+    name: "Type Hello"
+    on_press:
+      - hid_composite.type:
+          text: "Hello World!"
+          speed: 80
+          jitter: 20
+
+  - platform: template
+    name: "Mute TELEPHONY Only (0x0B)"
+    on_press:
+      - hid_composite.mute_telephony:
+
+  - platform: template
+    name: "Mute CONSUMER Only (0x0C)"
+    on_press:
+      - hid_composite.mute_consumer:
+
 
 globals:
   - id: source
@@ -134,6 +160,7 @@ light:
 
 pn532_i2c:
   id: pn532_board  
+  i2c_id: bus_a
   on_tag:
     then:
 

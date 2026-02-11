@@ -43,6 +43,8 @@ substitutions:
   long_press_color: "{100,0,0}"
   long_press_effect: "None"
 
+  sound_theme: "explore_the_stars" # christmas | explore_the_stars
+
   multi_touch_brightness: "1"
   multi_touch_color: "{0,0,0}"
   multi_touch_effect: "Rainbow"
@@ -545,13 +547,13 @@ media_player:
 
     files:
       - id: sound_clic
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/clic.flac
+        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/clic.flac
       - id: sound_long_press
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/long_press.flac
+        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/long_press.flac
       - id: sound_multi_press
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/multi_press.flac        
+        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/multi_press.flac        
       - id: sound_slide
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/slide.flac   
+        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/slide.flac   
 
 i2s_audio:
   - id: i2s_output
@@ -630,7 +632,7 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_long_press);
+      sound_file: !lambda return id(sound_multi_press);
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
@@ -643,7 +645,7 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_multi_press);
+      sound_file: !lambda return id(sound_long_press);
     - binary_sensor.template.publish:
         id: long_press
         state: ON

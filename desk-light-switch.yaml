@@ -3,6 +3,8 @@ substitutions:
   friendly_name: Bouton applique bureau
   
   ## TX Ultimate ##
+  sound_theme: "explore_the_stars" # christmas | explore_the_stars
+
   button_count: 1
 
   nightlight_sleep_id: input_boolean.away_mode
