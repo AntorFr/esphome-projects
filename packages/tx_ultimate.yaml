@@ -74,6 +74,7 @@ substitutions:
 
 esp32:
   board: esp32dev
+  flash_size: 8MB
   framework:
     type: esp-idf
     version: recommended
@@ -497,7 +498,7 @@ speaker:
     dac_type: external
     i2s_comm_fmt: i2s_lsb
     #timeout: never
-    buffer_duration: 100ms
+    buffer_duration: 200ms
     #audio_dac: aic3204_dac
 
 
@@ -532,8 +533,8 @@ media_player:
     volume_increment: 0.05
     volume_min: 0.5
     volume_max: 1
-    task_stack_in_psram: false
-    buffer_size: 50000
+    task_stack_in_psram: true
+    buffer_size: 80000
     announcement_pipeline:
       speaker:  announcement_resampling_speaker
       format: FLAC     # FLAC is the least processor intensive codec
