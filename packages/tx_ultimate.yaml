@@ -548,13 +548,13 @@ media_player:
 
     files:
       - id: sound_clic
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/clic.flac
+        file: sounds/tx_ultimate/${sound_theme}/clic.flac
       - id: sound_long_press
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/long_press.flac
+        file: sounds/tx_ultimate/${sound_theme}/long_press.flac
       - id: sound_multi_press
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/multi_press.flac        
+        file: sounds/tx_ultimate/${sound_theme}/multi_press.flac        
       - id: sound_slide
-        file: https://github.com/antorfr/esphome-projects/raw/master/sounds/tx_ultimate/${sound_theme}/slide.flac   
+        file: sounds/tx_ultimate/${sound_theme}/slide.flac   
 
 i2s_audio:
   - id: i2s_output
