@@ -220,6 +220,7 @@ sensor:
     active_power_a:
       id: power1
       name: "Power ${relay1_name}"
+      accuracy_decimals: 1
       filters:
         - multiply: -1
         - lambda: |-
@@ -249,6 +250,7 @@ sensor:
     active_power_a:
       id: power2
       name: "Power ${relay2_name}"
+      accuracy_decimals: 1
       filters:
         - multiply: -1
         - lambda: |-

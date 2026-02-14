@@ -105,6 +105,7 @@ sensor:
       state_class: measurement
       device_class: power
       id: "power_wattage"
+      accuracy_decimals: 1
       icon: mdi:gauge
       filters:
         # Map from sensor -> measured value

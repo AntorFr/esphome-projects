@@ -87,6 +87,7 @@ sensor:
     power:
       name: Power
       id: sensor_power
+      accuracy_decimals: 1
     frequency:
       name: Frequency
       id: sensor_frequency

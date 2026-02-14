@@ -547,14 +547,22 @@ media_player:
       #sample_rate: 48000
 
     files:
-      - id: sound_clic
-        file: sounds/tx_ultimate/${sound_theme}/clic.flac
-      - id: sound_long_press
-        file: sounds/tx_ultimate/${sound_theme}/long_press.flac
-      - id: sound_multi_press
-        file: sounds/tx_ultimate/${sound_theme}/multi_press.flac        
-      - id: sound_slide
-        file: sounds/tx_ultimate/${sound_theme}/slide.flac   
+      - id: sound_clic_explore
+        file: sounds/tx_ultimate/explore_the_stars/clic.flac
+#      - id: sound_clic_christmas
+#        file: sounds/tx_ultimate/christmas/clic.flac
+      - id: sound_long_press_explore
+        file: sounds/tx_ultimate/explore_the_stars/long_press.flac
+#      - id: sound_long_press_christmas
+#        file: sounds/tx_ultimate/christmas/long_press.flac
+      - id: sound_multi_press_explore
+        file: sounds/tx_ultimate/explore_the_stars/multi_press.flac
+#      - id: sound_multi_press_christmas
+#        file: sounds/tx_ultimate/christmas/multi_press.flac
+      - id: sound_slide_explore
+        file: sounds/tx_ultimate/explore_the_stars/slide.flac
+#      - id: sound_slide_christmas
+#        file: sounds/tx_ultimate/christmas/slide.flac
 
 i2s_audio:
   - id: i2s_output
@@ -597,7 +605,11 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_clic);
+        sound_file: !lambda |-
+          // if (id(sound_theme_select).current_option() == "christmas") {
+          //   return id(sound_clic_christmas);
+          // }
+          return id(sound_clic_explore);
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
 
@@ -607,7 +619,11 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_slide);
+        sound_file: !lambda |-
+          // if (id(sound_theme_select).current_option() == "christmas") {
+          //   return id(sound_slide_christmas);
+          // }
+          return id(sound_slide_explore);
     - binary_sensor.template.publish:
         id: swipe_left
         state: ON
@@ -620,7 +636,11 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_slide);
+        sound_file: !lambda |-
+          // if (id(sound_theme_select).current_option() == "christmas") {
+          //   return id(sound_slide_christmas);
+          // }
+          return id(sound_slide_explore);
     - binary_sensor.template.publish:
         id: swipe_right
         state: ON
@@ -633,7 +653,11 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_multi_press);
+        sound_file: !lambda |-
+          // if (id(sound_theme_select).current_option() == "christmas") {
+          //   return id(sound_multi_press_christmas);
+          // }
+          return id(sound_multi_press_explore);
     - binary_sensor.template.publish:
         id: multi_touch
         state: ON
@@ -646,7 +670,11 @@ tx_ultimate_touch:
     - script.execute:
         id: play_sound
         priority: true
-        sound_file: !lambda return id(sound_long_press);
+        sound_file: !lambda |-
+          // if (id(sound_theme_select).current_option() == "christmas") {
+          //   return id(sound_long_press_christmas);
+          // }
+          return id(sound_long_press_explore);
     - binary_sensor.template.publish:
         id: long_press
         state: ON
@@ -676,6 +704,15 @@ select:
     optimistic: true
     on_value:
       - script.execute: refresh_nightlight
+  - platform: template
+    name: sound theme
+    id: sound_theme_select
+    entity_category: "config"
+    options:
+     - "explore_the_stars"
+  #     - "christmas"
+    initial_option: "explore_the_stars"
+    optimistic: true
 
 script:
   - id: refresh_nightlight
