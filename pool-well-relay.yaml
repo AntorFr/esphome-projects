@@ -47,3 +47,31 @@ logger:
 packages:
   device_base: !include packages/device_base.yaml
   shelly-pro-1-pm: !include packages/shelly-pro-1-pm.yaml
+
+external_components:
+  - source: github://AntorFR/esphome-wellpump-guard
+    components: [auto_cooldown]
+    refresh: 0s
+
+auto_cooldown:
+  id: pump_cooldown
+  power_sensor: power1
+  relay_switch: relay1
+  enable_switch:
+    name: "Auto Cooldown Enabled"
+    restore_mode: RESTORE_DEFAULT_ON
+  cooldown_active_sensor:
+    name: "Pump Cooldown Active"
+    icon: "mdi:timer-off"
+  run_minutes_sensor:
+    name: "Pump Last Run Minutes"
+  pause_minutes_sensor:
+    name: "Pump Last Pause Minutes"
+  cooldown_remaining_sensor:
+    name: "Pump Cooldown Remaining"
+  threshold_w: 100.0
+  run_min_minutes: 5.0
+  run_max_minutes: 60.0
+  pause_at_run_min_minutes: 180.0
+  pause_at_run_max_minutes: 5.0
+  min_restart_pause_minutes: 60.0

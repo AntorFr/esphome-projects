@@ -3,11 +3,11 @@ substitutions:
   friendly_name: "Filtration Piscine"
   area: "Piscine"
 
-  relay1_name: "Filtration"
-  relay1_icon: "mdi:air-filter"
+  relay1_name: "Électrolyse"
+  relay1_icon: "mdi:meter-electric"
 
-  relay2_name: "Électrolyse"
-  relay2_icon: "mdi:meter-electric"
+  relay2_name: "Filtration"
+  relay2_icon: "mdi:air-filter"
 
 esphome:
   name: ${device_name}
