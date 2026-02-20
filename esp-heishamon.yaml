@@ -904,8 +904,10 @@ climate:
   #   supports_heat: false
   #   supports_cool: true
 
-  # DHW (Domestic Hot Water) - as Climate until ESPHome supports water_heater
+# =============================================================================
+# WATER HEATER - DHW (Domestic Hot Water)
+# =============================================================================
+water_heater:
   - platform: heishamon
     heishamon_id: heisha_main
     name: "DHW (Hot Water)"
-    type: water_heater
