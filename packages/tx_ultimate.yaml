@@ -74,10 +74,13 @@ substitutions:
 
 esp32:
   board: esp32dev
-  flash_size: 8MB
+  #flash_size: 8MB
+  
   framework:
     type: esp-idf
     version: recommended
+    advanced:
+      minimum_chip_revision: '3.0'
     sdkconfig_options:
       CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y" # Autoriser mbedTLS à utiliser de la mémoire externe (PSRAM)
       CONFIG_MBEDTLS_SSL_PROTO_TLS1_3: "y"  # TLS1.3 support isn't enabled by default in IDF 5.1.5
@@ -549,20 +552,21 @@ media_player:
     files:
       - id: sound_clic_explore
         file: sounds/tx_ultimate/explore_the_stars/clic.flac
-#      - id: sound_clic_christmas
-#        file: sounds/tx_ultimate/christmas/clic.flac
+      - id: sound_clic_christmas
+        file: https://raw.githubusercontent.com/AntorFr/esphome-projects/refs/heads/master/sounds/tx_ultimate/christmas/clic.flac
       - id: sound_long_press_explore
         file: sounds/tx_ultimate/explore_the_stars/long_press.flac
-#      - id: sound_long_press_christmas
-#        file: sounds/tx_ultimate/christmas/long_press.flac
+      - id: sound_long_press_christmas
+        file: https://raw.githubusercontent.com/AntorFr/esphome-projects/refs/heads/master/sounds/tx_ultimate/christmas/long_press.flac
       - id: sound_multi_press_explore
         file: sounds/tx_ultimate/explore_the_stars/multi_press.flac
-#      - id: sound_multi_press_christmas
-#        file: sounds/tx_ultimate/christmas/multi_press.flac
+      - id: sound_multi_press_christmas
+        file: https://raw.githubusercontent.com/AntorFr/esphome-projects/refs/heads/master/sounds/tx_ultimate/christmas/multi_press.flac
       - id: sound_slide_explore
         file: sounds/tx_ultimate/explore_the_stars/slide.flac
-#      - id: sound_slide_christmas
-#        file: sounds/tx_ultimate/christmas/slide.flac
+      - id: sound_slide_christmas
+        file: https://raw.githubusercontent.com/AntorFr/esphome-projects/refs/heads/master/sounds/tx_ultimate/christmas/slide.flac
+
 
 i2s_audio:
   - id: i2s_output
@@ -580,14 +584,14 @@ uart:
   data_bits: 8
   stop_bits: 1
   parity: NONE
-  debug:
-    direction: RX
-    dummy_receiver: false
-    after:
-      timeout: 2s
-      bytes: 2048
-    sequence:
-      - lambda: UARTDebug::log_hex(direction, bytes, ' ');
+  #debug:
+  #  direction: RX
+  #  dummy_receiver: false
+  #  after:
+  #    timeout: 2s
+  #    bytes: 2048
+  #  sequence:
+  #    - lambda: UARTDebug::log_hex(direction, bytes, ' ');
 
 tx_ultimate_touch:
   id: tx_touch
@@ -606,9 +610,9 @@ tx_ultimate_touch:
         id: play_sound
         priority: true
         sound_file: !lambda |-
-          // if (id(sound_theme_select).current_option() == "christmas") {
-          //   return id(sound_clic_christmas);
-          // }
+          if (id(sound_theme_select).current_option() == "christmas") {
+            return id(sound_clic_christmas);
+          }
           return id(sound_clic_explore);
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
@@ -620,9 +624,9 @@ tx_ultimate_touch:
         id: play_sound
         priority: true
         sound_file: !lambda |-
-          // if (id(sound_theme_select).current_option() == "christmas") {
-          //   return id(sound_slide_christmas);
-          // }
+          if (id(sound_theme_select).current_option() == "christmas") {
+            return id(sound_slide_christmas);
+          }
           return id(sound_slide_explore);
     - binary_sensor.template.publish:
         id: swipe_left
@@ -637,9 +641,9 @@ tx_ultimate_touch:
         id: play_sound
         priority: true
         sound_file: !lambda |-
-          // if (id(sound_theme_select).current_option() == "christmas") {
-          //   return id(sound_slide_christmas);
-          // }
+          if (id(sound_theme_select).current_option() == "christmas") {
+            return id(sound_slide_christmas);
+          }
           return id(sound_slide_explore);
     - binary_sensor.template.publish:
         id: swipe_right
@@ -654,9 +658,9 @@ tx_ultimate_touch:
         id: play_sound
         priority: true
         sound_file: !lambda |-
-          // if (id(sound_theme_select).current_option() == "christmas") {
-          //   return id(sound_multi_press_christmas);
-          // }
+          if (id(sound_theme_select).current_option() == "christmas") {
+            return id(sound_multi_press_christmas);
+          }
           return id(sound_multi_press_explore);
     - binary_sensor.template.publish:
         id: multi_touch
@@ -671,9 +675,9 @@ tx_ultimate_touch:
         id: play_sound
         priority: true
         sound_file: !lambda |-
-          // if (id(sound_theme_select).current_option() == "christmas") {
-          //   return id(sound_long_press_christmas);
-          // }
+          if (id(sound_theme_select).current_option() == "christmas") {
+            return id(sound_long_press_christmas);
+          }
           return id(sound_long_press_explore);
     - binary_sensor.template.publish:
         id: long_press
@@ -710,7 +714,7 @@ select:
     entity_category: "config"
     options:
      - "explore_the_stars"
-  #     - "christmas"
+     - "christmas"
     initial_option: "explore_the_stars"
     optimistic: true
 
