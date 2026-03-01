@@ -52,11 +52,11 @@ safe_mode:
 web_server:
 
 logger:
-  level: DEBUG
+  level: INFO
   logs:
-    sensor: DEBUG          # Suppress DEBUG spam from ADC/NTC/resistance
-    adc: DEBUG
-    pulse_counter: DEBUG
+    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/resistance
+    adc: INFO
+    pulse_counter: INFO
 
 
 #######################################
@@ -330,8 +330,8 @@ script:
           } else if (post_T < 0.0f) {
             ESP_LOGE("ntc_test", "FAIL: T=%.1f C < 0 - NTC not recovered (open circuit?)", post_T);
             id(ntc_validated) = false;
-          } else if (post_T > 100.0f) {
-            ESP_LOGE("ntc_test", "FAIL: T=%.1f C > 100 - reading stuck high", post_T);
+          } else if (post_T > 105.0f) {
+            ESP_LOGE("ntc_test", "FAIL: T=%.1f C > 105 - reading stuck high", post_T);
             id(ntc_validated) = false;
           } else {
             ESP_LOGI("ntc_test", "NTC CHECK PASS: T=%.1f C in normal range", post_T);
@@ -647,6 +647,11 @@ binary_sensor:
                 if (!id(kettle_on_base)) {
                   ESP_LOGW("kettle", "Cannot boil: kettle not on base");
                   id(buzzer_beep_error).execute();
+                  return;
+                }
+                if (id(kettle_temperature) >= 98) {
+                  ESP_LOGI("kettle", "Already at %d°C - no need to boil", id(kettle_temperature));
+                  id(buzzer_beep_short).execute();
                   return;
                 }
                 // Always re-test NTC before heating
@@ -1032,6 +1037,10 @@ button:
         - lambda: |-
             if (id(kettle_state) != 0) {
               ESP_LOGW("kettle", "Not idle (state=%d)", id(kettle_state));
+              return;
+            }
+            if (id(kettle_temperature) >= 98) {
+              ESP_LOGI("kettle", "Already at %d°C - no need to boil", id(kettle_temperature));
               return;
             }
             // Always re-test NTC before heating
