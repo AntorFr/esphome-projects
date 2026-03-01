@@ -30,25 +30,35 @@ logger:
   level: DEBUG
 
 
-# Import packages from GitHub
+# Import packages from GitHub (refresh: 0s = always fetch latest)
 packages:
-  esphome_dial:
-    remote_package_files:
-      url: https://github.com/antorfr/esphome-dial
-      files:
-        - packages/m5stack_dial.yaml
-        - packages/dial_menu_lvgl.yaml
-        - packages/french_fonts.yaml
-      ref: main
-      refresh: 0s
+  m5stack_dial:
+    url: https://github.com/antorfr/esphome-dial
+    file: packages/m5stack_dial.yaml
+    ref: main
+    refresh: 0s
+  dial_menu_lvgl:
+    url: https://github.com/antorfr/esphome-dial
+    file: packages/dial_menu_lvgl.yaml
+    ref: main
+    refresh: 0s
+  french_fonts:
+    url: https://github.com/antorfr/esphome-dial
+    file: packages/french_fonts.yaml
+    ref: main
+    refresh: 0s
   device_base:
     url: https://github.com/AntorFr/esphome-projects
     file: packages/device_base.yaml
 
-# Import the dial_menu component from GitHub
+
+# Import components from GitHub (refresh: 0s = always fetch latest)
 external_components:
-  - source: github://antorfr/esphome-dial@main
-    components: [dial_menu, homeassistant_media_player, homeassistant_climate]
+  - source:
+      type: git
+      url: https://github.com/antorfr/esphome-dial
+      ref: main
+    components: [dial_menu, homeassistant_addon]
     refresh: 0s
 
 time:
@@ -79,18 +89,24 @@ binary_sensor:
         then:
           - lambda: id(menu_controller).on_long_press();
 
-homeassistant_media_player:
-  - id: media_player_ma_bureau
-    entity_id: media_player.ma_bureau
+homeassistant_addon:
+  media_players:
+    - id: media_player_ma_bureau
+      entity_id: media_player.ma_bureau
 
-homeassistant_climate:
-  - id: climate_mobile_heater
+climate:
+  - platform: homeassistant_addon
+    id: climate_mobile_heater
     entity_id: climate.mobile_heater_plug_thermostat
+    name: "Chauffage Mobile"
+    internal: False
 
 cover:
-  - platform: homeassistant
+  - platform: homeassistant_addon
     id: cover_portail_2
     entity_id: cover.portail_2
+    name: "Portail"
+    internal: False
 
 # === Test Switches ===
 switch:
