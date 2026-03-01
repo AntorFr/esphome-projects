@@ -793,6 +793,10 @@ sensor:
     on_value:
       then:
         - lambda: |-
+            // Rotary only active in IDLE and KEEP_WARM
+            int state = id(kettle_state);
+            if (state != 0 && state != 1) return;
+            
             id(last_activity_time) = millis();
             id(last_rotary_time) = millis();
             float step = 1;
@@ -1138,17 +1142,17 @@ display:
           it.printf("%2d", cur_temp);
           showing_measured = true;
         } else {
-          it.printf("%2d", target);
-          showing_measured = false;
+          it.set_raw(0, 0x40);  // '-'
+          it.set_raw(1, 0x40);  // '-'
         }
         break;
-      case 2:  // BOILING - alternate current/target every 2s
-        if ((millis() / 2000) % 2 == 0 && cur_temp > 0) {
+      case 2:  // BOILING - always show measured temp
+        if (cur_temp > 0) {
           it.printf("%2d", cur_temp);
           showing_measured = true;
         } else {
-          it.printf("%2d", target);
-          showing_measured = false;
+          it.set_raw(0, 0x40);  // '-'
+          it.set_raw(1, 0x40);  // '-'
         }
         break;
       case 5:  // ERROR - flash "Er"
