@@ -600,7 +600,7 @@ script:
             }
               
             case 2:  // BOILING (full power to ~100°C then stop)
-              if (cur_temp >= 98) {
+              if (cur_temp >= 99) {
                 id(heater_switch_triac).turn_off();
                 id(heater_switch_relay).turn_off();
                 id(kettle_state) = 0;  // Always IDLE after boil
@@ -649,7 +649,7 @@ binary_sensor:
                   id(buzzer_beep_error).execute();
                   return;
                 }
-                if (id(kettle_temperature) >= 98) {
+                if (id(kettle_temperature) >= 99) {
                   ESP_LOGI("kettle", "Already at %d°C - no need to boil", id(kettle_temperature));
                   id(buzzer_beep_short).execute();
                   return;
@@ -1039,7 +1039,7 @@ button:
               ESP_LOGW("kettle", "Not idle (state=%d)", id(kettle_state));
               return;
             }
-            if (id(kettle_temperature) >= 98) {
+            if (id(kettle_temperature) >= 99) {
               ESP_LOGI("kettle", "Already at %d°C - no need to boil", id(kettle_temperature));
               return;
             }
