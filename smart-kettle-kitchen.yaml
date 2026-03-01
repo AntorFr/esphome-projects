@@ -415,22 +415,27 @@ script:
             id(kettle_state_text).publish_state("Unknown");
 
   # Triac ON (modulation) - relay must already be ON from heating start
-  # Respects heater_enabled substitution
+  # Respects heater_enabled substitution, skips if already ON
   - id: heater_on
     mode: single
     then:
       - if:
           condition:
-            lambda: 'return strcmp("${heater_enabled}", "true") == 0;'
+            lambda: 'return strcmp("${heater_enabled}", "true") == 0 && !id(heater_switch_triac).state;'
           then:
             - switch.turn_on: heater_switch_triac
 
   # Triac OFF (modulation) - relay stays ON for next modulation cycle
   # Always executes regardless of heater_enabled (safety: always allow OFF)
+  # Skips if already OFF to avoid log spam
   - id: heater_off
     mode: single
     then:
-      - switch.turn_off: heater_switch_triac
+      - if:
+          condition:
+            lambda: 'return id(heater_switch_triac).state;'
+          then:
+            - switch.turn_off: heater_switch_triac
 
   # Main control loop - triggered by NTC temperature updates (event-driven, every ~1s)
   - id: control_loop
@@ -815,7 +820,7 @@ sensor:
     id: ntc_temperature
     sensor: resistance_sensor_temperature
     calibration:
-      b_constant: 3950
+      b_constant: 4230
       reference_temperature: 25°C
       reference_resistance: 10kOhm
     name: "NTC Temperature"
