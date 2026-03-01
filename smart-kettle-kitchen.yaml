@@ -52,6 +52,9 @@ web_server:
 
 logger:
   level: DEBUG
+  logs:
+    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/pulse_counter
+    adc: INFO
 
 
 #######################################
@@ -641,18 +644,43 @@ binary_sensor:
   - platform: gpio
     pin: GPIO34
     name: "Unknown 34"
+    id: unknown_gpio34
+    on_state:
+      then:
+        - lambda: |-
+            ESP_LOGW("gpio", ">>> GPIO34 changed: %s", x ? "ON" : "OFF");
   - platform: gpio
     pin: GPIO35
     name: "Unknown 35"
+    id: unknown_gpio35
+    on_state:
+      then:
+        - lambda: |-
+            ESP_LOGW("gpio", ">>> GPIO35 changed: %s", x ? "ON" : "OFF");
   - platform: gpio
     pin: GPIO32
     name: "Unknown 32"
+    id: unknown_gpio32
+    on_state:
+      then:
+        - lambda: |-
+            ESP_LOGW("gpio", ">>> GPIO32 changed: %s", x ? "ON" : "OFF");
   - platform: gpio
     pin: GPIO25
     name: "Unknown 25"
+    id: unknown_gpio25
+    on_state:
+      then:
+        - lambda: |-
+            ESP_LOGW("gpio", ">>> GPIO25 changed: %s", x ? "ON" : "OFF");
   - platform: gpio
     pin: GPIO14
     name: "Unknown 14"
+    id: unknown_gpio14
+    on_state:
+      then:
+        - lambda: |-
+            ESP_LOGW("gpio", ">>> GPIO14 changed: %s", x ? "ON" : "OFF");
   # NTC-based presence detection (template binary sensor for HA)
   - platform: template
     id: kettle_presence
@@ -755,7 +783,7 @@ sensor:
     id: adc_sensor_temperature
     pin: GPIO36
     attenuation: 12db
-    update_interval: 10s
+    update_interval: 1s
     samples: 64
     internal: true
 
@@ -873,6 +901,24 @@ switch:
     id: heater_switch_triac
     internal: true
     restore_mode: ALWAYS_OFF
+  # Debug: toggle error state ON/OFF to test GPIO14 correlation
+  - platform: template
+    name: "Force Error Mode"
+    id: force_error_switch
+    icon: "mdi:alert-circle"
+    optimistic: true
+    turn_on_action:
+      - lambda: |-
+          id(kettle_state) = 5;
+          id(kettle_fault) = 99;
+          ESP_LOGW("debug", "Error mode FORCED ON");
+          id(on_state_change).execute();
+    turn_off_action:
+      - lambda: |-
+          id(kettle_state) = 0;
+          id(kettle_fault) = 0;
+          ESP_LOGW("debug", "Error mode FORCED OFF");
+          id(on_state_change).execute();
 
 button:
   - platform: template
