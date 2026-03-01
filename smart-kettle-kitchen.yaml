@@ -2,6 +2,7 @@ substitutions:
   device_name: smart-kettle-kitchen
   friendly_name: "Bouilloire"
   area: "Cuisine"
+  heater_enabled: "true"    # Master switch: "false" = dry-run, "true" = real heating
 
 esphome:
   name: ${device_name}
@@ -53,8 +54,9 @@ web_server:
 logger:
   level: DEBUG
   logs:
-    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/pulse_counter
+    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/resistance
     adc: INFO
+    pulse_counter: INFO
 
 
 #######################################
@@ -106,8 +108,20 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  # Fault code: 0=none, 1=overheat, 2=max_time, 3=dry_fire
+  # Fault code: 0=none, 1=overheat, 2=max_time, 3=dry_fire, 4=ntc_test_fail, 5=ntc_watchdog, 6=rate_of_rise
   - id: kettle_fault
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  # Last NTC update timestamp (for watchdog: >5s without update → kill heater)
+  - id: last_ntc_update
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+  # Previous temperature reading (for rate of rise detection)
+  - id: prev_temperature
     type: int
     restore_value: no
     initial_value: '0'
@@ -277,8 +291,8 @@ script:
             - output.turn_off: buzzer_output
             - delay: 200ms
 
-  # NTC pre-heat test: perturb analog chain via Q5 (GPIO12), then verify recovery
-  # Flow: check on_base → GPIO12 ON (perturb) → GPIO12 OFF → read ADC → validate normal range
+  # NTC pre-heat test: perturb analog chain via Q5 (GPIO12), verify recovery, check zero-cross
+  # Flow: check on_base → GPIO12 ON (perturb) → GPIO12 OFF → read ADC → validate → check 50Hz
   - id: ntc_pre_heat_test
     mode: single
     then:
@@ -296,7 +310,7 @@ script:
           }
           
           id(ntc_test_running) = true;
-          ESP_LOGI("ntc_test", "=== NTC PRE-HEAT TEST START ===");
+          ESP_LOGI("ntc_test", "=== PRE-HEAT TEST START ===");
       - switch.turn_on: ntc_test_switch
       - delay: 100ms
       - switch.turn_off: ntc_test_switch
@@ -320,29 +334,58 @@ script:
             ESP_LOGE("ntc_test", "FAIL: T=%.1f C > 100 - reading stuck high", post_T);
             id(ntc_validated) = false;
           } else {
-            ESP_LOGI("ntc_test", "CHECK PASS: T=%.1f C in normal range", post_T);
+            ESP_LOGI("ntc_test", "NTC CHECK PASS: T=%.1f C in normal range", post_T);
             id(ntc_validated) = true;
           }
           id(ntc_test_running) = false;
-          
+      - lambda: |-
+          // STEP 2: Zero-cross check (GPIO33 must read ~50Hz when mains powered)
+          if (!id(ntc_validated)) {
+            // NTC already failed, skip zero-cross
+          } else {
+            float freq = id(gpio33_frequency).state;
+            ESP_LOGW("ntc_test", "ZERO-CROSS: GPIO33=%.1f Hz (expected ~50Hz)");
+            if (std::isnan(freq) || freq < 40.0f || freq > 65.0f) {
+              ESP_LOGE("ntc_test", "FAIL: zero-cross %.1f Hz out of range [40-65] - mains/circuit issue", freq);
+              id(ntc_validated) = false;
+            } else {
+              ESP_LOGI("ntc_test", "ZERO-CROSS PASS: %.1f Hz", freq);
+            }
+          }
+      - lambda: |-
+          // STEP 3: Result and auto-start
           if (id(ntc_validated)) {
-            ESP_LOGI("ntc_test", "=== NTC TEST PASS ===");
+            ESP_LOGI("ntc_test", "=== PRE-HEAT TEST PASS ===");
             int pending = id(pending_heat_mode);
             id(pending_heat_mode) = 0;
             if (pending == 2) {
+              // Relay ON once (triac modulated by control_loop)
+              if (strcmp("${heater_enabled}", "true") == 0) {
+                id(heater_switch_relay).turn_on();
+                ESP_LOGI("heater", "Relay ON for BOIL");
+              } else {
+                ESP_LOGW("heater", "Relay ON skipped (dry-run)");
+              }
               id(kettle_state) = 2;
               id(boil_start_time) = millis();
               id(temp_at_start) = id(kettle_temperature);
-              ESP_LOGI("kettle", "BOIL started at %d°C (post NTC test)", id(kettle_temperature));
+              ESP_LOGI("kettle", "BOIL started at %d°C (post test)", id(kettle_temperature));
               id(buzzer_beep_short).execute();
               id(on_state_change).execute();
             } else if (pending == 1) {
+              // Relay ON once (triac modulated by control_loop)
+              if (strcmp("${heater_enabled}", "true") == 0) {
+                id(heater_switch_relay).turn_on();
+                ESP_LOGI("heater", "Relay ON for KEEP_WARM");
+              } else {
+                ESP_LOGW("heater", "Relay ON skipped (dry-run)");
+              }
               id(kettle_state) = 1;
               id(target_reached) = false;
               id(boil_start_time) = millis();
               id(temp_at_start) = id(kettle_temperature);
               id(keep_warm_start_time) = millis();
-              ESP_LOGI("kettle", "KEEP_WARM to %d°C at %d°C (post NTC test)",
+              ESP_LOGI("kettle", "KEEP_WARM to %d°C at %d°C (post test)",
                        id(kettle_target_temperature), id(kettle_temperature));
               id(buzzer_beep_short).execute();
               id(on_state_change).execute();
@@ -353,7 +396,7 @@ script:
             id(pending_heat_mode) = 0;
             id(kettle_state) = 5;
             id(kettle_fault) = 4;
-            ESP_LOGE("ntc_test", "=== NTC TEST FAIL - heating blocked ===");
+            ESP_LOGE("ntc_test", "=== PRE-HEAT TEST FAIL - heating blocked ===");
             id(on_state_change).execute();
             id(buzzer_beep_error).execute();
           }
@@ -371,6 +414,24 @@ script:
           else
             id(kettle_state_text).publish_state("Unknown");
 
+  # Triac ON (modulation) - relay must already be ON from heating start
+  # Respects heater_enabled substitution
+  - id: heater_on
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: 'return strcmp("${heater_enabled}", "true") == 0;'
+          then:
+            - switch.turn_on: heater_switch_triac
+
+  # Triac OFF (modulation) - relay stays ON for next modulation cycle
+  # Always executes regardless of heater_enabled (safety: always allow OFF)
+  - id: heater_off
+    mode: single
+    then:
+      - switch.turn_off: heater_switch_triac
+
   # Main control loop - triggered by NTC temperature updates (event-driven, every ~1s)
   - id: control_loop
     mode: single
@@ -382,6 +443,39 @@ script:
           int target = id(kettle_target_temperature);
           
           // === SAFETY CHECKS (always active) ===
+          
+          // NTC watchdog: no update in >5s → kill heater
+          if (state != 0 && state != 5) {
+            if (id(last_ntc_update) > 0 && millis() - id(last_ntc_update) > 5000) {
+              id(heater_switch_triac).turn_off();
+              id(heater_switch_relay).turn_off();
+              id(kettle_state) = 5;
+              id(kettle_fault) = 5;
+              ESP_LOGE("safety", "NTC WATCHDOG: no update in >5s - emergency stop!");
+              id(buzzer_alarm).execute();
+              id(on_state_change).execute();
+              return;
+            }
+          }
+          
+          // Rate of rise: >10°C/s → sensor malfunction
+          if (state != 0 && state != 5) {
+            int delta_temp = cur_temp - id(prev_temperature);
+            if (abs(delta_temp) > 10) {
+              id(heater_switch_triac).turn_off();
+              id(heater_switch_relay).turn_off();
+              id(kettle_state) = 5;
+              id(kettle_fault) = 6;
+              ESP_LOGE("safety", "RATE OF RISE: %d°C/s (prev=%d, cur=%d) - sensor fault!",
+                       delta_temp, id(prev_temperature), cur_temp);
+              id(buzzer_alarm).execute();
+              id(on_state_change).execute();
+              return;
+            }
+          }
+          
+          // Update prev_temperature for next cycle
+          id(prev_temperature) = cur_temp;
           
           // Overheat protection (105°C)
           if (cur_temp > 105) {
@@ -448,8 +542,8 @@ script:
             case 1: {  // KEEP_WARM (unified: heat to target + maintain)
               // 30min total timeout from button press
               if (millis() - id(keep_warm_start_time) > 1800000) {
-                id(heater_switch_relay).turn_off();
                 id(heater_switch_triac).turn_off();
+                id(heater_switch_relay).turn_off();
                 id(kettle_state) = 0;
                 ESP_LOGI("kettle", "Keep-warm timeout (30min)");
                 id(buzzer_beep_done).execute();
@@ -459,8 +553,7 @@ script:
               // Check if target reached for the first time
               if (!id(target_reached) && cur_temp >= target) {
                 id(target_reached) = true;
-                id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
+                id(heater_off).execute();
                 ESP_LOGI("kettle", "Target %d°C reached - maintaining", target);
                 id(buzzer_beep_done).execute();
                 break;
@@ -470,34 +563,32 @@ script:
               int delta = target - cur_temp;
               if (delta <= 0) {
                 // At or above target: heater off
-                id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
+                id(heater_off).execute();
               } else {
                 // Heater on, power proportional to delta
-                // id(heater_switch_relay).turn_on();  // DISABLED FOR SAFETY TESTING
                 // Power level: delta>10=100%, >5=70%, >2=40%, <=2=20%
                 // For now using simple pulse approach (will be replaced by burst-control)
                 if (delta <= 2) {
                   // 20% - very gentle
                   if ((millis() / 1000) % 5 == 0)
-                    {}// id(heater_switch_triac).turn_on();  // DISABLED FOR SAFETY TESTING
+                    id(heater_on).execute();
                   else
-                    id(heater_switch_triac).turn_off();
+                    id(heater_off).execute();
                 } else if (delta <= 5) {
                   // 40%
                   if ((millis() / 1000) % 5 < 2)
-                    {}// id(heater_switch_triac).turn_on();  // DISABLED FOR SAFETY TESTING
+                    id(heater_on).execute();
                   else
-                    id(heater_switch_triac).turn_off();
+                    id(heater_off).execute();
                 } else if (delta <= 10) {
                   // 70%
                   if ((millis() / 1000) % 10 < 7)
-                    {}// id(heater_switch_triac).turn_on();  // DISABLED FOR SAFETY TESTING
+                    id(heater_on).execute();
                   else
-                    id(heater_switch_triac).turn_off();
+                    id(heater_off).execute();
                 } else {
                   // 100% - full power
-                  {}// id(heater_switch_triac).turn_on();  // DISABLED FOR SAFETY TESTING
+                  id(heater_on).execute();
                 }
               }
               break;
@@ -505,20 +596,19 @@ script:
               
             case 2:  // BOILING (full power to ~100°C then stop)
               if (cur_temp >= 98) {
-                id(heater_switch_relay).turn_off();
                 id(heater_switch_triac).turn_off();
+                id(heater_switch_relay).turn_off();
                 id(kettle_state) = 0;  // Always IDLE after boil
                 ESP_LOGI("kettle", "Boil complete at %d°C", cur_temp);
                 id(buzzer_beep_done).execute();
               } else {
-                // id(heater_switch_relay).turn_on();  // DISABLED FOR SAFETY TESTING
-                // id(heater_switch_triac).turn_on();  // DISABLED FOR SAFETY TESTING
+                id(heater_on).execute();
               }
               break;
               
-            case 5:  // ERROR
-              id(heater_switch_relay).turn_off();
+            case 5:  // ERROR - ensure everything is OFF
               id(heater_switch_triac).turn_off();
+              id(heater_switch_relay).turn_off();
               break;
           }
           
@@ -732,6 +822,9 @@ sensor:
             // Skip NTC processing during test (prevents false presence detection + temp corruption)
             if (id(ntc_test_running)) return;
             
+            // Update NTC watchdog timestamp
+            id(last_ntc_update) = millis();
+            
             if (!std::isnan(x)) {
               id(kettle_temperature) = (int)x;
             }
@@ -787,9 +880,10 @@ sensor:
     samples: 64
     internal: true
 
-    # Test pulse counter sur GPIO33
+    # Test pulse counter sur GPIO33 (zero-cross detection)
   - platform: pulse_counter
     pin: GPIO33
+    id: gpio33_frequency
     name: "GPIO33 Frequency"
     unit_of_measurement: "Hz"
     accuracy_decimals: 1
