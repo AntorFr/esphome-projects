@@ -54,9 +54,9 @@ web_server:
 logger:
   level: DEBUG
   logs:
-    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/resistance
-    adc: INFO
-    pulse_counter: INFO
+    sensor: DEBUG          # Suppress DEBUG spam from ADC/NTC/resistance
+    adc: DEBUG
+    pulse_counter: DEBUG
 
 
 #######################################
@@ -824,7 +824,7 @@ sensor:
       reference_temperature: 25°C
       reference_resistance: 10kOhm
     name: "NTC Temperature"
-    internal: true
+    #internal: true
     on_value:
       then:
         - lambda: |-
@@ -880,14 +880,14 @@ sensor:
     reference_voltage: 3.3V
     resistor: 10kOhm
     name: "NTC Resistance Sensor"
-    internal: true
+    #internal: true
   - platform: adc
     id: adc_sensor_temperature
     pin: GPIO36
     attenuation: 12db
     update_interval: 1s
     samples: 64
-    internal: true
+    #internal: true
 
     # Test pulse counter sur GPIO33 (zero-cross detection)
   - platform: pulse_counter
@@ -1125,6 +1125,7 @@ display:
     // Convention: °C shown only when displaying actual measured temperature
     //             °C hidden when displaying target temperature (user setting)
     bool showing_measured = false;
+    int display_temp = std::min(cur_temp, 99);   // Cap to 2 digits
     switch (state) {
       case 0:  // IDLE
         // Rotary recently moved -> show target temp (no °C)
@@ -1132,7 +1133,7 @@ display:
           it.printf("%2d", target);
           showing_measured = false;
         } else if (on_base && cur_temp > 0) {
-          it.printf("%2d", cur_temp);
+          it.printf("%2d", display_temp);
           showing_measured = true;
         } else {
           it.set_raw(0, 0x40);  // '-'
@@ -1144,7 +1145,7 @@ display:
           it.printf("%2d", target);
           showing_measured = false;
         } else if (cur_temp > 0) {
-          it.printf("%2d", cur_temp);
+          it.printf("%2d", display_temp);
           showing_measured = true;
         } else {
           it.set_raw(0, 0x40);  // '-'
@@ -1153,7 +1154,7 @@ display:
         break;
       case 2:  // BOILING - always show measured temp
         if (cur_temp > 0) {
-          it.printf("%2d", cur_temp);
+          it.printf("%2d", display_temp);
           showing_measured = true;
         } else {
           it.set_raw(0, 0x40);  // '-'
