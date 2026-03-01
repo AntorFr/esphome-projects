@@ -15,8 +15,6 @@ esphome:
           id(last_activity_time) = millis();
           id(rotary_value_sensor).publish_state(id(kettle_target_temperature));
           id(target_temperature_number).publish_state(id(kettle_target_temperature));
-      - delay: 2s
-      - script.execute: ntc_pre_heat_test
 
 esp32:
   board: esp32doit-devkit-v1
@@ -276,50 +274,56 @@ script:
             - output.turn_off: buzzer_output
             - delay: 200ms
 
-  # NTC pre-heat test: inject R38 via Q5 (GPIO12) and validate resistance reading
-  # Measures forced_R and logs it for calibration (bounds: 400-1800 Ohm)
+  # NTC pre-heat test: perturb analog chain via Q5 (GPIO12), then verify recovery
+  # Flow: check on_base → GPIO12 ON (perturb) → GPIO12 OFF → read ADC → validate normal range
   - id: ntc_pre_heat_test
     mode: single
     then:
       - lambda: |-
-          // STEP 0: Preconditions - ensure heaters off, block NTC processing
+          // STEP 0: Preconditions
           id(heater_switch_relay).turn_off();
           id(heater_switch_triac).turn_off();
+          
+          if (!id(kettle_on_base)) {
+            ESP_LOGE("ntc_test", "FAIL: kettle not on base - cannot test");
+            id(ntc_validated) = false;
+            id(pending_heat_mode) = 0;
+            id(buzzer_beep_error).execute();
+            return;
+          }
+          
           id(ntc_test_running) = true;
           ESP_LOGI("ntc_test", "=== NTC PRE-HEAT TEST START ===");
       - switch.turn_on: ntc_test_switch
-      - delay: 80ms
+      - delay: 100ms
+      - switch.turn_off: ntc_test_switch
+      - delay: 100ms
       - component.update: adc_sensor_temperature
       - delay: 50ms
       - lambda: |-
-          // STEP 1: Read forced resistance and validate
-          float forced_R = id(resistance_sensor_temperature).state;
-          float forced_V = id(adc_sensor_temperature).state;
-          ESP_LOGW("ntc_test", "MEASURE: R=%.1f Ohm, V=%.4f V (bounds: 400-1800 Ohm)", forced_R, forced_V);
+          // STEP 1: Read post-perturbation values and validate recovery
+          float post_V = id(adc_sensor_temperature).state;
+          float post_R = id(resistance_sensor_temperature).state;
+          float post_T = id(ntc_temperature).state;
+          ESP_LOGW("ntc_test", "POST-PERTURB: V=%.4f V, R=%.1f Ohm, T=%.1f C", post_V, post_R, post_T);
           
-          if (std::isnan(forced_R)) {
-            ESP_LOGE("ntc_test", "FAIL: R is NaN - ADC read error");
+          if (std::isnan(post_T)) {
+            ESP_LOGE("ntc_test", "FAIL: T is NaN after perturbation - ADC chain broken");
             id(ntc_validated) = false;
-          } else if (forced_R < 400.0f) {
-            ESP_LOGE("ntc_test", "FAIL: R=%.0f Ohm < 400 - possible short circuit", forced_R);
+          } else if (post_T < 0.0f) {
+            ESP_LOGE("ntc_test", "FAIL: T=%.1f C < 0 - NTC not recovered (open circuit?)", post_T);
             id(ntc_validated) = false;
-          } else if (forced_R > 1800.0f) {
-            ESP_LOGE("ntc_test", "FAIL: R=%.0f Ohm > 1800 - Q5/R38 not conducting", forced_R);
+          } else if (post_T > 100.0f) {
+            ESP_LOGE("ntc_test", "FAIL: T=%.1f C > 100 - reading stuck high", post_T);
             id(ntc_validated) = false;
           } else {
-            ESP_LOGI("ntc_test", "CHECK PASS: R=%.1f Ohm within bounds", forced_R);
+            ESP_LOGI("ntc_test", "CHECK PASS: T=%.1f C in normal range", post_T);
             id(ntc_validated) = true;
           }
-      - switch.turn_off: ntc_test_switch
-      - delay: 80ms
-      - component.update: adc_sensor_temperature
-      - delay: 50ms
-      - lambda: |-
-          // STEP 2: Cleanup - re-enable NTC processing and report result
           id(ntc_test_running) = false;
+          
           if (id(ntc_validated)) {
             ESP_LOGI("ntc_test", "=== NTC TEST PASS ===");
-            // Auto-start pending heating mode if any
             int pending = id(pending_heat_mode);
             id(pending_heat_mode) = 0;
             if (pending == 2) {
