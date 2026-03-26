@@ -30,6 +30,25 @@ api:
   reboot_timeout: 15min
   encryption:
     key: !secret api_encryption
+  on_client_disconnected:
+    then:
+      - logger.log: "API disconnected — réactivation du relais en mode backup"
+      - switch.turn_on: button_switch
+
+interval:
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            not:
+              api.connected:
+          then:
+            - if:
+                condition:
+                  switch.is_off: button_switch
+                then:
+                  - logger.log: "API non connectée — réactivation du relais (backup)"
+                  - switch.turn_on: button_switch
 
 ota:
   platform: esphome
