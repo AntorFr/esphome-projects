@@ -16,7 +16,9 @@ esphome:
 esp32:
   board: denky_d4
   framework:
-    type: arduino
+    type: esp-idf
+    advanced:
+      minimum_chip_revision: '3.0'
 
 wifi:
   ssid: !secret wifi_ssid
@@ -59,14 +61,15 @@ uart:
     number: GPIO8
     ignore_pin_validation_error: true #Fix required to solve Pin validation broken by 2024.6 
   tx_pin: GPIO1
-  baud_rate: 1200
+  baud_rate: 9600           # Mode standard (était 1200)
   parity: EVEN
   data_bits: 7
+  rx_buffer_size: 512
 
 teleinfo:
   id: myteleinfo
   update_interval: 5s
-  historical_mode: true
+  historical_mode: false     # Mode standard (était true)
 
 time:
   - platform: homeassistant
@@ -74,9 +77,9 @@ time:
     id: homeassistant_time
 
 light:
-  - platform: neopixelbus
-    type: RGB
-    variant: SK6812
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    chipset: SK6812
     pin: GPIO14
     num_leds: 1
     name: "status"
@@ -84,55 +87,32 @@ light:
 
 #see here for more options: https://gist.github.com/mathieucarbou/886d2a6f5c0b51bb261d6a1329beb08d
 
+#######################################
+# Mapping mode historique → standard  #
+# ISOUSC  → PREF                      #
+# BBRHxxx → EASF01-06                 #
+# IINST   → IRMS1                     #
+# PAPP    → SINSTS                    #
+# PTEC    → NTARF (mappé HCJB etc.)   #
+# ADPS    → (supprimé)                #
+# IMAX    → SMAXSN                    #
+# Nouveau : SINSTI, EAIT, URMS1       #
+#######################################
+
 sensor:
-  # Intensité souscrite
+  # Puissance de référence (remplace ISOUSC)
   - platform: teleinfo
-    id: int_sousc
-    tag_name: "ISOUSC"
-    name: "Intensité souscrite"
-    unit_of_measurement: A
-    device_class: current
+    id: puiss_ref
+    tag_name: "PREF"
+    name: "Puissance de référence"
+    unit_of_measurement: kVA
     state_class: measurement
     icon: mdi:current-ac
     entity_category: diagnostic
 
-  # # Index option Base
-  #- platform: teleinfo
-  #  tag_name: "BASE"
-  #  name: "Linky Index Base"
-  #  unit_of_measurement: kWh
-  #  device_class: energy
-  #  state_class: total_increasing
-  #  icon: mdi:flash
-  #  accuracy_decimals: 2
-  #  filters:
-  #    - multiply: 0.001
-  
-  # Index option HP/HC
-  #- platform: teleinfo
-  #  tag_name: "HCHC"
-  #  name: "Index HC"
-  #  unit_of_measurement: kWh
-  #  device_class: energy
-  #  state_class: total_increasing
-  #  icon: mdi:flash
-  #  accuracy_decimals: 2
-  #  filters:
-  #    - multiply: 0.001
-  #- platform: teleinfo
-  #  tag_name: "HCHP"
-  #  name: "Index HP"
-  #  unit_of_measurement: kWh
-  #  device_class: energy
-  #  state_class: total_increasing
-  #  icon: mdi:flash
-  #  accuracy_decimals: 2
-  #  filters:
-  #    - multiply: 0.001
-
-  # Index option Tempo
+  # Index option Tempo (EASF01-06 remplacent BBRHxxxx)
   - platform: teleinfo
-    tag_name: "BBRHCJB"
+    tag_name: "EASF01"
     id: index_bleu_HC
     name: "Index Tempo Bleu HC"
     unit_of_measurement: kWh
@@ -145,7 +125,7 @@ sensor:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "BBRHPJB"
+    tag_name: "EASF02"
     id: index_bleu_HP
     name: "Index Tempo Bleu HP"
     unit_of_measurement: kWh
@@ -158,7 +138,7 @@ sensor:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "BBRHCJW"
+    tag_name: "EASF03"
     id: index_blanc_HC
     name: "Index Tempo Blanc HC"
     unit_of_measurement: kWh
@@ -171,7 +151,7 @@ sensor:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "BBRHPJW"
+    tag_name: "EASF04"
     id: index_blanc_HP
     name: "Index Tempo Blanc HP"
     unit_of_measurement: kWh
@@ -184,7 +164,7 @@ sensor:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "BBRHCJR"
+    tag_name: "EASF05"
     id: index_rouge_HC
     name: "Index Tempo Rouge HC"
     unit_of_measurement: kWh
@@ -197,7 +177,7 @@ sensor:
     on_value:
       - script.execute: compute_index_total
   - platform: teleinfo
-    tag_name: "BBRHPJR"
+    tag_name: "EASF06"
     id: index_rouge_HP
     name: "Index Tempo Rouge HP"
     unit_of_measurement: kWh
@@ -220,47 +200,69 @@ sensor:
     icon: mdi:transmission-tower-export
     accuracy_decimals: 3
 
-  # Intensité Instantanée (monophasé)
+  # Intensité Instantanée (IRMS1 remplace IINST)
   - platform: teleinfo
-    tag_name: "IINST"
+    tag_name: "IRMS1"
     name: "Intensité Instantanée"
     unit_of_measurement: A
     device_class: current
     state_class: measurement
     icon: mdi:current-ac
-    on_value:
-      - sensor.template.publish:
-          id: puiss_used
-          state: !lambda 'return (x*100)/id(int_sousc).state;'
 
-  # Avertissement de Dépassement De Puissance Souscrite
+  # Tension Instantanée (nouveau en mode standard)
   - platform: teleinfo
-    tag_name: "ADPS"
-    name: "Intensité Instantanée Dépassement"
-    unit_of_measurement: A
-    device_class: current
+    tag_name: "URMS1"
+    name: "Tension Instantanée"
+    unit_of_measurement: V
+    device_class: voltage
     state_class: measurement
-    icon: mdi:current-ac
-    entity_category: diagnostic
+    icon: mdi:sine-wave
 
-  # Intensité maximale appelée (monophasé)
+  # Puissance apparente soutirée (SINSTS remplace PAPP)
   - platform: teleinfo
-    tag_name: "IMAX"
-    name: "Intensité Maximale"
-    unit_of_measurement: A
-    device_class: current
-    state_class: measurement
-    icon: mdi:current-ac
-    entity_category: diagnostic
-
-  # Puissance apparente
-  - platform: teleinfo
-    tag_name: "PAPP"
+    tag_name: "SINSTS"
+    id: puiss_app
     name: "Puissance Apparente"
     unit_of_measurement: VA
     state_class: measurement
     device_class: apparent_power
     icon: mdi:gauge
+    on_value:
+      - sensor.template.publish:
+          id: puiss_used
+          state: !lambda 'return (x * 100.0) / (id(puiss_ref).state * 1000.0);'
+
+  # Puissance apparente injectée (nouveau en mode standard)
+  - platform: teleinfo
+    tag_name: "SINSTI"
+    id: puiss_inj
+    name: "Puissance Injectée"
+    unit_of_measurement: VA
+    state_class: measurement
+    device_class: apparent_power
+    icon: mdi:transmission-tower-import
+
+  # Énergie active injectée totale (nouveau en mode standard)
+  - platform: teleinfo
+    tag_name: "EAIT"
+    name: "Énergie Injectée Totale"
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    icon: mdi:transmission-tower-import
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # Puissance maximale soutirée du jour (remplace IMAX, en VA au lieu de A)
+  - platform: teleinfo
+    tag_name: "SMAXSN"
+    name: "Puissance Maximale du Jour"
+    unit_of_measurement: VA
+    device_class: apparent_power
+    state_class: measurement
+    icon: mdi:gauge
+    entity_category: diagnostic
 
  # Puissance utilisée
   - platform: template
@@ -324,6 +326,75 @@ sensor:
     accuracy_decimals: 4
     lambda: "return ${HCJR_price};"
     entity_category: diagnostic
+
+  # Puissance par mode tarifaire (inchangé)
+  - platform: template
+    id: puiss_bleu_hc
+    name: "Puissance Bleu HC"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HCJB") return id(puiss_app).state;
+      return 0;
+  - platform: template
+    id: puiss_bleu_hp
+    name: "Puissance Bleu HP"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HPJB") return id(puiss_app).state;
+      return 0;
+  - platform: template
+    id: puiss_blanc_hc
+    name: "Puissance Blanc HC"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HCJW") return id(puiss_app).state;
+      return 0;
+  - platform: template
+    id: puiss_blanc_hp
+    name: "Puissance Blanc HP"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HPJW") return id(puiss_app).state;
+      return 0;
+  - platform: template
+    id: puiss_rouge_hc
+    name: "Puissance Rouge HC"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HCJR") return id(puiss_app).state;
+      return 0;
+  - platform: template
+    id: puiss_rouge_hp
+    name: "Puissance Rouge HP"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    icon: mdi:flash
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(raw_price_period).state == "HPJR") return id(puiss_app).state;
+      return 0;
+
   - platform: template
     name: "Prix kWh Rouge HP"
     id: HPJV
@@ -335,27 +406,20 @@ sensor:
     entity_category: diagnostic
 
 text_sensor:
-  # Adresse du compteur
-  #- platform: teleinfo
-  #  tag_name: "ADCO"
-  #  name: "Adresse"
-  #  icon: mdi:information
-  #  entity_category: diagnostic
-  # Option tarifaire choisie
-  #- platform: teleinfo
-  #  tag_name: "OPTARIF"
-  #  name: "Option Tarifaire"
-  #  icon: mdi:information
-  #  entity_category: diagnostic
-  # Période Tarifaire en cours
+  # Période Tarifaire brute (NTARF remplace PTEC, mappé vers mêmes codes)
   - platform: teleinfo
-    tag_name: "PTEC"
+    tag_name: "NTARF"
     id: raw_price_period
     name: "Période Tarifaire brute"
     internal: true
     filters:
     - substitute:
-      - ".. -> "
+      - "01 -> HCJB"
+      - "02 -> HPJB"
+      - "03 -> HCJW"
+      - "04 -> HPJW"
+      - "05 -> HCJR"
+      - "06 -> HPJR"
     on_value:
       - sensor.template.publish:
           id: kwh_price
@@ -368,43 +432,35 @@ text_sensor:
            if( x == "HPJR" ) return ${HPJR_price};
 
   - platform: teleinfo
-    tag_name: "PTEC"
+    tag_name: "NTARF"
     name: "Période Tarifaire"
     icon: mdi:information
     filters:
     - substitute:
-      - ".. -> "
-      - "JB -> "
-      - "JR -> "
-      - "JW -> "
+      - "01 -> HC"
+      - "02 -> HP"
+      - "03 -> HC"
+      - "04 -> HP"
+      - "05 -> HC"
+      - "06 -> HP"
   - platform: teleinfo
-    tag_name: "PTEC"
+    tag_name: "NTARF"
     name: "Couleur actuelle"
     icon: mdi:information
     filters:
     - substitute:
-      - ".. -> "
-      - "HC -> "
-      - "HP -> "
-      - "JB -> bleu"
-      - "JW -> blanc"
-      - "JR -> rouge"
-  # Horaire Heures Pleines Heures Creuses
-  #- platform: teleinfo
-  #  tag_name: "HHPHC"
-  #  name: "Horaire HP/HC"
-  #  icon: mdi:information
-  #  entity_category: diagnostic
-  ## Mot d'état du compteur
-  #- platform: teleinfo
-  #  tag_name: "MOTDETAT"
-  #  name: "Mot d'état"
-  #  icon: mdi:information
-  ## Présence des potentiels
-  #- platform: teleinfo
-  #  tag_name: "PPOT"
-  #  name: "Présence Potentiels"
-  #  icon: mdi:information
+      - "01 -> bleu"
+      - "02 -> bleu"
+      - "03 -> blanc"
+      - "04 -> blanc"
+      - "05 -> rouge"
+      - "06 -> rouge"
+  # Label tarifaire complet (nouveau en mode standard)
+  - platform: teleinfo
+    tag_name: "LTARF"
+    name: "Label Tarifaire"
+    icon: mdi:information
+    entity_category: diagnostic
 
 
 script:
