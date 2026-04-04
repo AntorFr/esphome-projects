@@ -20,14 +20,14 @@ esphome:
 esp32:
   board: esp32doit-devkit-v1
   framework:
-    type: esp-idf # Suggest using the ESP-IDF Framework. Changing from 'arduino' to 'esp-idf' needs a cabled flash to correct partitions
+    type: esp-idf
     version: recommended
 
     sdkconfig_options:
       CONFIG_FREERTOS_UNICORE: y
     advanced:
       ignore_efuse_mac_crc: true
-      ignore_efuse_custom_mac: true  #added in 2024-11 as a fix https://community.home-assistant.io/t/xiaomi-mi-led-desk-lamp-1s-error-integration/787346
+      ignore_efuse_custom_mac: true
 
 wifi:
   ssid: !secret wifi_ssid
@@ -54,7 +54,7 @@ web_server:
 logger:
   level: INFO
   logs:
-    sensor: INFO          # Suppress DEBUG spam from ADC/NTC/resistance
+    sensor: INFO
     adc: INFO
     pulse_counter: INFO
 
@@ -69,6 +69,25 @@ external_components:
       url: https://github.com/AntorFr/esphome-tm1640
       ref: main
     refresh: 0s
+  - source:
+      type: local
+      path: components
+    components: [burst_fire,phase_cut]
+
+burst_fire:
+  id: burst_ctrl
+  zero_cross_pin: GPIO33
+  triac_pin: GPIO23
+  window_size: 10
+  min_edge_interval: 5ms
+
+#phase_cut:
+#  id: burst_ctrl
+#  zero_cross_pin: GPIO33
+#  triac_pin: GPIO23
+#  inverted: true
+#  max_level: 10
+#  min_edge_interval: 5ms
 
 packages:
   device_base: !include packages/device_base.yaml
@@ -298,8 +317,8 @@ script:
     then:
       - lambda: |-
           // STEP 0: Preconditions
+          id(burst_ctrl).stop();
           id(heater_switch_relay).turn_off();
-          id(heater_switch_triac).turn_off();
           
           if (!id(kettle_on_base)) {
             ESP_LOGE("ntc_test", "FAIL: kettle not on base - cannot test");
@@ -339,14 +358,14 @@ script:
           }
           id(ntc_test_running) = false;
       - lambda: |-
-          // STEP 2: Zero-cross check (GPIO33 must read ~50Hz when mains powered)
+          // STEP 2: Zero-cross check (GPIO33 must read ~100Hz = 2 edges per 50Hz cycle)
           if (!id(ntc_validated)) {
             // NTC already failed, skip zero-cross
           } else {
-            float freq = id(gpio33_frequency).state;
-            ESP_LOGW("ntc_test", "ZERO-CROSS: GPIO33=%.1f Hz (expected ~50Hz)");
-            if (std::isnan(freq) || freq < 40.0f || freq > 65.0f) {
-              ESP_LOGE("ntc_test", "FAIL: zero-cross %.1f Hz out of range [40-65] - mains/circuit issue", freq);
+            float freq = id(burst_ctrl).get_zc_frequency();
+            ESP_LOGW("ntc_test", "ZERO-CROSS: %.1f edges/s (expected ~100)", freq);
+            if (freq < 80.0f || freq > 120.0f) {
+              ESP_LOGE("ntc_test", "FAIL: zero-cross %.1f Hz out of range [80-120] - mains/circuit issue", freq);
               id(ntc_validated) = false;
             } else {
               ESP_LOGI("ntc_test", "ZERO-CROSS PASS: %.1f Hz", freq);
@@ -414,29 +433,6 @@ script:
           else
             id(kettle_state_text).publish_state("Unknown");
 
-  # Triac ON (modulation) - relay must already be ON from heating start
-  # Respects heater_enabled substitution, skips if already ON
-  - id: heater_on
-    mode: single
-    then:
-      - if:
-          condition:
-            lambda: 'return strcmp("${heater_enabled}", "true") == 0 && !id(heater_switch_triac).state;'
-          then:
-            - switch.turn_on: heater_switch_triac
-
-  # Triac OFF (modulation) - relay stays ON for next modulation cycle
-  # Always executes regardless of heater_enabled (safety: always allow OFF)
-  # Skips if already OFF to avoid log spam
-  - id: heater_off
-    mode: single
-    then:
-      - if:
-          condition:
-            lambda: 'return id(heater_switch_triac).state;'
-          then:
-            - switch.turn_off: heater_switch_triac
-
   # Main control loop - triggered by NTC temperature updates (event-driven, every ~1s)
   - id: control_loop
     mode: single
@@ -452,7 +448,7 @@ script:
           // NTC watchdog: no update in >5s → kill heater
           if (state != 0 && state != 5) {
             if (id(last_ntc_update) > 0 && millis() - id(last_ntc_update) > 5000) {
-              id(heater_switch_triac).turn_off();
+              id(burst_ctrl).stop();
               id(heater_switch_relay).turn_off();
               id(kettle_state) = 5;
               id(kettle_fault) = 5;
@@ -467,7 +463,7 @@ script:
           if (state != 0 && state != 5) {
             int delta_temp = cur_temp - id(prev_temperature);
             if (abs(delta_temp) > 10) {
-              id(heater_switch_triac).turn_off();
+              id(burst_ctrl).stop();
               id(heater_switch_relay).turn_off();
               id(kettle_state) = 5;
               id(kettle_fault) = 6;
@@ -479,13 +475,16 @@ script:
             }
           }
           
+          // Capture rate of rise before overwriting (used by proportional control)
+          int rate_of_rise = cur_temp - id(prev_temperature);
+          
           // Update prev_temperature for next cycle
           id(prev_temperature) = cur_temp;
           
           // Overheat protection (105°C)
           if (cur_temp > 105) {
+            id(burst_ctrl).stop();
             id(heater_switch_relay).turn_off();
-            id(heater_switch_triac).turn_off();
             id(kettle_state) = 5;
             id(kettle_fault) = 1;
             ESP_LOGE("safety", "OVERHEAT: %d°C - emergency stop!", cur_temp);
@@ -497,8 +496,8 @@ script:
           // Max heating time (10 min) - for BOILING and KEEP_WARM initial heating phase
           if ((state == 2 || (state == 1 && !id(target_reached))) && id(boil_start_time) > 0) {
             if (millis() - id(boil_start_time) > 600000) {
+              id(burst_ctrl).stop();
               id(heater_switch_relay).turn_off();
-              id(heater_switch_triac).turn_off();
               id(kettle_state) = 5;
               id(kettle_fault) = 2;
               ESP_LOGE("safety", "MAX_HEAT_TIME (10min) - emergency stop!");
@@ -511,8 +510,8 @@ script:
           // Kettle removed during operation
           if (state != 0 && state != 5) {
             if (!id(kettle_on_base)) {
+              id(burst_ctrl).stop();
               id(heater_switch_relay).turn_off();
-              id(heater_switch_triac).turn_off();
               id(kettle_state) = 0;
               ESP_LOGW("safety", "Kettle removed - stopping");
               id(on_state_change).execute();
@@ -526,8 +525,8 @@ script:
             if (elapsed > 90000 && cur_temp < 50) {
               int rise = cur_temp - id(temp_at_start);
               if (rise < 3) {
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
                 id(kettle_state) = 5;
                 id(kettle_fault) = 3;
                 ESP_LOGE("safety", "DRY FIRE: +%d°C in %lus", rise, elapsed/1000);
@@ -547,7 +546,7 @@ script:
             case 1: {  // KEEP_WARM (unified: heat to target + maintain)
               // 30min total timeout from button press
               if (millis() - id(keep_warm_start_time) > 1800000) {
-                id(heater_switch_triac).turn_off();
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
                 id(kettle_state) = 0;
                 ESP_LOGI("kettle", "Keep-warm timeout (30min)");
@@ -558,42 +557,54 @@ script:
               // Check if target reached for the first time
               if (!id(target_reached) && cur_temp >= target) {
                 id(target_reached) = true;
-                id(heater_off).execute();
-                ESP_LOGI("kettle", "Target %d°C reached - maintaining", target);
+                id(burst_ctrl).set_power(0);
+                id(heater_switch_relay).turn_off();
+                ESP_LOGI("kettle", "Target %d°C reached - relay OFF, maintaining", target);
                 id(buzzer_beep_done).execute();
                 break;
               }
               
-              // --- Proportional heating (same logic for initial & maintenance) ---
+              // --- Adaptive proportional heating via burst-fire ---
+              // Dynamic coast zone based on rate of rise: fast heating (little water)
+              // stores more thermal energy in element → coast earlier.
+              // K = thermal lag factor calibrated from full-power overshoot tests:
+              //   0.5L → K=16.7, 1L → K=14.8  →  use K=17 (conservative)
               int delta = target - cur_temp;
-              if (delta <= 0) {
-                // At or above target: heater off
-                id(heater_off).execute();
+              const int K = 17;
+              int coast = rate_of_rise * K;
+              if (coast < 2) coast = 2;   // minimum 2°C coast
+              if (coast > 20) coast = 20; // cap for sanity
+              int power;
+              if (delta <= coast) {
+                // Coast zone: let residual heat carry to target
+                power = 0;
+              } else if (delta >= 30) {
+                // Far from target: full power
+                power = 10;
               } else {
-                // Heater on, power proportional to delta
-                // Power level: delta>10=100%, >5=70%, >2=40%, <=2=20%
-                // For now using simple pulse approach (will be replaced by burst-control)
-                if (delta <= 2) {
-                  // 20% - very gentle
-                  if ((millis() / 1000) % 5 == 0)
-                    id(heater_on).execute();
-                  else
-                    id(heater_off).execute();
-                } else if (delta <= 5) {
-                  // 40%
-                  if ((millis() / 1000) % 5 < 2)
-                    id(heater_on).execute();
-                  else
-                    id(heater_off).execute();
-                } else if (delta <= 10) {
-                  // 70%
-                  if ((millis() / 1000) % 10 < 7)
-                    id(heater_on).execute();
-                  else
-                    id(heater_off).execute();
-                } else {
-                  // 100% - full power
-                  id(heater_on).execute();
+                // Linear ramp over effective range
+                int eff = delta - coast;
+                int range = 30 - coast;
+                if (range <= 0) range = 1;
+                power = 1 + eff * 9 / range;
+                if (power > 10) power = 10;
+              }
+              ESP_LOGD("control", "delta=%d rise=%d°C/s coast=%d power=%d/10",
+                       delta, rate_of_rise, coast, power);
+              // Relay must follow power: relay alone leaks current through triac snubber
+              if (power > 0) {
+                if (!id(heater_switch_relay).state) {
+                  if (strcmp("${heater_enabled}", "true") == 0) {
+                    id(heater_switch_relay).turn_on();
+                    ESP_LOGI("heater", "Relay ON (power=%d)", power);
+                  }
+                }
+                id(burst_ctrl).set_power(power);
+              } else {
+                id(burst_ctrl).set_power(0);
+                if (id(heater_switch_relay).state) {
+                  id(heater_switch_relay).turn_off();
+                  ESP_LOGI("heater", "Relay OFF (coast)");
                 }
               }
               break;
@@ -601,18 +612,18 @@ script:
               
             case 2:  // BOILING (full power to ~100°C then stop)
               if (cur_temp >= 99) {
-                id(heater_switch_triac).turn_off();
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
                 id(kettle_state) = 0;  // Always IDLE after boil
                 ESP_LOGI("kettle", "Boil complete at %d°C", cur_temp);
                 id(buzzer_beep_done).execute();
               } else {
-                id(heater_on).execute();
+                id(burst_ctrl).set_power(10);  // Full power
               }
               break;
               
             case 5:  // ERROR - ensure everything is OFF
-              id(heater_switch_triac).turn_off();
+              id(burst_ctrl).stop();
               id(heater_switch_relay).turn_off();
               break;
           }
@@ -669,8 +680,8 @@ binary_sensor:
                 id(on_state_change).execute();
                 break;
               case 2:  // BOILING -> STOP (same button)
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
                 id(kettle_state) = 0;
                 ESP_LOGI("kettle", "Stopped by Boil button");
                 id(buzzer_beep_short).execute();
@@ -726,8 +737,8 @@ binary_sensor:
                 break;
               }
               case 1:  // KEEP_WARM -> STOP (same button)
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
                 id(kettle_state) = 0;
                 ESP_LOGI("kettle", "Stopped by Keep Warm button");
                 id(buzzer_beep_short).execute();
@@ -870,8 +881,8 @@ sensor:
               id(kettle_presence).publish_state(false);
               ESP_LOGW("kettle", "Kettle OFF base (NTC: %.1f°C)", x);
               if (id(kettle_state) != 0) {
+                id(burst_ctrl).stop();
                 id(heater_switch_relay).turn_off();
-                id(heater_switch_triac).turn_off();
                 id(kettle_state) = 0;
                 ESP_LOGW("safety", "Kettle removed - immediate stop!");
                 id(on_state_change).execute();
@@ -894,16 +905,18 @@ sensor:
     samples: 64
     #internal: true
 
-    # Test pulse counter sur GPIO33 (zero-cross detection)
-  - platform: pulse_counter
-    pin: GPIO33
-    id: gpio33_frequency
-    name: "GPIO33 Frequency"
-    unit_of_measurement: "Hz"
-    accuracy_decimals: 1
-    update_interval: 10s
-    filters:
-      - multiply: 0.0166666667   # pulses/min -> Hz
+  # Burst-fire controller sensors
+  - platform: burst_fire
+    zc_frequency:
+      name: "${friendly_name} ZC Frequency"
+      unit_of_measurement: "Hz"
+      accuracy_decimals: 1
+      icon: "mdi:sine-wave"
+    power:
+      name: "${friendly_name} Burst Power"
+      unit_of_measurement: "%"
+      accuracy_decimals: 0
+      icon: "mdi:flash"
 
     # GPIO39 - fonction inconnue, monitoring passif
   - platform: adc
@@ -979,6 +992,9 @@ number:
             id(target_temperature_number).publish_state(val);
             ESP_LOGI("kettle", "Target set to %d°C from HA", val);
 
+  - platform: burst_fire
+    name: "Burst Power Level"
+
 switch:
   - platform: gpio
     name: "Button Boil - Light"
@@ -1003,12 +1019,7 @@ switch:
     id: heater_switch_relay
     internal: true
     restore_mode: ALWAYS_OFF
-  - platform: gpio
-    name: "Heater Secondary-Switch (Triac)"
-    pin: GPIO23
-    id: heater_switch_triac
-    internal: true
-    restore_mode: ALWAYS_OFF
+  # Triac (GPIO23) is now owned by burst_fire component — no switch here
   # Debug: toggle error state ON/OFF to test GPIO14 correlation
   - platform: template
     name: "Force Error Mode"
@@ -1069,8 +1080,8 @@ button:
     on_press:
       then:
         - lambda: |-
+            id(burst_ctrl).stop();
             id(heater_switch_relay).turn_off();
-            id(heater_switch_triac).turn_off();
             if (id(kettle_state) == 5) id(kettle_fault) = 0;
             id(kettle_state) = 0;
             ESP_LOGI("kettle", "Stopped from HA");

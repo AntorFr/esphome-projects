@@ -1,0 +1,402 @@
+# =====================================================================
+# CALIBRATION FIRMWARE — Xiaomi Smart Kettle 2 Pro
+# =====================================================================
+#
+# PURPOSE: Characterize thermal inertia for burst-fire K factor tuning.
+#          Heats at full power, cuts at target, logs overshoot curve.
+#
+# WARNING: This REPLACES the main kettle firmware on the same ESP32.
+#          Flash smart-kettle-kitchen.yaml to restore normal operation.
+#
+# TEST PROTOCOL:
+#   1. Flash this firmware
+#   2. Fill kettle with test water level (little / half / full)
+#   3. Place on base, wait for NTC to stabilize (~20°C)
+#   4. Press "Start Calibration" in HA
+#   5. Wait until "CAL DONE" appears in logs (~3-4 min)
+#   6. Copy CSV block from logs
+#   7. Let water cool, repeat with next water level
+#
+# OUTPUT (in logs at WARN level):
+#   CAL,<sec>,<temp>,<rise>,<power>,<peak>,<overshoot>
+#
+# =====================================================================
+
+substitutions:
+  device_name: smart-kettle-kitchen   # Same device — overwrites main firmware!
+  friendly_name: "Bouilloire CAL"
+  area: "Cuisine"
+  cal_target: "70"   # Target temperature for calibration
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  on_boot:
+    priority: -10
+    then:
+      - lambda: |-
+          ESP_LOGW("cal", "=============================================");
+          ESP_LOGW("cal", "  CALIBRATION FIRMWARE ACTIVE");
+          ESP_LOGW("cal", "  Target: ${cal_target}°C — full power then coast");
+          ESP_LOGW("cal", "=============================================");
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+      CONFIG_ESP_TIMER_SUPPORTS_ISR_DISPATCH_METHOD: y
+    advanced:
+      ignore_efuse_mac_crc: true
+      ignore_efuse_custom_mac: true
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+captive_portal:
+safe_mode:
+web_server:
+
+logger:
+  level: INFO
+  logs:
+    adc: WARN
+    wifi: WARN
+    sensor: WARN
+
+packages:
+  device_base: !include packages/device_base.yaml
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [phase_cut]
+
+phase_cut:
+  id: burst_ctrl
+  zero_cross_pin: GPIO33
+  triac_pin: GPIO23
+  inverted: true
+  max_level: 10
+  min_edge_interval: 5ms
+
+# =====================================================================
+# Calibration state
+# =====================================================================
+
+globals:
+  # 0=IDLE, 1=HEATING, 2=COASTING, 3=DONE
+  - id: cal_state
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: cal_start_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+  - id: cal_start_temp
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: cal_prev_temp
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: cal_peak_temp
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  # Temperature when power was cut (entering coast)
+  - id: cal_cut_temp
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  # Timestamp when power was cut (for accurate avg_rise)
+  - id: cal_cut_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+  # Seconds of stable temp after peak (for auto-stop)
+  - id: cal_stable_count
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: kettle_on_base
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# =====================================================================
+# NTC Temperature Chain
+# =====================================================================
+
+sensor:
+  - platform: ntc
+    id: ntc_temperature
+    sensor: resistance_sensor_temperature
+    calibration:
+      b_constant: 4230
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    name: "NTC Temperature"
+    on_value:
+      then:
+        - lambda: |-
+            // Presence detection
+            bool was = id(kettle_on_base);
+            if (!std::isnan(x) && x > 5.0f) id(kettle_on_base) = true;
+            else if (std::isnan(x) || x < -10.0f) id(kettle_on_base) = false;
+            
+            if (was && !id(kettle_on_base) && id(cal_state) != 0) {
+              id(burst_ctrl).stop();
+              id(heater_relay).turn_off();
+              id(cal_state) = 0;
+              ESP_LOGE("cal", "ABORT: kettle removed during calibration!");
+              return;
+            }
+            
+            // Overheat safety
+            if (!std::isnan(x) && x > 105.0f) {
+              id(burst_ctrl).stop();
+              id(heater_relay).turn_off();
+              id(cal_state) = 0;
+              ESP_LOGE("cal", "ABORT: overheat %.1f°C!", x);
+              return;
+            }
+            
+            if (id(cal_state) == 0) return;
+            
+            int cur = std::isnan(x) ? 0 : (int)x;
+            int rise = cur - id(cal_prev_temp);
+            id(cal_prev_temp) = cur;
+            uint32_t elapsed_s = (millis() - id(cal_start_time)) / 1000;
+            int target = ${cal_target};
+            
+            // Track peak
+            if (cur > id(cal_peak_temp)) {
+              id(cal_peak_temp) = cur;
+              id(cal_stable_count) = 0;
+            }
+            
+            // === STATE: HEATING (full power until target) ===
+            if (id(cal_state) == 1) {
+              int power = id(burst_ctrl).get_power();
+              ESP_LOGW("cal", "CAL,%lu,%d,%d,%d,0,0", elapsed_s, cur, rise, power);
+              
+              if (cur >= target) {
+                // Cut ALL power — relay must be off too (triac alone leaks current)
+                id(burst_ctrl).stop();
+                id(heater_relay).turn_off();
+                id(cal_cut_temp) = cur;
+                id(cal_cut_time) = millis();
+                id(cal_state) = 2;
+                ESP_LOGW("cal", "CAL_CUT,%lu,%d — relay+triac OFF, entering coast",
+                         elapsed_s, cur);
+              }
+            }
+            // === STATE: COASTING (power off, logging overshoot) ===
+            else if (id(cal_state) == 2) {
+              int overshoot = id(cal_peak_temp) - target;
+              ESP_LOGW("cal", "CAL,%lu,%d,%d,0,%d,%d",
+                       elapsed_s, cur, rise, id(cal_peak_temp), overshoot);
+              
+              // Detect temperature falling back = past peak
+              if (rise <= 0) {
+                id(cal_stable_count) += 1;
+              } else {
+                id(cal_stable_count) = 0;
+              }
+              
+              // After 10s of non-rising temp, test is done
+              if (id(cal_stable_count) >= 10) {
+                id(heater_relay).turn_off();
+                id(cal_state) = 3;
+                int total_overshoot = id(cal_peak_temp) - target;
+                int coast_rise = id(cal_peak_temp) - id(cal_cut_temp);
+                float heat_duration_s = (id(cal_cut_time) - id(cal_start_time)) / 1000.0f;
+                float avg_rise = (heat_duration_s > 0) ?
+                    (float)(id(cal_cut_temp) - id(cal_start_temp)) / heat_duration_s : 0;
+                float K = (avg_rise > 0.01f) ? (float)coast_rise / avg_rise : 0;
+                ESP_LOGW("cal", "=============================================");
+                ESP_LOGW("cal", "  CAL DONE");
+                ESP_LOGW("cal", "  Start: %d°C  Target: %d°C", id(cal_start_temp), target);
+                ESP_LOGW("cal", "  Cut at: %d°C  Peak: %d°C", id(cal_cut_temp), id(cal_peak_temp));
+                ESP_LOGW("cal", "  Overshoot: +%d°C  Coast rise: +%d°C", total_overshoot, coast_rise);
+                ESP_LOGW("cal", "  Heat duration: %.0f s", heat_duration_s);
+                ESP_LOGW("cal", "  Avg rise: %.2f °C/s", avg_rise);
+                ESP_LOGW("cal", "  >>> K = coast_rise / avg_rise = %.1f <<<", K);
+                ESP_LOGW("cal", "=============================================");
+                id(cal_state) = 0;
+              }
+            }
+            // === STATE: LEAK TEST (relay ON, triac 0) ===
+            else if (id(cal_state) == 4) {
+              int total_rise = cur - id(cal_start_temp);
+              ESP_LOGW("cal", "LEAK,%lu,%d,%d,%d", elapsed_s, cur, rise, total_rise);
+              
+              // Auto-stop: 60s or +5°C rise
+              if (elapsed_s >= 60 || total_rise >= 5) {
+                id(heater_relay).turn_off();
+                id(burst_ctrl).stop();
+                ESP_LOGW("cal", "=============================================");
+                if (total_rise >= 2) {
+                  ESP_LOGW("cal", "  LEAK TEST: TRIAC LEAKS! +%d°C in %lus", total_rise, elapsed_s);
+                  ESP_LOGW("cal", "  Phase-cut did NOT block current.");
+                } else {
+                  ESP_LOGW("cal", "  LEAK TEST: NO LEAK — temp stable (+%d°C in %lus)", total_rise, elapsed_s);
+                  ESP_LOGW("cal", "  Phase-cut blocks triac correctly!");
+                }
+                ESP_LOGW("cal", "=============================================");
+                id(cal_state) = 0;
+              }
+            }
+
+  - platform: resistance
+    id: resistance_sensor_temperature
+    sensor: adc_sensor_temperature
+    configuration: UPSTREAM
+    reference_voltage: 3.3V
+    resistor: 10kOhm
+
+  - platform: adc
+    id: adc_sensor_temperature
+    pin: GPIO36
+    attenuation: 12db
+    update_interval: 1s
+    samples: 64
+
+  - platform: phase_cut
+    zc_frequency:
+      name: "ZC Frequency"
+      unit_of_measurement: "Hz"
+      accuracy_decimals: 1
+    power:
+      name: "Burst Power"
+      unit_of_measurement: "%"
+      accuracy_decimals: 0
+
+# =====================================================================
+# Controls
+# =====================================================================
+
+switch:
+  - platform: gpio
+    name: "Heater Relay"
+    pin: GPIO22
+    id: heater_relay
+    internal: true
+    restore_mode: ALWAYS_OFF
+
+button:
+  - platform: template
+    name: "Start Calibration"
+    icon: "mdi:thermometer-lines"
+    on_press:
+      then:
+        - lambda: |-
+            if (id(cal_state) != 0) {
+              ESP_LOGW("cal", "Already running (state=%d)", id(cal_state));
+              return;
+            }
+            if (!id(kettle_on_base)) {
+              ESP_LOGE("cal", "Kettle not on base!");
+              return;
+            }
+            
+            float freq = id(burst_ctrl).get_zc_frequency();
+            if (freq < 80.0f || freq > 120.0f) {
+              ESP_LOGE("cal", "ZC frequency %.1f Hz out of range — abort", freq);
+              return;
+            }
+            
+            int cur = (int)id(ntc_temperature).state;
+            if (cur >= ${cal_target}) {
+              ESP_LOGW("cal", "Already at %d°C >= target ${cal_target}°C — let it cool first", cur);
+              return;
+            }
+            
+            // Start
+            id(cal_start_time) = millis();
+            id(cal_start_temp) = cur;
+            id(cal_prev_temp) = cur;
+            id(cal_peak_temp) = cur;
+            id(cal_stable_count) = 0;
+            id(cal_state) = 1;
+            
+            id(heater_relay).turn_on();
+            id(burst_ctrl).set_power(10);  // Full power
+            
+            ESP_LOGW("cal", "=============================================");
+            ESP_LOGW("cal", "  CALIBRATION START");
+            ESP_LOGW("cal", "  Start temp: %d°C  Target: ${cal_target}°C", cur);
+            ESP_LOGW("cal", "  Full power until target, then coast");
+            ESP_LOGW("cal", "  CSV: sec,temp,rise,power,peak,overshoot");
+            ESP_LOGW("cal", "=============================================");
+
+  - platform: template
+    name: "Abort Calibration"
+    icon: "mdi:stop-circle"
+    on_press:
+      then:
+        - lambda: |-
+            id(burst_ctrl).stop();
+            id(heater_relay).turn_off();
+            id(cal_state) = 0;
+            ESP_LOGW("cal", "CALIBRATION ABORTED by user");
+
+  - platform: template
+    name: "Leak Test (relay ON, triac 0)"
+    icon: "mdi:water-thermometer"
+    on_press:
+      then:
+        - lambda: |-
+            if (id(cal_state) != 0) {
+              ESP_LOGW("cal", "Calibration running — abort first");
+              return;
+            }
+            if (!id(kettle_on_base)) {
+              ESP_LOGE("cal", "Kettle not on base!");
+              return;
+            }
+            // Triac explicitly at 0 — gate should never fire
+            id(burst_ctrl).set_power(0);
+            // Relay ON — if current leaks through triac, water will heat
+            id(heater_relay).turn_on();
+            id(cal_state) = 4;  // 4 = LEAK_TEST
+            id(cal_start_time) = millis();
+            id(cal_start_temp) = (int)id(ntc_temperature).state;
+            id(cal_prev_temp) = id(cal_start_temp);
+            ESP_LOGW("cal", "=============================================");
+            ESP_LOGW("cal", "  LEAK TEST: relay=ON, triac power=0");
+            ESP_LOGW("cal", "  Start temp: %d°C", id(cal_start_temp));
+            ESP_LOGW("cal", "  If temp rises → triac leaks (burst-fire problem)");
+            ESP_LOGW("cal", "  If temp stable → phase-cut blocks correctly");
+            ESP_LOGW("cal", "  Auto-stop after 60s or +5°C rise");
+            ESP_LOGW("cal", "  CSV: sec,temp,rise");
+            ESP_LOGW("cal", "=============================================");
