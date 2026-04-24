@@ -6,8 +6,8 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
-  area: ${area}  
-  comment: HeishaMon v5
+  area: ${area}
+  comment: HeishaMon v4.1.2
   on_boot:
     priority: -100  # Run after everything is initialized
     then:
@@ -20,7 +20,6 @@ esp32:
   framework:
     type: esp-idf
 
-  
 
 # Configuration for W5500 Ethernet module
 ethernet:
@@ -165,33 +164,8 @@ sensor:
 
   - platform: heishamon
     heishamon_id: heisha_main
-    topic: "z2_water_temp"
-    name: "Zone 2 Water Temperature (TOP37)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
     topic: "z1_water_target_temp"
     name: "Zone 1 Water Target Temperature (TOP42)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_water_target_temp"
-    name: "Zone 2 Water Target Temperature (TOP43)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "buffer_temp"
-    name: "Buffer Temperature (TOP46)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "solar_temp"
-    name: "Solar Temperature (TOP47)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "pool_temp"
-    name: "Pool Temperature (TOP48)"
 
   - platform: heishamon
     heishamon_id: heisha_main
@@ -235,28 +209,8 @@ sensor:
 
   - platform: heishamon
     heishamon_id: heisha_main
-    topic: "z2_temp"
-    name: "Zone 2 Temperature (TOP57)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
     topic: "sterilization_temp"
     name: "Sterilization Temperature (TOP70)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "second_inlet_temp"
-    name: "Second Inlet Temperature (TOP116)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "economizer_outlet_temp"
-    name: "Economizer Outlet Temperature (TOP117)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "second_room_thermostat_temp"
-    name: "Second Room Thermostat Temperature (TOP118)"
 
   # ============== COMPRESSOR & MOTOR SENSORS ==============
   - platform: heishamon
@@ -287,6 +241,13 @@ sensor:
     heishamon_id: heisha_main
     topic: "compressor_current"
     name: "Compressor Current (TOP67)"
+    entity_category: diagnostic
+
+  # ============== EXPANSION VALVE ==============
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "expansion_valve"
+    name: "Expansion Valve (TOP142)"
     entity_category: diagnostic
 
   # ============== PRESSURE SENSORS ==============
@@ -330,21 +291,9 @@ sensor:
     name: "DHW Power Consumption (TOP41)"
     id: dhw_power_consumption_sensor
 
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "cool_power_production"
-    name: "Cool Power Production (XTOP4)"
-    id: cool_power_production_sensor
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "cool_power_consumption"
-    name: "Cool Power Consumption (XTOP1)"
-    id: cool_power_consumption_sensor
-
   # ============== ENERGY INTEGRATION (kWh from power sensors) ==============
   # These sensors integrate power over time to calculate total energy consumption/production
-  
+
   # Heat Energy Consumption (integrates TOP16)
   - platform: integration
     name: "Heat Energy Consumption"
@@ -354,7 +303,7 @@ sensor:
     state_class: total_increasing
     device_class: energy
     accuracy_decimals: 3
-    
+
   # Heat Energy Production (integrates TOP15)
   - platform: integration
     name: "Heat Energy Production"
@@ -379,26 +328,6 @@ sensor:
   - platform: integration
     name: "DHW Energy Production"
     sensor: dhw_power_production_sensor
-    time_unit: h
-    unit_of_measurement: "Wh"
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
-
-  # Cool Energy Consumption (integrates XTOP1)
-  - platform: integration
-    name: "Cool Energy Consumption"
-    sensor: cool_power_consumption_sensor
-    time_unit: h
-    unit_of_measurement: "Wh"
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
-
-  # Cool Energy Production (integrates XTOP4)
-  - platform: integration
-    name: "Cool Energy Production"
-    sensor: cool_power_production_sensor
     time_unit: h
     unit_of_measurement: "Wh"
     state_class: total_increasing
@@ -435,26 +364,11 @@ sensor:
     topic: "sterilization_max_time"
     name: "Sterilization Max Time (TOP71)"
 
-  # ============== ZONE REQUEST TEMPERATURES ==============
+  # ============== ZONE 1 REQUEST TEMPERATURES ==============
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "z1_heat_request_temp"
     name: "Zone 1 Heat Request Temperature (TOP27)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z1_cool_request_temp"
-    name: "Zone 1 Cool Request Temperature (TOP28)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_heat_request_temp"
-    name: "Zone 2 Heat Request Temperature (TOP29)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_cool_request_temp"
-    name: "Zone 2 Cool Request Temperature (TOP30)"
 
   # ============== ZONE 1 HEAT CURVE ==============
   - platform: heishamon
@@ -477,84 +391,11 @@ sensor:
     topic: "z1_heat_curve_outside_low"
     name: "Zone 1 Heat Curve Outside Low (TOP34)"
 
-  # ============== ZONE 1 COOL CURVE ==============
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z1_cool_curve_target_high"
-    name: "Zone 1 Cool Curve Target High (TOP72)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z1_cool_curve_target_low"
-    name: "Zone 1 Cool Curve Target Low (TOP73)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z1_cool_curve_outside_high"
-    name: "Zone 1 Cool Curve Outside High (TOP74)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z1_cool_curve_outside_low"
-    name: "Zone 1 Cool Curve Outside Low (TOP75)"
-
-  # ============== ZONE 2 HEAT CURVE ==============
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_heat_curve_target_high"
-    name: "Zone 2 Heat Curve Target High (TOP82)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_heat_curve_target_low"
-    name: "Zone 2 Heat Curve Target Low (TOP83)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_heat_curve_outside_high"
-    name: "Zone 2 Heat Curve Outside High (TOP84)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_heat_curve_outside_low"
-    name: "Zone 2 Heat Curve Outside Low (TOP85)"
-
-  # ============== ZONE 2 COOL CURVE ==============
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_cool_curve_target_high"
-    name: "Zone 2 Cool Curve Target High (TOP86)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_cool_curve_target_low"
-    name: "Zone 2 Cool Curve Target Low (TOP87)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_cool_curve_outside_high"
-    name: "Zone 2 Cool Curve Outside High (TOP88)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_cool_curve_outside_low"
-    name: "Zone 2 Cool Curve Outside Low (TOP89)"
-
   # ============== AUTO MODE TEMPERATURES ==============
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "heater_on_outdoor_temp"
     name: "Heater On Outdoor Temperature (TOP78)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "heat_to_cool_temp"
-    name: "Heat to Cool Temperature (TOP79)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "cool_to_heat_temp"
-    name: "Cool to Heat Temperature (TOP80)"
 
   # ============== HOLIDAY TEMPERATURES ==============
   - platform: heishamon
@@ -567,7 +408,7 @@ sensor:
     topic: "room_holiday_shift_temp"
     name: "Room Holiday Shift Temperature (TOP45)"
 
-  # ============== PUMP & VALVE SENSORS ==============
+  # ============== PUMP SENSORS ==============
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "pump_duty"
@@ -579,33 +420,6 @@ sensor:
     topic: "z1_valve_pid"
     name: "Zone 1 Valve PID (TOP127)"
     entity_category: diagnostic
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "z2_valve_pid"
-    name: "Zone 2 Valve PID (TOP128)"
-    entity_category: diagnostic
-
-  # ============== SOLAR SENSORS ==============
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "solar_on_delta"
-    name: "Solar On Delta (TOP102)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "solar_off_delta"
-    name: "Solar Off Delta (TOP103)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "solar_frost_protection"
-    name: "Solar Frost Protection (TOP104)"
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    topic: "solar_high_limit"
-    name: "Solar High Limit (TOP105)"
 
   # ============== BIVALENT SENSORS (read-only) ==============
   - platform: heishamon
@@ -644,6 +458,16 @@ binary_sensor:
 
   - platform: heishamon
     heishamon_id: heisha_main
+    topic: "dhw_heater_state"
+    name: "DHW Heater State (TOP58)"
+
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "room_heater_state"
+    name: "Room Heater State (TOP59)"
+
+  - platform: heishamon
+    heishamon_id: heisha_main
     topic: "internal_heater_state"
     name: "Internal Heater (TOP60)"
 
@@ -654,18 +478,28 @@ binary_sensor:
 
   - platform: heishamon
     heishamon_id: heisha_main
-    topic: "z1_pump_state"
-    name: "Zone 1 Pump (TOP124)"
+    topic: "force_heater_state"
+    name: "Force Heater State (TOP68)"
 
   - platform: heishamon
     heishamon_id: heisha_main
-    topic: "z2_pump_state"
-    name: "Zone 2 Pump (TOP123)"
+    topic: "sterilization_state"
+    name: "Sterilization State (TOP69)"
 
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "dhw_installed"
     name: "DHW Installed (TOP100)"
+
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "anti_freeze_mode"
+    name: "Anti Freeze Mode (TOP109)"
+
+  - platform: heishamon
+    heishamon_id: heisha_main
+    topic: "z1_pump_state"
+    name: "Zone 1 Pump (TOP124)"
 
   - platform: heishamon
     heishamon_id: heisha_main
@@ -717,12 +551,6 @@ select:
     name: "Active Zones (TOP94)"
     entity_category: config
 
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "smart_grid_mode"
-    name: "Smart Grid Mode (Optional PCB)"
-    entity_category: config
-
   # Read-only selects (display current state)
   - platform: heishamon
     heishamon_id: heisha_main
@@ -736,13 +564,13 @@ select:
 
   - platform: heishamon
     heishamon_id: heisha_main
-    type: "z1_sensor_settings"
-    name: "Zone 1 Sensor Settings (TOP112)"
+    type: "holiday_mode_state"
+    name: "Holiday Mode State (TOP19)"
 
   - platform: heishamon
     heishamon_id: heisha_main
-    type: "z2_sensor_settings"
-    name: "Zone 2 Sensor Settings (TOP111)"
+    type: "z1_sensor_settings"
+    name: "Zone 1 Sensor Settings (TOP112)"
 
 # =============================================================================
 # NUMBERS - Temperature setpoints and control parameters (all are config)
@@ -751,107 +579,77 @@ number:
   - platform: heishamon
     heishamon_id: heisha_main
     type: "dhw_target_temp"
-    name: "DHW Target Temperature (SET11/TOP9)"
+    name: "DHW Target Temperature (SET11-TOP9)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "z1_heat_target_temp"
-    name: "Zone 1 Heat Target (SET5/TOP27)"
-    entity_category: config
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "z2_heat_target_temp"
-    name: "Zone 2 Heat Target (SET6/TOP34)"
-    entity_category: config
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "z1_cool_target_temp"
-    name: "Zone 1 Cool Target (SET7/TOP28)"
-    entity_category: config
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "z2_cool_target_temp"
-    name: "Zone 2 Cool Target (SET8/TOP35)"
+    name: "Zone 1 Heat Target (SET5-TOP27)"
     entity_category: config
 
   # ============== DELTA CONTROLS ==============
   - platform: heishamon
     heishamon_id: heisha_main
     type: "dhw_heat_delta"
-    name: "DHW Heat Delta (SET18/TOP22)"
+    name: "DHW Heat Delta (SET18-TOP22)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "heat_delta"
-    name: "Floor Heat Delta (SET19/TOP23)"
-    entity_category: config
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "cool_delta"
-    name: "Floor Cool Delta (SET20/TOP24)"
-    entity_category: config
-
-  - platform: heishamon
-    heishamon_id: heisha_main
-    type: "buffer_tank_delta"
-    name: "Buffer Tank Delta (SET34/TOP113)"
+    name: "Floor Heat Delta (SET19-TOP23)"
     entity_category: config
 
   # ============== PUMP & OUTDOOR CONTROLS ==============
   - platform: heishamon
     heishamon_id: heisha_main
     type: "max_pump_duty"
-    name: "Max Pump Duty (SET32/TOP95)"
+    name: "Max Pump Duty (SET32-TOP95)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "heating_off_outdoor_temp"
-    name: "Heating Off Outdoor Temp (SET24/TOP77)"
+    name: "Heating Off Outdoor Temp (SET24-TOP77)"
     entity_category: config
 
   # ============== BIVALENT CONTROLS ==============
   - platform: heishamon
     heishamon_id: heisha_main
     type: "bivalent_start_temp"
-    name: "Bivalent Start Temp (SET35/TOP131)"
+    name: "Bivalent Start Temp (SET35-TOP131)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "bivalent_ap_start_temp"
-    name: "Bivalent Advanced Start Temp (SET36/TOP134)"
+    name: "Bivalent Advanced Start Temp (SET36-TOP134)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "bivalent_ap_stop_temp"
-    name: "Bivalent Advanced Stop Temp (SET37/TOP135)"
+    name: "Bivalent Advanced Stop Temp (SET37-TOP135)"
     entity_category: config
 
   # ============== J-SERIES HEATER CONTROLS ==============
   - platform: heishamon
     heishamon_id: heisha_main
     type: "heater_delay_time"
-    name: "Heater Delay Time (SET29/TOP96)"
+    name: "Heater Delay Time (SET29-TOP96)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "heater_start_delta"
-    name: "Heater Start Delta (SET30/TOP97)"
+    name: "Heater Start Delta (SET30-TOP97)"
     entity_category: config
 
   - platform: heishamon
     heishamon_id: heisha_main
     type: "heater_stop_delta"
-    name: "Heater Stop Delta (SET31/TOP98)"
+    name: "Heater Stop Delta (SET31-TOP98)"
     entity_category: config
 
 # =============================================================================
@@ -861,48 +659,23 @@ switch:
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "force_dhw"
-    name: "Force DHW (SET4/TOP2)"
+    name: "Force DHW (SET4-TOP2)"
 
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "quiet_mode"
-    name: "Quiet Mode Switch (SET3/TOP18)"
+    name: "Quiet Mode Switch (SET3-TOP18)"
 
 # =============================================================================
-# CLIMATE - Zone temperature control
+# CLIMATE - Zone 1 temperature control (heating only)
 # =============================================================================
 climate:
-  # Zone 1 Heating Climate
   - platform: heishamon
     heishamon_id: heisha_main
     name: "Zone 1 Climate"
     zone_id: 1
     supports_heat: true
     supports_cool: false
-
-  # Zone 2 Heating Climate  
-  - platform: heishamon
-    heishamon_id: heisha_main
-    name: "Zone 2 Climate"
-    zone_id: 2
-    supports_heat: true
-    supports_cool: false
-
-  # Zone 1 Cooling Climate (optional - enable if you have cooling)
-  # - platform: heishamon
-  #   heishamon_id: heisha_main
-  #   name: "Zone 1 Cooling"
-  #   zone_id: 1
-  #   supports_heat: false
-  #   supports_cool: true
-
-  # Zone 2 Cooling Climate (optional - enable if you have cooling)
-  # - platform: heishamon
-  #   heishamon_id: heisha_main
-  #   name: "Zone 2 Cooling"
-  #   zone_id: 2
-  #   supports_heat: false
-  #   supports_cool: true
 
 # =============================================================================
 # WATER HEATER - DHW (Domestic Hot Water)
