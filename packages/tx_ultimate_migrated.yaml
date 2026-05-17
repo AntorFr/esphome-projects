@@ -1,0 +1,72 @@
+substitutions:
+  ha_night_sensor: binary_sensor.nuit
+  ha_sleep_sensor: input_boolean.night_mode
+  ha_away_sensor: input_boolean.away_mode
+  nightlight_room_type: standard
+
+packages:
+  hw:
+    url: https://github.com/AntorFr/esphome-tx-ultimate
+    ref: main
+    files:
+      - packages/tx_ultimate_hw.yaml
+    refresh: 0s
+  theme_stars:
+    url: https://github.com/AntorFr/esphome-tx-ultimate
+    ref: main
+    files:
+      - packages/themes/default.yaml
+    refresh: 0s
+
+binary_sensor:
+  - platform: homeassistant
+    id: night_sensor
+    entity_id: ${ha_night_sensor}
+    trigger_on_initial_state: true
+  - platform: homeassistant
+    id: sleep_sensor
+    entity_id: ${ha_sleep_sensor}
+    trigger_on_initial_state: true
+  - platform: homeassistant
+    id: away_sensor
+    entity_id: ${ha_away_sensor}
+    trigger_on_initial_state: true
+
+
+# Common base for the new native tx_ultimate_switch schema.
+# Each device should define its own `buttons:` list locally with explicit
+# `position`, inline/reference `relay`, and optional `sensor` / `state_sensor`.
+tx_ultimate_switch:
+  id: tx
+
+  leds: leds
+
+  vibra: vibra
+  media_player: mp
+  api_connected: api_connected
+  wifi_connected: wifi_connected
+
+  nightlight:
+    sensor: night_sensor
+    sleep_sensor: sleep_sensor
+    away_sensor: away_sensor
+    room_type: ${nightlight_room_type}
+
+  active_theme: "Default"
+
+# Devices with no custom behavior can wire touch events like this locally:
+# tx_ultimate_touch:
+#   id: tx_touch
+#   uart_id: my_uart
+#   on_press:
+#     - lambda: id(tx).on_touch_press();
+#   on_release:
+#     - lambda: id(tx).on_touch_release(touch.x);
+#   on_swipe_left:
+#     - lambda: id(tx).on_swipe_left();
+#   on_swipe_right:
+#     - lambda: id(tx).on_swipe_right();
+#   on_full_touch_release:
+#     - lambda: id(tx).on_full_touch_release();
+#   on_long_touch_release:
+#     - lambda: id(tx).on_long_touch_release();

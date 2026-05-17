@@ -1,67 +1,53 @@
 substitutions:
   device_name: shower-light-switch
   friendly_name: Bouton lumière douche
-  
-  ## TX Ultimate ##
-  button_count: "3"
 
-  light_1_internal: "false"
-  light_1_entity_category: "config"
-  light_1_restore_mode: "RESTORE_DEFAULT_ON" 
-  button_1_switch_relay: "false"
-
-  light_2_internal: "false"
-  light_2_entity_category: ""
-  light_2_restore_mode: "RESTORE_DEFAULT_OFF" 
-  button_2_switch_relay: "false"
-
-  light_3_internal: "true"
-  button_3_switch_relay: "true"
-  button_3_light_id: "2"
-
-
+  ha_spot_douche_id: light.shower_light_lumi_re_douche
+  ha_plafonnier_id: light.salle_de_douche_plafonnier
 
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name} 
+  friendly_name: ${friendly_name}
 
-esp32:
-  board: esp32dev
-  #framework:
-  #  type: arduino
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
-
-  ap:
-    ssid: ${device_name}
-    password: !secret ap_password
-
-api:
-  reboot_timeout: 15min
-  encryption:
-    key: !secret api_encryption
-
-ota:
-  platform: esphome
-  password: !secret ota_password
-
-captive_portal:
-
-logger:
-  level: DEBUG
-
-web_server:
-
-#######################################
-# Device specific Config Begins Below #
-#######################################
 packages:
   device_base: !include packages/device_base.yaml
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate.yaml
+  tx_ultimate_migrated: !include packages/tx_ultimate_migrated.yaml
+
+
+binary_sensor:
+  - platform: homeassistant
+    id: ha_spot_douche
+    entity_id: ${ha_spot_douche_id}
+    internal: true
+    trigger_on_initial_state: true
+  - platform: homeassistant
+    id: plafonnier_state
+    entity_id: ${ha_plafonnier_id}
+    internal: true
+    trigger_on_initial_state: true
+
+tx_ultimate_switch:
+  buttons:
+    - position: left
+      switch_relay: false
+      state_sensor: ha_spot_douche
+      relay:
+        id: relay_1
+        name: "Relais spot douche"
+        restore_mode: RESTORE_DEFAULT_ON
+        entity_category: diagnostic
+        internal: false
+    - position: center
+      switch_relay: false
+      state_sensor: plafonnier_state
+    - position: right
+      switch_relay: true
+      relay:
+        id: relay_2
+        name: "Miroir"
+        restore_mode: RESTORE_DEFAULT_OFF
+        internal: false
+
+
 
 

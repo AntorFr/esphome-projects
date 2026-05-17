@@ -93,6 +93,6 @@ light:
   - platform: binary
     name: ${device_name} # you can enter a custom name to appear in HomeAsistant here.
     output: main_light_relay 
-    restore_mode: RESTORE_DEFAULT_OFF 
+    restore_mode: RESTORE_DEFAULT_ON 
     id: light_id
 

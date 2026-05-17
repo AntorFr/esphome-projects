@@ -1,65 +1,93 @@
 substitutions:
   device_name: desk-light-switch
-  friendly_name: Bouton applique bureau
-  
-  ## TX Ultimate ##
-  sound_theme: "explore_the_stars" # christmas | explore_the_stars
+  friendly_name: "Bouton applique bureau"
+  area: "Bureau"
 
-  button_count: 1
+  ha_applique_id: light.hue_color_lamp_5_3
+  ha_plafonnier_id: light.bouton_lumiere_bureau_spots
 
-  nightlight_sleep_id: input_boolean.away_mode
+  nightlight_room_type: "bedroom"
 
-  light_1_internal: "false"
-  light_1_entity_category: "config"
-  light_1_restore_mode: "RESTORE_DEFAULT_ON"
-
-  light_2_internal: "true"
-  light_3_internal: "true"
-
-  button_1_switch_relay: "false"
-  button_2_switch_relay: "false"
-  button_3_switch_relay: "false"
+  espnow_peer_mac: "54:43:B2:71:BB:38"   # MAC de office-light-switch
 
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name} 
+  friendly_name: ${friendly_name}
+  area: ${area}
 
-esp32:
-  board: esp32dev
-  #framework:
-  #  type: arduino
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
-
-  ap:
-    ssid: ${device_name}
-    password: !secret ap_password
-
-api:
-  reboot_timeout: 15min
-  encryption:
-    key: !secret api_encryption
-
-ota:
-  platform: esphome
-  password: !secret ota_password
-
-captive_portal:
-
-logger:
-  level: INFO
-
-web_server:
-
-#######################################
-# Device specific Config Begins Below #
-#######################################
 packages:
   device_base: !include packages/device_base.yaml
-    #url: https://github.com/AntorFr/esphome-projects
-    #file: packages/device_base.yaml
-  tx_ultimate: !include packages/tx_ultimate.yaml
+  tx_ultimate_migrated: !include packages/tx_ultimate_migrated.yaml
+
+# ── ESP-NOW fallback : pilote relay_1 de office-light-switch quand HA est down ─
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-espnow
+      ref: main
+    refresh: 0s
+    components: [espnow_sender]
+
+espnow_sender:
+  id: espnow_tx
+  peer_mac: ${espnow_peer_mac}
+  connectivity_sensor_id: api_connected   # réutilise le binary_sensor hw.yaml (delayed_off: 30s)
+  fallback_timeout: 30s
+  recovery_timeout: 10s
+  action: toggle
+  #on_fallback_enter:
+  #  - light.turn_on:
+  #      id: leds_top
+  #      effect: "Scan"
+  #on_fallback_exit:
+  #  - light.turn_on:
+  #      id: leds_top
+
+binary_sensor:
+  - platform: homeassistant
+    id: applique_state
+    entity_id: ${ha_applique_id}
+    internal: true
+    trigger_on_initial_state: true
+  - platform: homeassistant
+    id: plafonnier_state
+    entity_id: ${ha_plafonnier_id}
+    internal: true
+    trigger_on_initial_state: true
+
+# ── Composant switch principal ────────────────────────────────────────────────
+tx_ultimate_switch:
+  upside_down: true
+  buttons:
+    - position: left
+      switch_relay: fallback_wifi
+      relay:
+        id: relay_1
+        name: "Relay"
+        restore_mode: RESTORE_DEFAULT_ON
+        entity_category: diagnostic
+        internal: false
+      state_sensor: applique_state
+      sensor:
+        name: "Bouton gauche"
+        icon: mdi:gesture-tap
+        device_class: motion
+    - position: center
+      state_sensor: plafonnier_state
+      switch_relay: false
+      sensor:
+        name: "Bouton centre"
+        icon: mdi:gesture-tap
+        device_class: motion
+        on_press:
+          - lambda: id(espnow_tx).send_command(true);
+    - position: right
+      switch_relay: false
+      sensor:
+        name: "Bouton droite"
+        icon: mdi:gesture-tap
+        device_class: motion
+
+    
+
 

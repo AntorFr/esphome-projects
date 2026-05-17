@@ -40,7 +40,7 @@ globals:
   - id: restore_mode
     type: int
     restore_value: yes
-    initial_value: "1"
+    initial_value: "2"
 
 select:
   - platform: template
@@ -55,6 +55,8 @@ select:
       then:
         - lambda: |-
             id(restore_mode)=i+1;
+            // Persist immediately so OTA/reboots do not lose the selected mode.
+            global_preferences->sync();
 
 esphome:
   name: "${name}"
@@ -298,10 +300,10 @@ script:
     then:
       - if:
           condition:
-            lambda: return ( id(fast_boot) >= 3 );
+            lambda: return ( id(fast_boot) >= 6 );
           then:
             - lambda: |-
-                ESP_LOGD("athom-rgbct-light.yaml", "Now the counter is greater than or equal to 3, perform reset device and reboot");
+                ESP_LOGD("athom-rgbct-light.yaml", "Now the counter is greater than or equal to 6, perform reset device and reboot");
                 id(fast_boot) = 0;
                 fast_boot->loop();
                 global_preferences->sync();
@@ -317,7 +319,7 @@ script:
           id(fast_boot) += 1;
           fast_boot->loop();
           global_preferences->sync();
-          ESP_LOGD("athom-rgbct-light.yaml", "Now the counter is %d.  Reset the device when the counter is greater than or equal to 3", id(fast_boot));
+          ESP_LOGD("athom-rgbct-light.yaml", "Now the counter is %d.  Reset the device when the counter is greater than or equal to 6", id(fast_boot));
       - delay: 10s
       - lambda: |-
           ESP_LOGD("athom-rgbct-light.yaml", "Reset counter");
