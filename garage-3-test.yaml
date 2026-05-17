@@ -59,8 +59,8 @@ status_led:
 
 uart:
   id: uart_rs485
-  tx_pin: GPIO19  # Connect to RX on HW-519 (crossed!)
-  rx_pin: GPIO04  # Connect to TX on HW-519 (crossed!)
+  tx_pin: GPIO17  # Connect to RX on HW-519 (crossed!)
+  rx_pin: GPIO16  # Connect to TX on HW-519 (crossed!)
   baud_rate: 19200
   data_bits: 8
   parity: NONE
@@ -69,10 +69,7 @@ uart:
 # Hörmann HCP1 component
 hormann_hcp1:
   id: hormann
-  uart_id: uart_rs485
-  # Your HW-519 module has auto-direction (only VCC/GND/TX/RX)
-  # No need for de_pin/re_pin - leave them commented out
-  # de_pin: GPIO4   # Only needed for modules with DE pin
+  de_pin: GPIO4   # Only needed for modules with DE pin
   # re_pin: GPIO5   # Only needed for modules with RE pin
 
 # Garage door cover entity
