@@ -8,6 +8,9 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
   area: ${area}
+  project: 
+    name: AntorFR.Smart Kettle
+    version: 0.9.0
   on_boot:
     priority: -10
     then:
