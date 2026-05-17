@@ -193,6 +193,7 @@ sensor:
 
   - platform: ade7953_spi
     id: ade7953_1
+    update_interval: 1s
     cs_pin:
       number: GPIO0
       ignore_strapping_warning: true
@@ -253,6 +254,12 @@ switch:
   - platform: gpio
     name: "Relay 1"
     id: relay1
+    on_turn_on:
+      then:
+        - script.execute: refresh_power_relay1
+    on_turn_off:
+      then:
+        - script.execute: refresh_power_relay1
     pin:
       sn74hc595: sn74hc595_hub
       number: 0
@@ -316,6 +323,11 @@ script:
                   - script.execute: led_green
                 else:
                   - script.execute: led_red
+
+  - id: refresh_power_relay1
+    then:
+      - delay: 200ms
+      - component.update: ade7953_1
               
   - id: handle_input1
     then:

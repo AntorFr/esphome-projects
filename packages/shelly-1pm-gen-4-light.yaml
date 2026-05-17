@@ -49,6 +49,12 @@ light:
     id: light1
     icon: ${icon}
     output: relay_output
+    on_turn_on:
+      then:
+        - script.execute: refresh_power_after_toggle
+    on_turn_off:
+      then:
+        - script.execute: refresh_power_after_toggle
 
 sensor:
   - id: temperature
@@ -74,6 +80,7 @@ sensor:
     attenuation: 12db
 
   - platform: bl0942
+    id: bl0942_power_meter
     uart_id: bl0942_uart
     update_interval: 1s
     line_frequency: 60Hz
@@ -184,3 +191,9 @@ status_led:
   pin:
     number: GPIO0
     inverted: true
+
+script:
+  - id: refresh_power_after_toggle
+    then:
+      - delay: 200ms
+      - component.update: bl0942_power_meter
