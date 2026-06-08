@@ -35,7 +35,7 @@ ota:
 captive_portal:
 
 logger:
-  #level: DEBUG
+  level: WARN
 
 
 #######################################
@@ -44,3 +44,83 @@ logger:
 packages:
   device_base: !include packages/device_base.yaml
   shelly-pro-2-pm : !include packages/shelly-pro-2-pm.yaml
+
+globals:
+  - id: filter_clogged_latched
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+
+  - id: filter_low_power_s
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: filter_recover_high125_s
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: filter_recover_high120_s
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+binary_sensor:
+  - platform: template
+    id: pool_filter_clogged
+    name: "Filtre encrasse"
+    icon: mdi:air-filter
+    device_class: problem
+    lambda: |-
+      return id(filter_clogged_latched);
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          const bool pump_on = id(relay2).state;
+          const float p = id(power2).state;
+          const bool valid = !isnan(p);
+
+          // If pump is off or power is invalid, we keep the latched state as-is
+          // and reset continuity counters.
+          if (!(pump_on && valid)) {
+            id(filter_low_power_s) = 0;
+            id(filter_recover_high125_s) = 0;
+            id(filter_recover_high120_s) = 0;
+            return;
+          }
+
+          // Trigger condition: p < 120 W continuously for 10 minutes.
+          if (p < 120.0f) {
+            id(filter_low_power_s) += 1;
+          } else {
+            id(filter_low_power_s) = 0;
+          }
+
+          // Recovery conditions:
+          // 1) p > 125 W for 2 minutes, OR
+          // 2) p > 120 W for 10 minutes.
+          if (p > 125.0f) {
+            id(filter_recover_high125_s) += 1;
+          } else {
+            id(filter_recover_high125_s) = 0;
+          }
+
+          if (p > 120.0f) {
+            id(filter_recover_high120_s) += 1;
+          } else {
+            id(filter_recover_high120_s) = 0;
+          }
+
+          if (!id(filter_clogged_latched) && id(filter_low_power_s) >= 600) {
+            id(filter_clogged_latched) = true;
+            id(pool_filter_clogged).publish_state(true);
+          }
+
+          if (id(filter_clogged_latched) &&
+              (id(filter_recover_high125_s) >= 120 || id(filter_recover_high120_s) >= 600)) {
+            id(filter_clogged_latched) = false;
+            id(pool_filter_clogged).publish_state(false);
+          }

@@ -6,7 +6,7 @@ substitutions:
   # Capteur HA utilise comme inhibiteur de nightlight quand absent
   ha_away_sensor: input_boolean.away_mode
   
-  nightlight_room_type: "bedroom"
+  nightlight_room_type: "standard" #"bedroom"
 
 
   # ESP-NOW — MACs des senders

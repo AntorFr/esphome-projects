@@ -6,7 +6,7 @@ substitutions:
   ha_applique_id: light.hue_color_lamp_5_3
   ha_plafonnier_id: light.bouton_lumiere_bureau_spots
 
-  nightlight_room_type: "bedroom"
+  nightlight_room_type: "standard" #"bedroom"
 
   espnow_peer_mac: "54:43:B2:71:BB:38"   # MAC de office-light-switch
 
