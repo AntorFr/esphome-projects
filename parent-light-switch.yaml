@@ -1,3 +1,7 @@
+# Read by the Fleet for ESPHome add-on. Do not remove.
+# esphome-fleet:
+#   tags: day_only
+
 substitutions:
   device_name: "parent-light-switch"
   friendly_name: "Bouton lumière chambre parent"
