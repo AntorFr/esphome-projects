@@ -1,3 +1,7 @@
+# Read by the Fleet for ESPHome add-on. Do not remove.
+# esphome-fleet:
+#   tags: day_only
+
 substitutions:
   device_name: "ceiling-light-timothee"
   friendly_name: "Plafonnier Timothée"
