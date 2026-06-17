@@ -64,7 +64,6 @@ media_player:
     announcement_pipeline:
       speaker: echo_speaker
       format: WAV
-    codec_support_enabled: false
     buffer_size: 6000
     volume_min: 0.4
     files:
@@ -375,5 +374,8 @@ micro_wake_word:
   vad:
   models:
     - model: okay_nabu
+      id: okay_nabu
     - model: hey_mycroft
+      id: hey_mycroft
     - model: hey_jarvis
+      id: hey_jarvis
