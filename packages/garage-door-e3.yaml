@@ -1,0 +1,86 @@
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf  
+    advanced:
+      minimum_chip_revision: 3.1
+      sram1_as_iram: true 
+
+
+
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-Hormann
+      ref: main
+    components: [ hormann_hcp1, status_led_rgb ]
+
+
+hormann_hcp1:
+  id: hormann
+  uart_num: 1
+  tx_pin: GPIO22       # DI
+  rx_pin: GPIO21       # RO
+  de_pin: GPIO17       # DE (active-high)
+  ab_inverted: true    # A/B physically swapped -> software re-inversion RX+TX
+  reply_delay_us: 3800 # reply latency tuned to a real UAP1 (~3.84 ms)
+  sniffer: false       # true = log the bus frames (debug)
+
+light:
+  # Onboard WS2812 (GPIO4) -> status indicator via status_led_rgb (green=OK / orange=warn / red=err)
+  - platform: esp32_rmt_led_strip
+    id: status_strip
+    internal: true
+    pin: GPIO4
+    num_leds: 1
+    chipset: WS2812
+    rgb_order: GRB
+    default_transition_length: 0s
+    restore_mode: ALWAYS_OFF
+  - platform: hormann_hcp1
+    id: garage_light
+    name: "Eclairage"
+    hormann_hcp1_id: hormann
+
+status_led_rgb:
+  light_id: status_strip
+
+cover:
+  - platform: hormann_hcp1
+    id: garage_door
+    name: "Porte"
+    hormann_hcp1_id: hormann
+    device_class: garage
+
+binary_sensor:
+  - platform: hormann_hcp1
+    hormann_hcp1_id: hormann
+    light:
+      name: "Eclairage"
+    error:
+      name: "Probleme"
+    venting:
+      name: "Ventilation"
+    prewarn:
+      name: "Mouvement"
+    registered:
+      name: "Enregistré"
+
+button:
+  - platform: hormann_hcp1
+    name: "Impulsion"
+    hormann_hcp1_id: hormann
+    action: impulse
+    icon: "mdi:gesture-tap"
+  - platform: hormann_hcp1
+    name: "Ventilation"
+    hormann_hcp1_id: hormann
+    action: venting
+    icon: "mdi:air-filter"
+  - platform: hormann_hcp1
+    name: "Arret d'urgence"
+    hormann_hcp1_id: hormann
+    action: emergency_stop
+    icon: "mdi:stop-circle"
+    entity_category: diagnostic
