@@ -8,24 +8,6 @@ esphome:
   friendly_name: ${friendly_name}
   area: ${area}
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
-
-  ap:
-    ssid: ${device_name}
-    password: !secret ap_password
-
-ota:
-  platform: esphome
-  password: !secret ota_password
-
-api:
-  reboot_timeout: 15min
-  encryption:
-    key: !secret api_encryption
-
 captive_portal:
 
 
@@ -33,5 +15,6 @@ captive_portal:
 # Device specific Config Begins Below #
 #######################################
 packages:
+  device_base: !include packages/device_base.yaml
   onju-voice: !include packages/onju-voice.yaml
 
