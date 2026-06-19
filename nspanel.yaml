@@ -19,7 +19,7 @@ esp32:
     type: esp-idf
 
 wifi:
-  use_address: ${device_name}.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr.
 
   ap:
     ssid: ${device_name}
