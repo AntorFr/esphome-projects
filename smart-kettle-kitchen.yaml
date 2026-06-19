@@ -35,7 +35,7 @@ esp32:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: ${device_name}.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr.
 
   ap:
     ssid: ${device_name}
