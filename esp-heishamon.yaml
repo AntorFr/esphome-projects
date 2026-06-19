@@ -31,7 +31,7 @@ ethernet:
   interrupt_pin: GPIO15  # ETH_IRQ
   reset_pin: GPIO14  # ETH_RST
   clock_speed: 26.67MHz
-  use_address: ${device_name}.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr.
 
 # Enable Home Assistant API
 api:
