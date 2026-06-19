@@ -25,7 +25,7 @@ ethernet:
     mode: CLK_OUT
   phy_addr: 0
   power_pin: GPIO12
-  use_address: ${device_name}.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr.
 
 api:
   reboot_timeout: 15min
