@@ -57,6 +57,8 @@ esp32:
       CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
       CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+      # Supprime le warning de dépréciation des anciennes API tactiles (esp32_touch)
+      CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN: "y"
 
 psram:
   mode: octal
@@ -209,7 +211,13 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   on_start:
-    - script.execute: stop_wake_word
+    # In local mode, stop the on-device wake word while the pipeline runs (no AEC).
+    # In streaming mode, the continuous stream IS the pipeline, so leave it running.
+    - if:
+        condition:
+          switch.is_on: use_local_wake_word
+        then:
+          - micro_wake_word.stop:
   on_listening:
     - light.turn_on:
         id: top_led
@@ -505,7 +513,9 @@ script:
             - if:
                 condition:
                   - switch.is_on: use_listen_light
+                  - switch.is_on: use_local_wake_word
                 then:
+                  # Local wake word: warm white listen light
                   - light.turn_on:
                       id: top_led
                       red: 100%
@@ -514,20 +524,58 @@ script:
                       brightness: 60%
                       effect: none
                 else:
-                  - light.turn_off: top_led
+                  - if:
+                      condition:
+                        - switch.is_on: use_listen_light
+                        - switch.is_off: use_local_wake_word
+                      then:
+                        # Streaming to Home Assistant: cyan listen light
+                        - light.turn_on:
+                            id: top_led
+                            red: 0%
+                            green: 100%
+                            blue: 100%
+                            brightness: 60%
+                            effect: none
+                      else:
+                        - light.turn_off: top_led
 
   - id: start_wake_word
     then:
+      # Local on-device wake word
       - if:
           condition:
-            not:
-              - voice_assistant.is_running:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - switch.is_on: use_local_wake_word
           then:
+            - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
+      # Wake word detected remotely in Home Assistant (continuous streaming)
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - switch.is_off: use_local_wake_word
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
 
   - id: stop_wake_word
     then:
-      - micro_wake_word.stop:
+      - if:
+          condition:
+            switch.is_on: use_local_wake_word
+          then:
+            - micro_wake_word.stop:
+      - if:
+          condition:
+            switch.is_off: use_local_wake_word
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop:
 
   - id: turn_on_notification
     then:
@@ -682,6 +730,32 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+  # Boolean exposed to Home Assistant to choose the wake word engine:
+  #   ON  -> local on-device wake word (micro_wake_word)
+  #   OFF -> audio streamed continuously to Home Assistant (remote detection)
+  - platform: template
+    id: use_local_wake_word
+    name: "Local wake word"
+    icon: "mdi:account-voice"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      # Switch to local detection: stop any remote streaming, then start local
+      - micro_wake_word.stop:
+      - lambda: id(va).set_use_wake_word(false);
+      - voice_assistant.stop:
+      - delay: 500ms
+      - script.execute: start_wake_word
+      - script.execute: reset_led
+    on_turn_off:
+      # Switch to remote detection: stop local engine, then start streaming
+      - micro_wake_word.stop:
+      - lambda: id(va).set_use_wake_word(false);
+      - voice_assistant.stop:
+      - delay: 500ms
+      - script.execute: start_wake_word
+      - script.execute: reset_led
   - platform: template
     name: Use listen light
     id: use_listen_light
@@ -739,28 +813,23 @@ select:
       # Sets specific wake word probabilities computed for each particular model
       lambda: |-
         if (x == "Slightly sensitive") {
+          id(nestor).set_probability_cutoff(217);
           id(okay_nabu).set_probability_cutoff(217);
-          id(hey_jarvis).set_probability_cutoff(247);
-          id(hey_mycroft).set_probability_cutoff(253);
         } else if (x == "Moderately sensitive") {
+          id(nestor).set_probability_cutoff(176);
           id(okay_nabu).set_probability_cutoff(176);
-          id(hey_jarvis).set_probability_cutoff(235);
-          id(hey_mycroft).set_probability_cutoff(242);
         } else if (x == "Very sensitive") {
+          id(nestor).set_probability_cutoff(143);
           id(okay_nabu).set_probability_cutoff(143);
-          id(hey_jarvis).set_probability_cutoff(212);
-          id(hey_mycroft).set_probability_cutoff(237);
         }
 
 micro_wake_word:
   id: mww
   models:
+    - model: micro-wake-word/models/Nestor.json
+      id: nestor
     - model: okay_nabu
       id: okay_nabu
-    - model: hey_jarvis
-      id: hey_jarvis
-    - model: hey_mycroft
-      id: hey_mycroft
   vad:
   on_wake_word_detected:
     # If muted (software mute): do nothing
