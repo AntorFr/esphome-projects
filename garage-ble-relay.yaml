@@ -26,7 +26,7 @@ ethernet:
   power_pin:
     number: GPIO12
     ignore_strapping_warning: true
-  use_address: ${device_name}.intra.sberard.fr
+  use_address: ${device_name}.intra.sberard.fr.
 
 api:
   reboot_timeout: 15min
