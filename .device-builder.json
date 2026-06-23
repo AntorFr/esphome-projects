@@ -1,0 +1,406 @@
+{
+  "_firmware_jobs": [
+    {
+      "job_id": "a5f9ce659486",
+      "configuration": "nest-mini-bureau.yaml",
+      "job_type": "upload",
+      "status": "completed",
+      "created_at": "2026-06-19T16:37:16.336927+00:00",
+      "started_at": "2026-06-19T17:09:07.340044+00:00",
+      "completed_at": "2026-06-19T17:09:24.158318+00:00",
+      "exit_code": 0,
+      "error": null,
+      "port": "OTA",
+      "new_name": "",
+      "depends_on": "89e45be1ef62",
+      "dependency_released": true,
+      "progress": 100,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    },
+    {
+      "job_id": "89e45be1ef62",
+      "configuration": "nest-mini-bureau.yaml",
+      "job_type": "compile",
+      "status": "completed",
+      "created_at": "2026-06-19T16:37:16.336862+00:00",
+      "started_at": "2026-06-19T16:37:16.339644+00:00",
+      "completed_at": "2026-06-19T17:09:07.330735+00:00",
+      "exit_code": 0,
+      "error": null,
+      "port": "",
+      "new_name": "",
+      "depends_on": "",
+      "dependency_released": false,
+      "progress": null,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    },
+    {
+      "job_id": "92835ec118fd",
+      "configuration": "nest-mini-salon.yaml",
+      "job_type": "upload",
+      "status": "completed",
+      "created_at": "2026-06-18T10:36:03.749116+00:00",
+      "started_at": "2026-06-18T10:51:44.824271+00:00",
+      "completed_at": "2026-06-18T10:51:59.348120+00:00",
+      "exit_code": 0,
+      "error": null,
+      "port": "OTA",
+      "new_name": "",
+      "depends_on": "15ccbc6a7236",
+      "dependency_released": true,
+      "progress": 100,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    },
+    {
+      "job_id": "15ccbc6a7236",
+      "configuration": "nest-mini-salon.yaml",
+      "job_type": "compile",
+      "status": "completed",
+      "created_at": "2026-06-18T10:36:03.749067+00:00",
+      "started_at": "2026-06-18T10:36:03.750446+00:00",
+      "completed_at": "2026-06-18T10:51:44.821177+00:00",
+      "exit_code": 0,
+      "error": null,
+      "port": "",
+      "new_name": "",
+      "depends_on": "",
+      "dependency_released": false,
+      "progress": null,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    },
+    {
+      "job_id": "8b8346c20d60",
+      "configuration": "ha-voice-kitchen.yaml",
+      "job_type": "compile",
+      "status": "running",
+      "created_at": "2026-06-23T21:02:32.373249+00:00",
+      "started_at": "2026-06-23T21:02:32.376085+00:00",
+      "completed_at": null,
+      "exit_code": null,
+      "output": [],
+      "error": null,
+      "port": "",
+      "new_name": "",
+      "depends_on": "",
+      "dependency_released": false,
+      "progress": null,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    },
+    {
+      "job_id": "16697890eee3",
+      "configuration": "ha-voice-kitchen.yaml",
+      "job_type": "upload",
+      "status": "queued",
+      "created_at": "2026-06-23T21:02:32.373435+00:00",
+      "started_at": null,
+      "completed_at": null,
+      "exit_code": null,
+      "output": [],
+      "error": null,
+      "port": "OTA",
+      "new_name": "",
+      "depends_on": "8b8346c20d60",
+      "dependency_released": false,
+      "progress": null,
+      "remote_peer": "",
+      "remote_job_id": "",
+      "remote_peer_label": "",
+      "device_name": "",
+      "device_friendly_name": "",
+      "source": "local",
+      "source_pin_sha256": "",
+      "source_label": "",
+      "source_esphome_version": ""
+    }
+  ],
+  "_board_id_user_set_migrated": true,
+  "_dashboard_identity": {
+    "dashboard_id": "EEBzVLm_RHdwb-kEa7aP1CviSbwlnyE3"
+  },
+  "bathroom-light-switch.yaml": {
+    "mac_address": "54:43:B2:6D:F6:A0"
+  },
+  "bathroom-power-strip.yaml": {
+    "mac_address": "3C:E9:0E:E9:D9:DC"
+  },
+  "bathroom-presence-sensor.yaml": {
+    "mac_address": "80:64:6F:9B:CF:28"
+  },
+  "breezeway-light.yaml": {
+    "mac_address": "30:C6:F7:80:1C:28"
+  },
+  "ceiling-light-timothee.yaml": {
+    "mac_address": "D8:BC:38:9A:DD:FC"
+  },
+  "desk-light-switch.yaml": {
+    "mac_address": "54:43:B2:71:82:F4"
+  },
+  "dressing-light-switch.yaml": {
+    "mac_address": "54:43:B2:6D:FA:D0"
+  },
+  "dryer-plug.yaml": {
+    "mac_address": "08:3A:8D:FA:31:E5"
+  },
+  "emilie-clock.yaml": {
+    "mac_address": "84:FC:E6:73:16:10"
+  },
+  "emilie-desk-switch.yaml": {
+    "mac_address": "54:43:B2:70:02:20"
+  },
+  "emilie-entrance-switch.yaml": {
+    "mac_address": "54:43:B2:71:8D:CC"
+  },
+  "emilie-power-strip.yaml": {
+    "mac_address": "4C:EB:D6:18:99:8E"
+  },
+  "emilie-rfc-reader.yaml": {
+    "mac_address": "A0:20:A6:2C:7E:58"
+  },
+  "entrance-gate.yaml": {
+    "mac_address": "98:F4:AB:E3:54:B1"
+  },
+  "esp-heishamon.yaml": {
+    "mac_address": "24:58:7C:DC:C4:24"
+  },
+  "freezer-plug.yaml": {
+    "mac_address": "A4:E5:7C:99:0D:52"
+  },
+  "fridge-plug.yaml": {
+    "mac_address": "A4:E5:7C:98:D2:A1"
+  },
+  "garage-ble-relay.yaml": {
+    "mac_address": "30:C9:22:00:F2:FC"
+  },
+  "garage-door-1.yaml": {
+    "mac_address": "78:21:84:4F:93:70"
+  },
+  "garage-door-2.yaml": {
+    "mac_address": "28:05:A5:07:CA:34"
+  },
+  "garage-door-3.yaml": {
+    "mac_address": "28:05:A5:07:5A:34"
+  },
+  "garage1-ceilling-light.yaml": {
+    "mac_address": "A0:85:E3:C9:15:E0"
+  },
+  "garage2-ceilling-light.yaml": {
+    "mac_address": "44:17:93:A7:26:8C"
+  },
+  "garage2-presence-sensor.yaml": {
+    "mac_address": "80:64:6F:9B:CC:42"
+  },
+  "garage2-water-tank.yaml": {
+    "mac_address": "78:21:84:50:E5:70"
+  },
+  "garden-light-back.yaml": {
+    "mac_address": "40:F5:20:FB:A9:44"
+  },
+  "garden-light-front.yaml": {
+    "mac_address": "24:A1:60:11:9D:21"
+  },
+  "garden-parking-light.yaml": {
+    "mac_address": "C8:2B:96:62:8E:86"
+  },
+  "ha-voice-garage2.yaml": {
+    "mac_address": "20:F8:3B:09:16:A9"
+  },
+  "ha-voice-kitchen.yaml": {
+    "mac_address": "20:F8:3B:09:74:16"
+  },
+  "hallway-light-relay.yaml": {
+    "mac_address": "FC:E8:C0:D9:52:C4"
+  },
+  "laundry-ceiling-light.yaml": {
+    "mac_address": "80:65:99:87:DA:10"
+  },
+  "laundry-switch.yaml": {
+    "mac_address": "54:43:B2:70:06:CC"
+  },
+  "library-power-strip.yaml": {
+    "mac_address": "48:55:19:52:13:19"
+  },
+  "linky.yaml": {
+    "mac_address": "4C:75:25:F3:64:98"
+  },
+  "multiprise-timothee.yaml": {
+    "mac_address": "48:55:19:71:03:48"
+  },
+  "nuki-gateway-entrance.yaml": {
+    "mac_address": "A0:B7:65:CC:A3:D4"
+  },
+  "office-entry-power-strip.yaml": {
+    "mac_address": "E0:98:06:DC:34:E1"
+  },
+  "office-hallway-light-switch.yaml": {
+    "mac_address": "54:43:B2:70:81:70"
+  },
+  "office-light-switch.yaml": {
+    "mac_address": "54:43:B2:71:BB:38"
+  },
+  "breathing-love.yaml": {
+    "mac_address": "48:3F:DA:95:A1:62"
+  },
+  "daynight-light.yaml": {
+    "mac_address": "08:D1:F9:E0:20:8C"
+  },
+  "desk-presence-sensor.yaml": {
+    "mac_address": "24:EC:4A:AD:5F:40"
+  },
+  "desk-smart-sensors.yaml": {
+    "mac_address": "84:FC:E6:74:B0:D8"
+  },
+  "dial-office-desk.yaml": {
+    "mac_address": "B0:81:84:97:1E:00"
+  },
+  "nest-mini-bureau.yaml": {
+    "mac_address": "68:B6:B3:24:C9:C8"
+  },
+  "nest-mini-salon.yaml": {
+    "mac_address": "68:B6:B3:24:C9:B0"
+  },
+  "office-air-sensor.yaml": {
+    "mac_address": "78:21:84:6B:AA:F0"
+  },
+  "parent-bed-light.yaml": {
+    "mac_address": "3C:71:BF:31:5B:6A"
+  },
+  "parent-bed-power-strip.yaml": {
+    "mac_address": "E0:98:06:DE:72:6B"
+  },
+  "parent-light-switch.yaml": {
+    "mac_address": "54:43:B2:71:7C:8C"
+  },
+  "pool-filtering-relay.yaml": {
+    "mac_address": "EC:62:60:82:23:B8"
+  },
+  "pool-heat-pump.yaml": {
+    "mac_address": "EC:FA:BC:51:0C:59"
+  },
+  "pool-well-relay.yaml": {
+    "mac_address": "8C:4F:00:B4:24:48"
+  },
+  "portail-ble-relay.yaml": {
+    "mac_address": "30:C9:22:00:20:CC"
+  },
+  "power-plug-ups-garage.yaml": {
+    "mac_address": "08:3A:8D:FA:36:A9"
+  },
+  "presence-sensor-dining.yaml": {
+    "mac_address": "80:64:6F:9B:CA:C2"
+  },
+  "presence-sensor-shower.yaml": {
+    "mac_address": "80:64:6F:9C:E4:C4"
+  },
+  "restroom-1floor-light.yaml": {
+    "mac_address": "F4:CF:A2:16:53:3C"
+  },
+  "restroom-groundfloor-light.yaml": {
+    "mac_address": "F4:CF:A2:16:54:E2"
+  },
+  "shower-light-switch.yaml": {
+    "mac_address": "54:43:B2:6D:E1:14"
+  },
+  "shower-light.yaml": {
+    "mac_address": "84:0D:8E:7E:BF:CC"
+  },
+  "shower-power-strip.yaml": {
+    "mac_address": "4C:EB:D6:18:F8:34"
+  },
+  "smart-kettle-kitchen.yaml": {
+    "mac_address": "CC:4D:75:70:F0:C9"
+  },
+  "sonos-switch-dining.yaml": {
+    "mac_address": "C8:2B:96:5C:4B:8E"
+  },
+  "timothee-bed-light.yaml": {
+    "mac_address": "40:91:51:FF:D3:A8"
+  },
+  "timothee-bed-power-strip.yaml": {
+    "mac_address": "4C:EB:D6:18:B0:E6"
+  },
+  "timothee-bed-switch.yaml": {
+    "mac_address": "54:43:B2:70:16:FC"
+  },
+  "timothee-entrance-switch.yaml": {
+    "mac_address": "54:43:B2:70:87:0C"
+  },
+  "timothee-wood-pannel.yaml": {
+    "mac_address": "24:0A:C4:9B:3B:DC"
+  },
+  "underwater-pool-light.yaml": {
+    "mac_address": "30:C6:F7:8A:D1:F8"
+  },
+  "upstairs-hallway-light-relay.yaml": {
+    "mac_address": "FC:E8:C0:D9:53:70"
+  },
+  "washing-machine-plug.yaml": {
+    "mac_address": "A4:E5:7C:98:D7:6D"
+  },
+  "esp-assistant-parent.yaml": {
+    "mac_address": "64:B7:08:88:90:DC"
+  },
+  "tv-presence-sensor.yaml": {
+    "mac_address": "10:51:DB:AB:0B:A4"
+  },
+  "hotglue-gun-plug.yaml": {
+    "mac_address": "C8:2B:96:59:98:79"
+  },
+  "mobile-heater-plug.yaml": {
+    "mac_address": "08:3A:8D:FA:36:B8"
+  },
+  "office-solder-fume.yaml": {
+    "mac_address": "30:83:98:A1:8B:AA"
+  },
+  "office-solder-iron-switch.yaml": {
+    "mac_address": "34:94:54:83:38:86"
+  },
+  "sonic-saber-plug.yaml": {
+    "mac_address": "08:3A:8D:FA:3C:1F"
+  },
+  "garden-light-parking2.yaml": {
+    "mac_address": "D4:8C:49:0E:B7:30"
+  },
+  "garden-light-parking3.yaml": {
+    "mac_address": "D4:8C:49:0E:BD:BD"
+  }
+}

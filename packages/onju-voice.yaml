@@ -95,6 +95,30 @@ button:
     id: factory_reset_btn
     name: Factory reset
 
+  # Diagnostic: force a stop + restart of the continuous stream to Home Assistant.
+  # Useful to check whether HA re-selects the pipeline / Wyoming wake word port on a
+  # fresh pipeline run. Only meaningful in remote (streaming) mode.
+  - platform: template
+    name: "Restart stream"
+    id: restart_stream_btn
+    icon: "mdi:restart"
+    entity_category: diagnostic
+    on_press:
+      - logger.log: "Manual stream restart requested"
+      - micro_wake_word.stop:
+      - voice_assistant.stop:
+      - lambda: id(va).set_use_wake_word(false);
+      - delay: 500ms
+      - if:
+          condition:
+            switch.is_off: use_local_wake_word
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
+          else:
+            - script.execute: start_wake_word
+      - script.execute: reset_led
+
 #######################################
 # Device specific Config Begins Below #
 #######################################
@@ -131,6 +155,25 @@ interval:
       - script.execute:
           id: calibrate_touch
           button: 2
+  # Remote (streaming) watchdog: in remote mode the continuous stream to Home
+  # Assistant can drop and not resume on its own. Every few seconds, if we are
+  # idle and the stream is not running, restart it so remote wake word keeps working.
+  - interval: 3s
+    then:
+      - if:
+          condition:
+            and:
+              - switch.is_off: use_local_wake_word
+              - wifi.connected:
+              - api.connected:
+              - switch.is_off: master_mute_switch
+              - switch.is_off: timer_ringing
+              - not:
+                  voice_assistant.is_running:
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
+            - script.execute: reset_led
 
 i2s_audio:
   - id: i2s_audio_bus
@@ -267,6 +310,7 @@ voice_assistant:
   on_client_connected:
     - delay: 2s  # Give the api server time to settle
     - script.execute: start_wake_word
+    - script.execute: reset_led
   on_client_disconnected:
     - script.execute: stop_wake_word
   on_timer_finished:
@@ -458,6 +502,22 @@ light:
           name: slow_pulse
           transition_length: 1s
           update_interval: 2s
+      # Indicator shown while streaming continuously to Home Assistant (remote wake word).
+      # The LEDs are arranged in a line, so use a back-and-forth sweep (chenillard):
+      # as long as the teal dot bounces left/right, the remote listening is alive.
+      - addressable_lambda:
+          name: streaming
+          update_interval: 150ms
+          lambda: |-
+            static int idx = 0;
+            static int dir = 1;
+            Color c(0, 180, 180);
+            for (int i = 0; i < it.size(); i++) {
+              it[i] = (i == idx) ? c : Color::BLACK;
+            }
+            idx += dir;
+            if (idx >= (int) it.size() - 1) { idx = it.size() - 1; dir = -1; }
+            else if (idx <= 0) { idx = 0; dir = 1; }
       - addressable_lambda:
           name: show_volume
           update_interval: 50ms
@@ -512,29 +572,45 @@ script:
           else:
             - if:
                 condition:
-                  - switch.is_on: use_listen_light
-                  - switch.is_on: use_local_wake_word
+                  - switch.is_off: use_local_wake_word
                 then:
-                  # Local wake word: warm white listen light
-                  - light.turn_on:
-                      id: top_led
-                      red: 100%
-                      green: 89%
-                      blue: 71%
-                      brightness: 60%
-                      effect: none
+                  # Remote mode: show whether the continuous stream to Home Assistant is alive
+                  - if:
+                      condition:
+                        voice_assistant.is_running:
+                      then:
+                        # Stream alive: moving teal dot
+                        - light.turn_on:
+                            id: top_led
+                            brightness: 60%
+                            effect: streaming
+                      else:
+                        - if:
+                            condition:
+                              switch.is_on: master_mute_switch
+                            then:
+                              # Muted: stream intentionally stopped
+                              - light.turn_off: top_led
+                            else:
+                              # Stream dropped unexpectedly: red warning (watchdog will retry)
+                              - light.turn_on:
+                                  id: top_led
+                                  red: 100%
+                                  green: 0%
+                                  blue: 0%
+                                  brightness: 60%
+                                  effect: "Slow Pulse"
                 else:
+                  # Local mode: warm white listen light (if enabled)
                   - if:
                       condition:
                         - switch.is_on: use_listen_light
-                        - switch.is_off: use_local_wake_word
                       then:
-                        # Streaming to Home Assistant: cyan listen light
                         - light.turn_on:
                             id: top_led
-                            red: 0%
-                            green: 100%
-                            blue: 100%
+                            red: 100%
+                            green: 89%
+                            blue: 71%
                             brightness: 60%
                             effect: none
                       else:
