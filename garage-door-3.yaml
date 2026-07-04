@@ -1,6 +1,6 @@
 substitutions:
   device_name: garage-door-3
-  friendly_name: Porte
+  friendly_name: Porte Garage 3
   area: Garage 3
 
 esphome:
