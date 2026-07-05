@@ -266,11 +266,6 @@ switch:
     name: "Prise bureau"
     internal: true
   - platform: homeassistant
-    id: sw_curfew
-    entity_id: input_boolean.curfew_emilie
-    name: "Couvre-feu"
-    internal: true
-  - platform: homeassistant
     id: sw_adaptive
     entity_id: switch.adaptive_lighting_chambre_emilie
     name: "Lumière adaptative"
@@ -407,7 +402,6 @@ ha_dashboard:
       icon: speaker
       cards:
         - { type: media_player, media_player_id: media_emilie, name: "Enceinte", color: "#A06CFF" }
-        - { type: switch, switch_id: sw_curfew,   name: "Couvre-feu",   color: "#7E57C2" }
         - { type: switch, switch_id: sw_adaptive, name: "Lum. adaptive", color: "#26A69A" }
     # Music Library launcher tab: Émilie's favourites -> her Music Assistant player.
     - name: "Musique"
