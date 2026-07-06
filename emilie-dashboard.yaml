@@ -225,6 +225,17 @@ voice_assistant:
     - lambda: "id(emilie_dash)->voice_thinking();"
   on_tts_start:
     - lambda: "id(emilie_dash)->voice_responding();"
+  # Voice responses always play at full volume, independent of the device volume. The speaker
+  # media_player applies one gain to BOTH pipelines, so we boost to 100% for the TTS stream and
+  # restore cfg_volume right after — the UI click stays tied to the device volume.
+  on_tts_stream_start:
+    - media_player.volume_set:
+        id: d1001_media
+        volume: 1.0
+  on_tts_stream_end:
+    - media_player.volume_set:
+        id: d1001_media
+        volume: !lambda "return id(cfg_volume).state / 100.0f;"
   on_end:
     - lambda: "id(emilie_dash)->voice_end();"
     - micro_wake_word.start:
