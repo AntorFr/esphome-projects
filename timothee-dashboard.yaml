@@ -1,0 +1,425 @@
+# reTerminal D1001 (ESP32-P4) dashboard for Timothée's room.
+# Consumes the ha_dashboard + homeassistant_addon components and the board/fonts packages from
+# github://AntorFr/esphome-dashboard (ref: main). Mirrors the office/Émilie examples (audio +
+# voice assistant + settings + weather + music launcher), wired to Timothée's room entities.
+substitutions:
+  device_name: timothee-dashboard
+  friendly_name: Dashboard Timothée
+  area: "Chambre Timothée"
+  # Launcher cover encoding: jpg (small transfer) | bmp (near-free decode). Drives the
+  # online_image slots' format AND the music_library group's image_format.
+  ml_img_fmt: jpg
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  on_boot:
+    # Start local wake-word detection once everything is up (also (re)started on HA connect
+    # and after each pipeline run, see voice_assistant below).
+    - priority: -100
+      then:
+        - delay: 2s
+        - micro_wake_word.start:
+
+# Keep the radio always on (merges with device_base's wifi). The ESP32 default light-sleep adds
+# latency and drops time-sensitive streamed fetches (HA TTS/media over the C6/SDIO link) — the
+# cause of intermittent "TTS plays once then nothing". HA Voice PE also uses none.
+wifi:
+  power_save_mode: none
+
+logger:
+  level: DEBUG
+
+packages:
+  # wifi / ota / api (encrypted) / diagnostics / restart buttons.
+  device_base: !include packages/device_base.yaml
+  # D1001 board (MIPI-DSI display, GSL3670 touch, lvgl, psram, esp_ldo, esp32_hosted WiFi via C6,
+  # audio I2S ES8311/ES7210, PA, battery, backlight) + dashboard fonts — pulled from the lib.
+  board:
+    url: https://github.com/AntorFr/esphome-dashboard
+    file: packages/boards/reterminal_d1001.yaml
+    ref: main
+    refresh: 0s
+  fonts:
+    url: https://github.com/AntorFr/esphome-dashboard
+    file: packages/fonts/montserrat_fr.yaml
+    ref: main
+    refresh: 0s
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-dashboard
+      ref: main
+    components: [ha_dashboard, homeassistant_addon]
+    refresh: 0s
+
+# Diagnostics: heap + loop health, and the reset reason (why a reboot happened).
+debug:
+  update_interval: 30s
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap libre"
+    fragmentation:
+      name: "Heap fragmentation"
+    loop_time:
+      name: "Loop time"
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Paris
+
+# Multi-day weather forecast, fetched directly from HA via weather.get_forecasts
+# (capture_response: no HA-side template sensor). Reformatted into a compact
+# "condition|low|high;..." string and handed to the dashboard. On HA connect + every 30 min.
+script:
+  - id: fetch_forecast
+    then:
+      - homeassistant.action:
+          action: weather.get_forecasts
+          data:
+            entity_id: weather.petit_mars
+            type: daily
+          capture_response: true
+          on_success:
+            - lambda: |-
+                // HA wraps the service response one level deep under "response".
+                std::string out;
+                int n = 0;
+                JsonArrayConst f = response["response"]["weather.petit_mars"]["forecast"].as<JsonArrayConst>();
+                for (JsonObjectConst d : f) {
+                  if (n++ >= 6) break;
+                  if (!out.empty()) out += ";";
+                  out += std::string(d["condition"].as<const char *>()) + "|" +
+                         std::to_string((int) lroundf(d["templow"].as<float>())) + "|" +
+                         std::to_string((int) lroundf(d["temperature"].as<float>()));
+                }
+                id(timothee_dash)->set_forecast(out);
+          on_error:
+            - logger.log:
+                format: "get_forecasts action FAILED"
+                level: WARN
+
+interval:
+  - interval: 30min
+    then:
+      - script.execute: fetch_forecast
+
+# Side button (GPIO3, active-low): short-press toggles extended standby (backlight off/on).
+binary_sensor:
+  - platform: gpio
+    id: d1001_side_button
+    pin:
+      number: GPIO3
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      - lambda: "id(timothee_dash)->toggle_deep_standby();"
+
+# HTTP client for the Music Library launcher (ESP -> music-library REST API).
+http_request:
+  id: ml_http
+  timeout: 5s
+  verify_ssl: false
+
+# Cover-image pools for the launcher. URLs are set at runtime; the initial url is a placeholder.
+online_image:
+  - { id: cov0, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov1, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov2, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov3, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov4, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov5, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov6, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov7, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov8, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: cov9, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm0, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm1, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm2, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm3, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm4, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm5, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm6, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm7, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm8, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm9, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm10, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm11, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm12, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm13, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm14, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+  - { id: thm15, url: "http://music-library.berard.me/covers/_.jpg", format: "${ml_img_fmt}", type: RGB565, update_interval: never, http_request_id: ml_http }
+
+# === Voice assistant (wake word local + HA Assist), reflected into the dashboard overlay ===
+# Always-on MIXER speaker chain (mirrors HA Voice PE) so short announcements/TTS actually play.
+# announcement_pipeline -> announcement_resampling_speaker -> announcement_mixing_input
+#                       -> mixing_speaker -> d1001_speaker (i2s, always on)
+speaker:
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: d1001_speaker      # the board's raw i2s speaker (16 kHz, ES8311)
+    source_speakers:
+      - id: announcement_mixing_input
+      - id: media_mixing_input
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+
+# format: NONE compiles ALL decoders (MP3/FLAC/WAV/OPUS): HA streams TTS as .mp3, so a fixed
+# FLAC format would fail to decode it.
+media_player:
+  - platform: speaker
+    id: d1001_media
+    name: "Enceinte Chambre Timothée"   # exposed to HA (TTS/announcements/media to the device)
+    # After any playback (notably a boosted voice response) returns to idle, restore the device
+    # volume — so the 100% TTS boost from on_tts_start doesn't stick for the next media/click.
+    on_idle:
+      - media_player.volume_set:
+          id: d1001_media
+          volume: !lambda "return id(cfg_volume).state / 100.0f;"
+    announcement_pipeline:
+      speaker: announcement_resampling_speaker
+      format: NONE
+    media_pipeline:
+      speaker: media_resampling_speaker
+      format: NONE
+    files:
+      - id: wake_sound
+        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/wake_word_triggered.flac
+      - id: timer_sound
+        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+      - id: click_sound   # short UI click for touch feedback (FLAC — avoids the mono-MP3 issue)
+        file: sounds/tx_ultimate/explore_the_stars/clic.flac
+
+# Local custom wake word "Ok Nestor" (model shipped in this repo).
+micro_wake_word:
+  models:
+    - model: micro-wake-word/models/Nestor.json
+      id: nestor
+  microphone:
+    microphone: d1001_microphone
+  on_wake_word_detected:
+    - media_player.speaker.play_on_device_media_file:
+        id: d1001_media
+        media_file: wake_sound
+        announcement: true
+    - voice_assistant.start:
+
+voice_assistant:
+  id: timothee_voice
+  microphone:
+    microphone: d1001_microphone
+  media_player: d1001_media
+  on_listening:
+    - lambda: "id(timothee_dash)->voice_listening();"
+  on_stt_end:
+    - lambda: "id(timothee_dash)->voice_thinking();"
+  on_tts_start:
+    - lambda: "id(timothee_dash)->voice_responding();"
+    # Voice responses always play at full volume, independent of the device volume. The speaker
+    # media_player applies one gain to BOTH pipelines, so boost to 100% for the response; the
+    # media_player's on_idle restores cfg_volume once it finishes. The UI click stays on cfg_volume.
+    - media_player.volume_set:
+        id: d1001_media
+        volume: 1.0
+  on_end:
+    - lambda: "id(timothee_dash)->voice_end();"
+    - micro_wake_word.start:
+  on_error:
+    - lambda: "id(timothee_dash)->voice_error();"
+  on_client_connected:
+    - lambda: "id(timothee_dash)->voice_set_available(true);"
+    - micro_wake_word.start:
+    - delay: 4s
+    - script.execute: fetch_forecast
+  on_client_disconnected:
+    - lambda: "id(timothee_dash)->voice_set_available(false);"
+    - micro_wake_word.stop:
+  on_timer_started:
+    - lambda: "id(timothee_dash)->timer_started(timer.id, timer.name, timer.seconds_left);"
+  on_timer_updated:
+    - lambda: "id(timothee_dash)->timer_updated(timer.id, timer.seconds_left, timer.is_active);"
+  on_timer_cancelled:
+    - lambda: "id(timothee_dash)->timer_cancelled(timer.id);"
+  on_timer_finished:
+    - lambda: "id(timothee_dash)->timer_finished(timer.id);"
+    - media_player.speaker.play_on_device_media_file:
+        id: d1001_media
+        media_file: timer_sound
+        announcement: true
+
+# === Timothée's room entities ===
+# Touch click feedback on/off (settings entity, gates ha_dashboard on_tap).
+switch:
+  - platform: template
+    name: "Clic tactile"
+    id: cfg_click
+    icon: mdi:gesture-tap
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+  - platform: homeassistant
+    id: sw_adaptive
+    entity_id: switch.adaptive_lighting_chambre_timothee
+    name: "Lumière adaptative"
+    internal: true
+
+# Non-switch HA entities via homeassistant_addon (cover / media_player / light).
+cover:
+  - platform: homeassistant_addon
+    id: cover_volet
+    entity_id: cover.chambre_timothee_volet_roulant   # TODO confirm exact entity_id (registry)
+    name: "Volet"
+    internal: true
+
+homeassistant_addon:
+  media_players:
+    - id: media_timothee
+      entity_id: media_player.timothee
+      volume_step: 0.05
+  lights:
+    - id: light_plafonnier
+      entity_id: light.ceiling_light_timothee_plafonnier_timoth_e
+    - id: light_veilleuse
+      entity_id: light.veilleuse_timothee
+    - id: light_lit
+      entity_id: light.timothee_bed_light_lumi_res_lit_timoth_e
+    - id: light_cadre
+      entity_id: light.daynight_light_cadre_lumineux_timoth_e
+    - id: light_horloge
+      entity_id: light.led_matrix
+
+# Configurable settings, exposed to HA AND driven by the on-device settings shade (single
+# source of truth). Each applies its effect in on_value and persists (restore_value).
+number:
+  - platform: template
+    name: "Volume"
+    id: cfg_volume
+    icon: mdi:volume-high
+    optimistic: true
+    restore_value: true
+    initial_value: 60
+    min_value: 0
+    max_value: 100
+    step: 5
+    unit_of_measurement: "%"
+    mode: slider
+    on_value:
+      - media_player.volume_set:
+          id: d1001_media
+          volume: !lambda "return x / 100.0f;"
+  - platform: template
+    name: "Luminosité"
+    id: cfg_brightness
+    icon: mdi:brightness-6
+    optimistic: true
+    restore_value: true
+    initial_value: 100
+    min_value: 10
+    max_value: 100
+    step: 5
+    unit_of_measurement: "%"
+    mode: slider
+    on_value:
+      - light.turn_on:
+          id: d1001_backlight
+          brightness: !lambda "return x / 100.0f;"
+  - platform: template
+    name: "Mise en veille"
+    id: cfg_standby
+    icon: mdi:timer-outline
+    optimistic: true
+    restore_value: true
+    initial_value: 3
+    min_value: 0        # 0 = jamais (veille prolongée désactivée)
+    max_value: 30
+    step: 1
+    unit_of_measurement: "min"
+    mode: box
+    on_value:
+      - lambda: "id(timothee_dash)->set_deep_standby_timeout(x <= 0 ? 0 : (uint32_t)(x * 60000));"
+
+ha_dashboard:
+  id: timothee_dash
+  profile: reterminal_d1001
+  language: fr
+  inactivity_timeout: 120s
+  time_id: sntp_time
+  # Audible click feedback on button/tile taps — gated by the "Clic tactile" switch.
+  on_tap:
+    - if:
+        condition:
+          switch.is_on: cfg_click
+        then:
+          - media_player.speaker.play_on_device_media_file:
+              id: d1001_media
+              media_file: click_sound
+              announcement: true
+  # Extended standby: the backlight turns off after the "Mise en veille" delay; the next touch
+  # or wake word turns it back on.
+  on_deep_standby:
+    - light.turn_off: d1001_backlight
+  on_wake:
+    - light.turn_on: d1001_backlight
+  # Settings shade (swipe down): reads/writes these entities + shows the battery.
+  volume_number: cfg_volume
+  brightness_number: cfg_brightness
+  standby_number: cfg_standby
+  click_switch: cfg_click
+  battery_sensor: d1001_battery
+  charging_sensor: d1001_charging
+  weather:
+    entity: weather.petit_mars
+  font_small: ha_font_small
+  font_medium: ha_font_medium
+  font_large: ha_font_large
+  font_weather: ha_font_weather
+  font_icons: ha_font_icons
+  font_icons_lg: ha_font_icons_lg
+  font_voice: ha_font_voice
+  # Touch-only navigation (no encoder/button on the D1001).
+  groups:
+    - name: "Lumières"
+      icon: light
+      cards:
+        - { type: light, light_id: light_plafonnier, name: "Plafonnier", color: "#FFB020" }
+        - { type: light, light_id: light_veilleuse,  name: "Veilleuse",  color: "#FF7043" }
+        - { type: light, light_id: light_lit,        name: "Lampe lit",  color: "#FFCA28" }
+        - { type: light, light_id: light_cadre,      name: "Cadre",      color: "#7E57C2" }
+    - name: "Chambre"
+      icon: sofa
+      cards:
+        - { type: cover, cover_id: cover_volet, name: "Volet", color: "#577EFF", cover_kind: shutter }
+        - { type: light, light_id: light_horloge, name: "Horloge", color: "#00BCD4" }
+    - name: "Ambiance"
+      icon: speaker
+      cards:
+        - { type: media_player, media_player_id: media_timothee, name: "Enceinte", color: "#A06CFF" }
+        - { type: switch, switch_id: sw_adaptive, name: "Lum. adaptive", color: "#26A69A" }
+    # Music Library launcher tab: Timothée's favourites -> his Music Assistant player.
+    - name: "Musique"
+      icon: music
+      type: music_library
+      http_request_id: ml_http
+      base_url: "http://music-library.berard.me"
+      owner: "Timothée"
+      player: "media_player.timothee_2"    # Music Assistant player id — TODO confirm
+      player_name: "Chambre Timothée"      # shown in the launch-confirmation toast
+      image_format: ${ml_img_fmt}
+      cover_slots: [cov0, cov1, cov2, cov3, cov4, cov5, cov6, cov7, cov8, cov9]
+      thumb_slots: [thm0, thm1, thm2, thm3, thm4, thm5, thm6, thm7, thm8, thm9,
+                    thm10, thm11, thm12, thm13, thm14, thm15]
