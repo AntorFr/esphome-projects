@@ -282,7 +282,7 @@ switch:
 cover:
   - platform: homeassistant_addon
     id: cover_volet
-    entity_id: cover.chambre_timothee_volet_roulant   # TODO confirm exact entity_id (registry)
+    entity_id: cover.chambre_timothee_volet_roulant
     name: "Volet"
     internal: true
 
@@ -417,7 +417,7 @@ ha_dashboard:
       http_request_id: ml_http
       base_url: "http://music-library.berard.me"
       owner: "Timothée"
-      player: "media_player.timothee_2"    # Music Assistant player id — TODO confirm
+      player: "media_player.timothee_2"    # Music Assistant player id
       player_name: "Chambre Timothée"      # shown in the launch-confirmation toast
       image_format: ${ml_img_fmt}
       cover_slots: [cov0, cov1, cov2, cov3, cov4, cov5, cov6, cov7, cov8, cov9]
