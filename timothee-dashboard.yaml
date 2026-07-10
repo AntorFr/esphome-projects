@@ -391,6 +391,8 @@ ha_dashboard:
   font_icons: ha_font_icons
   font_icons_lg: ha_font_icons_lg
   font_voice: ha_font_voice
+  font_nestor: ha_font_nestor
+  font_nestor_lg: ha_font_nestor_lg
   # Touch-only navigation (no encoder/button on the D1001).
   groups:
     - name: "Lumières"
