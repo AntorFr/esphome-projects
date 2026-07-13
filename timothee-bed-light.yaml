@@ -57,6 +57,12 @@ external_components:
 light:
   - id: !extend led
     power_estimation:
-      # Défauts : 20 mA/canal (60 mA/LED en blanc plein), 1 mA idle/LED.
-      # Alim 5V 10A, consigne prudente : 8A.
-      max_current_ma: 8000
+      # Bande WS2811 5V (~60 mA/pixel blanc plein), défauts 20 mA/canal OK.
+      # Seuil calé sur le palier de brown-out empirique : 56% blanc (~770 mA)
+      # stable, 57% (~806 mA) fait crasher l'ESP (rail 5V qui s'affaisse ->
+      # reset -> le relais power_supply s'ouvre). On plafonne à 700 mA avec
+      # une marge, HA continue d'afficher 100% (throttling physique seul).
+      # ⚠️ Pansement : cap inactif pendant les effets (limite PR esphome#15348),
+      # et masque un vrai défaut du chemin d'alim (0,8 A ne devrait pas crasher
+      # une alim 10A -> fil/connecteur PSU->carte a revoir).
+      max_current_ma: 700
