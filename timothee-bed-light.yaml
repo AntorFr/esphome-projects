@@ -43,3 +43,20 @@ packages:
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
   athom-strip-controller: !include packages/athom-strip-controller.yaml
+
+# Test du limiteur de courant soft (PR esphome#15348, pas encore mergée).
+# Estime la conso depuis le buffer de pixels et scale uniformément la sortie
+# physique pour rester sous max_current_ma (l'état HA reste inchangé).
+# ⚠️ Limite connue de la PR : le throttling est inactif pendant les effets.
+# À retirer quand la PR sera mergée dans une release ESPHome.
+external_components:
+  - source: github://pr#15348
+    components: [light]
+    refresh: 1h
+
+light:
+  - id: !extend led
+    power_estimation:
+      # Défauts : 20 mA/canal (60 mA/LED en blanc plein), 1 mA idle/LED.
+      # Alim 5V 10A, consigne prudente : 8A.
+      max_current_ma: 8000
