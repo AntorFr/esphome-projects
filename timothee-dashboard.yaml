@@ -419,7 +419,7 @@ ha_dashboard:
       http_request_id: ml_http
       base_url: "http://music-library.berard.me"
       owner: "Timothée"
-      player: "media_player.timothee_2"    # Music Assistant player id
+      player: "RINCON_74CA60C838E601400"  # Sonos Timothée (Music Assistant queue_id)
       player_name: "Chambre Timothée"      # shown in the launch-confirmation toast
       image_format: ${ml_img_fmt}
       cover_slots: [cov0, cov1, cov2, cov3, cov4, cov5, cov6, cov7, cov8, cov9]

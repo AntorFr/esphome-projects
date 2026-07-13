@@ -424,7 +424,7 @@ ha_dashboard:
       http_request_id: ml_http
       base_url: "http://music-library.berard.me"
       owner: "Émilie"
-      player: "media_player.emilie_2"     # Music Assistant player id
+      player: "RINCON_C43875EC5BB201400"  # Sonos Émilie (Music Assistant queue_id)
       player_name: "Chambre Émilie"       # shown in the launch-confirmation toast
       image_format: ${ml_img_fmt}
       cover_slots: [cov0, cov1, cov2, cov3, cov4, cov5, cov6, cov7, cov8, cov9]
