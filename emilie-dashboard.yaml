@@ -189,9 +189,17 @@ media_player:
     # After any playback (notably a boosted voice response) returns to idle, restore the device
     # volume — so the 100% TTS boost from on_tts_start doesn't stick for the next media/click.
     on_idle:
-      - media_player.volume_set:
-          id: d1001_media
-          volume: !lambda "return id(cfg_volume).state / 100.0f;"
+      # Restore the device volume after a TTS boost — but ONLY if it actually differs, else the
+      # speaker idle-churn at boot fires volume_set hundreds of times (loop/heap pressure).
+      - if:
+          condition:
+            lambda: |-
+              float d = id(d1001_media).volume - id(cfg_volume).state / 100.0f;
+              return (d < 0 ? -d : d) > 0.02f;
+          then:
+            - media_player.volume_set:
+                id: d1001_media
+                volume: !lambda "return id(cfg_volume).state / 100.0f;"
     announcement_pipeline:
       speaker: announcement_resampling_speaker
       format: NONE
