@@ -310,6 +310,22 @@ homeassistant_addon:
       entity_id: light.daynight_light_cadre_lumineux_timoth_e
     - id: light_horloge
       entity_id: light.led_matrix
+    - id: light_crystal
+      entity_id: light.veilleuse_crystal
+
+# Climate proxies: heat-only radiator + cool-only baillconnect AC (real hvac_modes drive the
+# on-device mode sheet). internal: not exposed to HA, only surfaced on the dashboard.
+climate:
+  - platform: homeassistant_addon
+    id: climate_timothee
+    entity_id: climate.chambre_timothee
+    name: "Radiateur"
+    internal: true
+  - platform: homeassistant_addon
+    id: clim_timothee
+    entity_id: climate.baillconnect_chambre_timothee
+    name: "Clim"
+    internal: true
 
 # Configurable settings, exposed to HA AND driven by the on-device settings shade (single
 # source of truth). Each applies its effect in on_value and persists (restore_value).
@@ -410,11 +426,14 @@ ha_dashboard:
         - { type: light, light_id: light_veilleuse,  name: "Veilleuse",  color: "#FF7043" }
         - { type: light, light_id: light_lit,        name: "Lampe lit",  color: "#FFCA28" }
         - { type: light, light_id: light_cadre,      name: "Cadre",      color: "#7E57C2" }
+        - { type: light, light_id: light_crystal,    name: "Cristal",    color: "#4FC3F7" }
     - name: "Chambre"
       icon: sofa
       cards:
         - { type: cover, cover_id: cover_volet, name: "Volet", color: "#577EFF", cover_kind: shutter }
         - { type: light, light_id: light_horloge, name: "Horloge", color: "#00BCD4" }
+        - { type: climate, climate_id: climate_timothee, name: "Radiateur", climate_kind: radiator }
+        - { type: climate, climate_id: clim_timothee, name: "Clim", climate_kind: ac }
     - name: "Ambiance"
       icon: speaker
       cards:

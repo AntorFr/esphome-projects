@@ -305,6 +305,11 @@ climate:
     entity_id: climate.chambre_emilie
     name: "Chauffage"
     internal: true
+  - platform: homeassistant_addon
+    id: clim_emilie
+    entity_id: climate.baillconnect_chambre_emilie
+    name: "Clim"
+    internal: true
 
 homeassistant_addon:
   media_players:
@@ -418,7 +423,8 @@ ha_dashboard:
       icon: sofa
       cards:
         - { type: cover, cover_id: cover_volet, name: "Volet", color: "#577EFF", cover_kind: shutter }
-        - { type: climate, climate_id: climate_emilie, name: "Chauffage", color: "#03A964" }
+        - { type: climate, climate_id: climate_emilie, name: "Radiateur", climate_kind: radiator }
+        - { type: climate, climate_id: clim_emilie, name: "Clim", climate_kind: ac }
         - { type: switch, switch_id: sw_prise_bureau, name: "Prise bureau", color: "#607D8B" }
     - name: "Ambiance"
       icon: speaker
