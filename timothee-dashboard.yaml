@@ -1,11 +1,11 @@
-# reTerminal D1001 (ESP32-P4) dashboard for Émilie's room.
+# reTerminal D1001 (ESP32-P4) dashboard for Timothée's room.
 # Consumes the ha_dashboard + homeassistant_addon components and the board/fonts packages from
-# github://AntorFr/esphome-dashboard (ref: main). Mirrors the office example (audio + voice
-# assistant + settings + weather + music launcher), wired to Émilie's room entities.
+# github://AntorFr/esphome-dashboard (ref: main). Mirrors the office/Émilie examples (audio +
+# voice assistant + settings + weather + music launcher), wired to Timothée's room entities.
 substitutions:
-  device_name: emilie-dashboard
-  friendly_name: Dashboard Émilie
-  area: "Chambre Émilie"
+  device_name: timothee-dashboard
+  friendly_name: Dashboard Timothée
+  area: "Chambre Timothée"
   # Launcher cover encoding: jpg (small transfer) | bmp (near-free decode). Drives the
   # online_image slots' format AND the music_library group's image_format.
   ml_img_fmt: jpg
@@ -103,7 +103,7 @@ script:
                          std::to_string((int) lroundf(d["templow"].as<float>())) + "|" +
                          std::to_string((int) lroundf(d["temperature"].as<float>()));
                 }
-                id(emilie_dash)->set_forecast(out);
+                id(timothee_dash)->set_forecast(out);
           on_error:
             - logger.log:
                 format: "get_forecasts action FAILED"
@@ -125,7 +125,7 @@ binary_sensor:
         pullup: true
       inverted: true
     on_press:
-      - lambda: "id(emilie_dash)->toggle_deep_standby();"
+      - lambda: "id(timothee_dash)->toggle_deep_standby();"
 
 # HTTP client for the Music Library launcher (ESP -> music-library REST API).
 http_request:
@@ -185,7 +185,7 @@ speaker:
 media_player:
   - platform: speaker
     id: d1001_media
-    name: "Enceinte Chambre Émilie"   # exposed to HA (TTS/announcements/media to the device)
+    name: "Enceinte Chambre Timothée"   # exposed to HA (TTS/announcements/media to the device)
     # After any playback (notably a boosted voice response) returns to idle, restore the device
     # volume — so the 100% TTS boost from on_tts_start doesn't stick for the next media/click.
     on_idle:
@@ -221,16 +221,16 @@ micro_wake_word:
     - voice_assistant.start:
 
 voice_assistant:
-  id: emilie_voice
+  id: timothee_voice
   microphone:
     microphone: d1001_microphone
   media_player: d1001_media
   on_listening:
-    - lambda: "id(emilie_dash)->voice_listening();"
+    - lambda: "id(timothee_dash)->voice_listening();"
   on_stt_end:
-    - lambda: "id(emilie_dash)->voice_thinking();"
+    - lambda: "id(timothee_dash)->voice_thinking();"
   on_tts_start:
-    - lambda: "id(emilie_dash)->voice_responding();"
+    - lambda: "id(timothee_dash)->voice_responding();"
     # Voice responses always play at full volume, independent of the device volume. The speaker
     # media_player applies one gain to BOTH pipelines, so boost to 100% for the response; the
     # media_player's on_idle restores cfg_volume once it finishes. The UI click stays on cfg_volume.
@@ -238,32 +238,32 @@ voice_assistant:
         id: d1001_media
         volume: 1.0
   on_end:
-    - lambda: "id(emilie_dash)->voice_end();"
+    - lambda: "id(timothee_dash)->voice_end();"
     - micro_wake_word.start:
   on_error:
-    - lambda: "id(emilie_dash)->voice_error();"
+    - lambda: "id(timothee_dash)->voice_error();"
   on_client_connected:
-    - lambda: "id(emilie_dash)->voice_set_available(true);"
+    - lambda: "id(timothee_dash)->voice_set_available(true);"
     - micro_wake_word.start:
     - delay: 4s
     - script.execute: fetch_forecast
   on_client_disconnected:
-    - lambda: "id(emilie_dash)->voice_set_available(false);"
+    - lambda: "id(timothee_dash)->voice_set_available(false);"
     - micro_wake_word.stop:
   on_timer_started:
-    - lambda: "id(emilie_dash)->timer_started(timer.id, timer.name, timer.seconds_left);"
+    - lambda: "id(timothee_dash)->timer_started(timer.id, timer.name, timer.seconds_left);"
   on_timer_updated:
-    - lambda: "id(emilie_dash)->timer_updated(timer.id, timer.seconds_left, timer.is_active);"
+    - lambda: "id(timothee_dash)->timer_updated(timer.id, timer.seconds_left, timer.is_active);"
   on_timer_cancelled:
-    - lambda: "id(emilie_dash)->timer_cancelled(timer.id);"
+    - lambda: "id(timothee_dash)->timer_cancelled(timer.id);"
   on_timer_finished:
-    - lambda: "id(emilie_dash)->timer_finished(timer.id);"
+    - lambda: "id(timothee_dash)->timer_finished(timer.id);"
     - media_player.speaker.play_on_device_media_file:
         id: d1001_media
         media_file: timer_sound
         announcement: true
 
-# === Émilie's room entities ===
+# === Timothée's room entities ===
 # Touch click feedback on/off (settings entity, gates ha_dashboard on_tap).
 switch:
   - platform: template
@@ -273,41 +273,35 @@ switch:
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
   - platform: homeassistant
-    id: sw_prise_bureau
-    entity_id: switch.chambre_emilie_prise_bureau
-    name: "Prise bureau"
-    internal: true
-  - platform: homeassistant
     id: sw_adaptive
-    entity_id: switch.adaptive_lighting_chambre_emilie
+    entity_id: switch.adaptive_lighting_chambre_timothee
     name: "Lumière adaptative"
     internal: true
 
-# Non-switch HA entities via homeassistant_addon (cover / climate / media_player / light).
+# Non-switch HA entities via homeassistant_addon (cover / media_player / light).
 cover:
   - platform: homeassistant_addon
     id: cover_volet
-    entity_id: cover.chambre_emilie_volet_roulant
+    entity_id: cover.chambre_timothee_volet_roulant
     name: "Volet"
-    internal: true
-
-climate:
-  - platform: homeassistant_addon
-    id: climate_emilie
-    entity_id: climate.chambre_emilie
-    name: "Chauffage"
     internal: true
 
 homeassistant_addon:
   media_players:
-    - id: media_emilie
-      entity_id: media_player.emilie
+    - id: media_timothee
+      entity_id: media_player.timothee
       volume_step: 0.05
   lights:
     - id: light_plafonnier
-      entity_id: light.chambre_emilie_plafonnier
+      entity_id: light.ceiling_light_timothee_plafonnier_timoth_e
+    - id: light_veilleuse
+      entity_id: light.veilleuse_timothee
+    - id: light_lit
+      entity_id: light.timothee_bed_light_lumi_res_lit_timoth_e
+    - id: light_cadre
+      entity_id: light.daynight_light_cadre_lumineux_timoth_e
     - id: light_horloge
-      entity_id: light.emilie_clock_led_matrix
+      entity_id: light.led_matrix
 
 # Configurable settings, exposed to HA AND driven by the on-device settings shade (single
 # source of truth). Each applies its effect in on_value and persists (restore_value).
@@ -357,10 +351,10 @@ number:
     unit_of_measurement: "min"
     mode: box
     on_value:
-      - lambda: "id(emilie_dash)->set_deep_standby_timeout(x <= 0 ? 0 : (uint32_t)(x * 60000));"
+      - lambda: "id(timothee_dash)->set_deep_standby_timeout(x <= 0 ? 0 : (uint32_t)(x * 60000));"
 
 ha_dashboard:
-  id: emilie_dash
+  id: timothee_dash
   profile: reterminal_d1001
   language: fr
   inactivity_timeout: 120s
@@ -405,27 +399,28 @@ ha_dashboard:
       icon: light
       cards:
         - { type: light, light_id: light_plafonnier, name: "Plafonnier", color: "#FFB020" }
-        - { type: light, light_id: light_horloge,    name: "Horloge",    color: "#00BCD4" }
+        - { type: light, light_id: light_veilleuse,  name: "Veilleuse",  color: "#FF7043" }
+        - { type: light, light_id: light_lit,        name: "Lampe lit",  color: "#FFCA28" }
+        - { type: light, light_id: light_cadre,      name: "Cadre",      color: "#7E57C2" }
     - name: "Chambre"
       icon: sofa
       cards:
         - { type: cover, cover_id: cover_volet, name: "Volet", color: "#577EFF", cover_kind: shutter }
-        - { type: climate, climate_id: climate_emilie, name: "Chauffage", color: "#03A964" }
-        - { type: switch, switch_id: sw_prise_bureau, name: "Prise bureau", color: "#607D8B" }
+        - { type: light, light_id: light_horloge, name: "Horloge", color: "#00BCD4" }
     - name: "Ambiance"
       icon: speaker
       cards:
-        - { type: media_player, media_player_id: media_emilie, name: "Enceinte", color: "#A06CFF" }
+        - { type: media_player, media_player_id: media_timothee, name: "Enceinte", color: "#A06CFF" }
         - { type: switch, switch_id: sw_adaptive, name: "Lum. adaptive", color: "#26A69A" }
-    # Music Library launcher tab: Émilie's favourites -> her Music Assistant player.
+    # Music Library launcher tab: Timothée's favourites -> his Music Assistant player.
     - name: "Musique"
       icon: music
       type: music_library
       http_request_id: ml_http
       base_url: "http://music-library.berard.me"
-      owner: "Émilie"
-      player: "media_player.emilie_2"     # Music Assistant player id
-      player_name: "Chambre Émilie"       # shown in the launch-confirmation toast
+      owner: "Timothée"
+      player: "media_player.timothee_2"    # Music Assistant player id
+      player_name: "Chambre Timothée"      # shown in the launch-confirmation toast
       image_format: ${ml_img_fmt}
       cover_slots: [cov0, cov1, cov2, cov3, cov4, cov5, cov6, cov7, cov8, cov9]
       thumb_slots: [thm0, thm1, thm2, thm3, thm4, thm5, thm6, thm7, thm8, thm9,
