@@ -65,4 +65,4 @@ light:
       # ⚠️ Pansement : cap inactif pendant les effets (limite PR esphome#15348),
       # et masque un vrai défaut du chemin d'alim (0,8 A ne devrait pas crasher
       # une alim 10A -> fil/connecteur PSU->carte a revoir).
-      max_current_ma: 700
+      max_current_ma: 600
