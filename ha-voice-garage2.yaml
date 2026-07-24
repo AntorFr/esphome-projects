@@ -34,4 +34,4 @@ captive_portal:
 # Device specific Config Begins Below #
 #######################################
 packages:
-  home-assistant-voice: !include packages/home-assistant-voice.yaml
+  home-assistant-voice: !include packages/home-assistant-voice_local-remote.yaml
