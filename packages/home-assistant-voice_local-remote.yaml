@@ -1,5 +1,21 @@
-#https://raw.githubusercontent.com/esphome/home-assistant-voice-pe/refs/heads/dev/home-assistant-voice.yaml
-#https://github.com/esphome/home-assistant-voice-pe/blob/dev/home-assistant-voice.yaml
+# Home Assistant Voice PE — local *or* remote wake word.
+#
+# Base: https://github.com/esphome/home-assistant-voice-pe/blob/dev/home-assistant-voice.yaml
+#       upstream commit 0579e7b9d8504264719c593474c85447253c9dc1 (2026-07-08)
+#
+# Local modifications (every one of them is tagged `# [local]` below):
+#   1. `use_local_wake_word` switch: ON  -> on-device wake word (micro_wake_word)
+#                                    OFF -> continuous stream, Home Assistant detects the wake word
+#   2. `apply_wake_word_engine` script: the single place that switches between the two engines
+#   3. `on_wake_word_detected` on the voice assistant: the remote-mode counterpart of the
+#      micro_wake_word trigger (wake sound + ducking + LED phase)
+#   4. `on_start` only ducks in local mode (in remote mode the pipeline "starts" while it is
+#      still only waiting for the wake word — ducking there would mute the media permanently)
+#   5. Watchdog interval restarting a dropped continuous stream, with a debounced
+#      `remote_stream_lost` flag driving the LED ring
+#   6. Custom "Nestor" micro_wake_word model + its sensitivity cutoffs
+#
+# Everything else is upstream, untouched.
 
 substitutions:
   # Phases of the Voice Assistant
@@ -41,7 +57,7 @@ esphome:
   name: home-assistant-voice
   friendly_name: Home Assistant Voice
   name_add_mac_suffix: true
-  min_version: 2026.5.0
+  min_version: 2026.6.0
   on_boot:
     priority: 375
     then:
@@ -152,6 +168,18 @@ globals:
     type: int
     restore_value: no
     initial_value: ${voice_assist_not_ready_phase_id}
+  # [local] Remote mode only: set once the watchdog below has repeatedly failed to bring the
+  # continuous stream back. Drives the red twinkle in the idle phase. Debounced on purpose, so
+  # that a single restart that takes one extra tick never shows up as an error.
+  - id: remote_stream_lost
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  # [local] Remote mode only: number of consecutive watchdog restarts that did not take.
+  - id: remote_stream_retries
+    type: int
+    restore_value: no
+    initial_value: '0'
   # Global variable tracking if the dial was recently touched.
   - id: dial_touched
     type: bool
@@ -230,33 +258,31 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
-  # Wake word engine selector exposed to Home Assistant:
-  #   ON  -> local on-device wake word (micro_wake_word)
-  #   OFF -> audio streamed continuously to Home Assistant (remote detection)
+  # [local] Wake word engine selector.
+  #   ON  -> the wake word is detected on the device by micro_wake_word. The pipeline is only
+  #          started once a wake word fires (upstream behaviour).
+  #   OFF -> the microphone is streamed continuously to Home Assistant, which runs the wake
+  #          word stage of the pipeline.
   - platform: template
     id: use_local_wake_word
-    name: "Local wake word"
+    name: Local wake word
     icon: "mdi:account-voice"
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
     on_turn_on:
-      # Switch to local detection
-      - voice_assistant.stop:
-      - lambda: id(va).set_use_wake_word(false);
-      - delay: 500ms
-      - micro_wake_word.start:
-      - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-      - script.execute: control_leds
+      - script.execute: apply_wake_word_engine
     on_turn_off:
-      # Switch to remote detection (continuous streaming)
-      - micro_wake_word.stop:
-      - voice_assistant.stop:
-      - delay: 500ms
-      - lambda: id(va).set_use_wake_word(true);
-      - voice_assistant.start_continuous:
-      - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-      - script.execute: control_leds
+      - script.execute: apply_wake_word_engine
+  # Disable physical controls switch
+  - platform: template
+    id: disable_buttons
+    name: Disable physical controls
+    icon: "mdi:button-pointer"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    disabled_by_default: true
   # Internal switch to track when a timer is ringing on the device.
   - platform: template
     id: timer_ringing
@@ -314,9 +340,17 @@ binary_sensor:
       number: GPIO0
       inverted: true
     on_press:
-      - script.execute: control_leds
+      - if:
+          condition:
+            switch.is_off: disable_buttons
+          then:
+            - script.execute: control_leds
     on_release:
-      - script.execute: control_leds
+      - if:
+          condition:
+            switch.is_off: disable_buttons
+          then:
+            - script.execute: control_leds
       # If a factory reset is requested, factory reset on release
       - if:
           condition:
@@ -337,7 +371,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed);
+                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed) && !id(disable_buttons).state;
               then:
                 - if:
                     condition:
@@ -390,7 +424,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed);
+                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed) && !id(disable_buttons).state;
               then:
                 - script.execute:
                     id: play_sound
@@ -411,7 +445,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed);
+                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed) && !id(disable_buttons).state;
               then:
                 - script.execute:
                     id: play_sound
@@ -427,7 +461,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed);
+                lambda: return !id(init_in_progress) && !id(color_changed) && !id(group_volume_changed) && !id(disable_buttons).state;
               then:
                 - script.execute:
                     id: play_sound
@@ -808,23 +842,6 @@ light:
       - addressable_twinkle:
           name: "Twinkle"
           twinkle_probability: 50%
-      # Subtle moving dot shown while the device streams continuously to Home Assistant.
-      # If the dot stops moving / the ring goes dark in remote mode, the stream has dropped.
-      - addressable_lambda:
-          name: "Streaming"
-          update_interval: 120ms
-          lambda: |-
-            Color stream_color(0, 200, 200);
-            for (uint8_t i = 0; i < 12; i++) {
-              if (i == id(global_led_animation_index) % 12) {
-                it[i] = stream_color;
-              } else if (i == (id(global_led_animation_index) + 11) % 12) {
-                it[i] = stream_color * 96;
-              } else {
-                it[i] = Color::BLACK;
-              }
-            }
-            id(global_led_animation_index) = (id(global_led_animation_index) + 1) % 12;
       - addressable_lambda:
           name: "Error"
           update_interval: 10ms
@@ -1027,7 +1044,9 @@ sensor:
       - lambda: id(dial_touched) = true;
       - if:
           condition:
-            binary_sensor.is_off: center_button
+            and:
+              - binary_sensor.is_off: center_button
+              - switch.is_off: disable_buttons
           then:
             - script.execute:
                 id: control_volume
@@ -1049,7 +1068,9 @@ sensor:
       - lambda: id(dial_touched) = true;
       - if:
           condition:
-            binary_sensor.is_off: center_button
+            and:
+              - binary_sensor.is_off: center_button
+              - switch.is_off: disable_buttons
           then:
             - script.execute:
                 id: control_volume
@@ -1197,36 +1218,23 @@ script:
 
   # Script executed when the voice assistant is idle (waiting for a wake word)
   # Nothing (Either LED ring off or LED ring on if the user decided to turn the user facing LED ring on)
+  # [local] The single exception is remote mode with a confirmed dead stream: the device cannot
+  # hear its wake word at all, which is a fault worth showing. Waiting for the wake word must
+  # look identical in both modes — a lit ring reads as "I am listening to you" and it isn't.
   - id: control_leds_voice_assistant_idle_phase
     then:
       - if:
           condition:
-            # Remote mode: show a live indicator reflecting the continuous stream state
-            switch.is_off: use_local_wake_word
+            lambda: return id(remote_stream_lost);
           then:
-            - if:
-                condition:
-                  voice_assistant.is_running:
-                then:
-                  # Stream is alive: subtle moving teal dot
-                  - light.turn_on:
-                      brightness: 30%
-                      red: 0%
-                      green: 78%
-                      blue: 78%
-                      id: voice_assistant_leds
-                      effect: "Streaming"
-                else:
-                  # Stream dropped: warn with a dim red twinkle
-                  - light.turn_on:
-                      brightness: 50%
-                      red: 100%
-                      green: 0%
-                      blue: 0%
-                      id: voice_assistant_leds
-                      effect: "Twinkle"
+            - light.turn_on:
+                brightness: 50%
+                red: 100%
+                green: 0%
+                blue: 0%
+                id: voice_assistant_leds
+                effect: "Twinkle"
           else:
-            # Local mode: ring off (or user LED ring if turned on)
             - light.turn_off: voice_assistant_leds
             - if:
                 condition:
@@ -1575,6 +1583,51 @@ script:
                 then:
                   - micro_wake_word.disable_model: stop
 
+  # [local] Brings the wake word engine in line with the `use_local_wake_word` switch.
+  # This is the ONLY place that starts an engine, so the switch triggers and
+  # voice_assistant.on_client_connected can never leave the device in a half-configured state
+  # (e.g. mWW running *and* a continuous stream open).
+  # `mode: restart` because the switch can be toggled again while this is still running.
+  - id: apply_wake_word_engine
+    mode: restart
+    then:
+      # Neither engine can be started before Home Assistant is connected: micro_wake_word would
+      # fire into a pipeline that cannot start, and start_continuous bails out immediately
+      # without an API client. This guard also makes the script a no-op when the switch restores
+      # its state at boot — on_client_connected re-runs it as soon as the API is up.
+      - if:
+          condition:
+            api.connected:
+          then:
+            # Tear down whatever is running. request_stop() also clears the `continuous` flag,
+            # which is what makes the wait below resolve (the voice_assistant.is_running
+            # condition is `state != IDLE || continuous`).
+            - micro_wake_word.stop:
+            - voice_assistant.stop:
+            - lambda: |-
+                id(remote_stream_lost) = false;
+                id(remote_stream_retries) = 0;
+            # start_continuous() is ignored unless the state machine is back to IDLE.
+            - wait_until:
+                condition:
+                  not:
+                    voice_assistant.is_running:
+                timeout: 2s
+            - if:
+                condition:
+                  switch.is_on: use_local_wake_word
+                then:
+                  # Local: micro_wake_word triggers the pipeline, so Home Assistant must not run
+                  # a wake word stage of its own.
+                  - lambda: id(va).set_use_wake_word(false);
+                  - micro_wake_word.start:
+                else:
+                  # Remote: hold a continuous stream open and let Home Assistant do the detection.
+                  - lambda: id(va).set_use_wake_word(true);
+                  - voice_assistant.start_continuous:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+            - script.execute: control_leds
+
 i2s_audio:
   - id: i2s_output
     # i2s_output data pin is gpio10
@@ -1775,6 +1828,7 @@ micro_wake_word:
     gain_factor: 4
   stop_after_detection: false
   models:
+    # [local] Custom "Nestor" model, trained locally (see micro-wake-word/models/).
     - model: micro-wake-word/models/Nestor.json
       id: nestor
     - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241226.3/okay_nabu.json
@@ -1849,17 +1903,17 @@ select:
       # These cutoffs apply only to the specific models included in the firmware: okay_nabu@20241226.3, hey_jarvis@v2, hey_mycroft@v2
       lambda: |-
         if (x == "Slightly sensitive") {
-          id(nestor).set_probability_cutoff(217);       // 0.85
+          id(nestor).set_probability_cutoff(217);       // 0.85 [local] mirrors okay_nabu, not measured on DipCo
           id(okay_nabu).set_probability_cutoff(217);    // 0.85 -> 0.000 FAPH on DipCo (Manifest's default)
           id(hey_jarvis).set_probability_cutoff(247);   // 0.97 -> 0.563 FAPH on DipCo (Manifest's default)
           id(hey_mycroft).set_probability_cutoff(253);  // 0.99 -> 0.567 FAPH on DipCo
         } else if (x == "Moderately sensitive") {
-          id(nestor).set_probability_cutoff(176);       // 0.69
+          id(nestor).set_probability_cutoff(176);       // 0.69 [local] mirrors okay_nabu, not measured on DipCo
           id(okay_nabu).set_probability_cutoff(176);    // 0.69 -> 0.376 FAPH on DipCo
           id(hey_jarvis).set_probability_cutoff(235);   // 0.92 -> 0.939 FAPH on DipCo
           id(hey_mycroft).set_probability_cutoff(242);  // 0.95 -> 1.502 FAPH on DipCo (Manifest's default)
         } else if (x == "Very sensitive") {
-          id(nestor).set_probability_cutoff(143);       // 0.56
+          id(nestor).set_probability_cutoff(143);       // 0.56 [local] mirrors okay_nabu, not measured on DipCo
           id(okay_nabu).set_probability_cutoff(143);    // 0.56 -> 0.751 FAPH on DipCo
           id(hey_jarvis).set_probability_cutoff(212);   // 0.83 -> 1.502 FAPH on DipCo
           id(hey_mycroft).set_probability_cutoff(237);  // 0.93 -> 1.878 FAPH on DipCo
@@ -1880,18 +1934,9 @@ voice_assistant:
   volume_multiplier: 1
   on_client_connected:
     - lambda: id(init_in_progress) = false;
-    # Start the wake word engine selected by the user
-    - if:
-        condition:
-          switch.is_on: use_local_wake_word
-        then:
-          - lambda: id(va).set_use_wake_word(false);
-          - micro_wake_word.start:
-        else:
-          - lambda: id(va).set_use_wake_word(true);
-          - voice_assistant.start_continuous:
-    - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-    - script.execute: control_leds
+    # [local] Upstream starts micro_wake_word here; we start whichever engine the switch selects.
+    # The script also resets the phase to idle and refreshes the LEDs.
+    - script.execute: apply_wake_word_engine
   on_client_disconnected:
     - voice_assistant.stop:
     - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
@@ -1918,12 +1963,55 @@ voice_assistant:
               priority: true
               sound_file: "error_cloud_expired"
   # When the voice assistant starts: Play a wake up sound, duck audio.
+  # [local] In remote mode this fires as soon as the continuous stream opens, i.e. while the
+  # device is still only waiting for the wake word — ducking there would keep the media 20 dB
+  # down forever. In that mode the ducking is done from on_wake_word_detected instead.
   on_start:
-    - mixer_speaker.apply_ducking:
-        id: media_mixing_input
-        decibel_reduction: 20  # Number of dB quieter; higher implies more quiet, 0 implies full volume
-        duration: 0.0s         # The duration of the transition (default is no transition)
+    - if:
+        condition:
+          switch.is_on: use_local_wake_word
+        then:
+          - mixer_speaker.apply_ducking:
+              id: media_mixing_input
+              decibel_reduction: 20  # Number of dB quieter; higher implies more quiet, 0 implies full volume
+              duration: 0.0s         # The duration of the transition (default is no transition)
+  # [local] Remote mode only: Home Assistant found the wake word in the continuous stream.
+  # This is the real start of a conversation, so it is the counterpart of the micro_wake_word
+  # on_wake_word_detected trigger used in local mode: duck, move to the "waiting for command"
+  # phase and play the wake sound. In local mode the pipeline never runs a wake word stage, so
+  # this trigger does not fire; the switch test is only a belt-and-braces guard.
+  on_wake_word_detected:
+    - if:
+        condition:
+          switch.is_off: use_local_wake_word
+        then:
+          - mixer_speaker.apply_ducking:
+              id: media_mixing_input
+              decibel_reduction: 20
+              duration: 0.0s
+          - lambda: id(voice_assistant_phase) = ${voice_assist_waiting_for_command_phase_id};
+          - script.execute: control_leds
+          - if:
+              condition:
+                switch.is_on: wake_sound
+              then:
+                - script.execute:
+                    id: play_sound
+                    priority: true
+                    sound_file: "wake_word_triggered_sound"
   on_listening:
+    # [local] Safety net for remote mode: speech capture is starting, so the media must be
+    # ducked whether we got here through a wake word or through a conversation started by Home
+    # Assistant itself (which fires no wake word event). Ducking is idempotent, and on_end
+    # always restores the level. In local mode on_start has already done it.
+    - if:
+        condition:
+          switch.is_off: use_local_wake_word
+        then:
+          - mixer_speaker.apply_ducking:
+              id: media_mixing_input
+              decibel_reduction: 20
+              duration: 0.0s
     - lambda: id(voice_assistant_phase) = ${voice_assist_waiting_for_command_phase_id};
     - script.execute: control_leds
   on_stt_vad_start:
@@ -1982,9 +2070,12 @@ voice_assistant:
   on_timer_tick:
     - script.execute: control_leds
 
-# Watchdog: in remote (streaming) mode, the continuous stream can drop and not
-# resume on its own. Every few seconds, if we are idle and the stream is not
-# running, restart it and refresh the LED indicator.
+# [local] Watchdog for remote mode. The voice_assistant restarts its pipeline on its own after
+# every run, but it gives up for good when a start request fails (HA restart, pipeline error,
+# ...): it clears its `continuous` flag and sits in IDLE, leaving the device deaf while looking
+# perfectly idle. `voice_assistant.is_running` covers exactly that case (it stays true between
+# two normal runs because `continuous` is still set), so it is a reliable liveness test here.
+# Only acts while the phase is idle, so it never interferes with a conversation in progress.
 interval:
   - interval: 3s
     then:
@@ -1996,12 +2087,31 @@ interval:
               - lambda: return id(voice_assistant_phase) == ${voice_assist_idle_phase_id};
               - wifi.connected:
               - api.connected:
-              - not:
-                  voice_assistant.is_running:
           then:
-            - lambda: id(va).set_use_wake_word(true);
-            - voice_assistant.start_continuous:
-            - script.execute: control_leds
+            - if:
+                condition:
+                  voice_assistant.is_running:
+                then:
+                  # Stream is alive. Clear the fault, and only repaint the ring if it was set.
+                  - lambda: id(remote_stream_retries) = 0;
+                  - if:
+                      condition:
+                        lambda: return id(remote_stream_lost);
+                      then:
+                        - lambda: id(remote_stream_lost) = false;
+                        - script.execute: control_leds
+                else:
+                  # Stream is down. Restart it, and only surface the fault on the LED ring once
+                  # 3 consecutive attempts (~9s) have failed to bring it back.
+                  - lambda: id(va).set_use_wake_word(true);
+                  - voice_assistant.start_continuous:
+                  - lambda: id(remote_stream_retries) += 1;
+                  - if:
+                      condition:
+                        lambda: return id(remote_stream_retries) >= 3 && !id(remote_stream_lost);
+                      then:
+                        - lambda: id(remote_stream_lost) = true;
+                        - script.execute: control_leds
 
 button:
   - platform: factory_reset
