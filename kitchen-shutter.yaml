@@ -69,6 +69,22 @@ packages:
   shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
   shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
 
+# Tracking main until the component has proven itself on real hardware; pin a
+# ref: vX.Y.Z once it has.
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-smart-cover
+      ref: main
+    refresh: 0s
+    components: [smart_cover]
+
+# Learns the real travel durations from end-stop to end-stop runs and keeps them
+# current. The durations in the substitutions above stay as the bootstrap: they
+# are what positions are based on until the first full travel is observed.
+smart_cover:
+  cover_id: shutter
+
 # INFO rather than WARN: the cover reports malfunctions and obstacles at INFO,
 # and those are exactly the events worth catching in a log. WARN would silence
 # them while saving nothing that matters — the per-second sensor chatter is DEBUG
