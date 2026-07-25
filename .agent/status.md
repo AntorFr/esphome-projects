@@ -59,15 +59,17 @@ est à 120 ms, valeur de prudence posée avant mesure — 50 ms suffisent largem
 diviseraient par deux la latence du bouton mural.
 
 Le device consomme le composant externe **`smart_cover`**
-([AntorFr/esphome-smart-cover](https://github.com/AntorFr/esphome-smart-cover), `ref: main`
-en attendant un tag), qui apprend les durées réelles sur les courses butée-à-butée. Les
-durées des substitutions ne sont plus qu'un **amorçage**.
+([AntorFr/esphome-smart-cover](https://github.com/AntorFr/esphome-smart-cover), épinglé
+`ref: v0.1.0`), qui apprend les durées réelles sur les courses butée-à-butée et les
+maintient à jour. **Les durées des substitutions ne sont plus qu'un amorçage** : les
+valeurs qui font foi sont apprises et persistées en NVS (montée 26,4 s, descente 22,0 s
+au 2026-07-25). Validation détaillée dans le `status.md` du repo du composant.
 
 **Prochaines étapes (volet) :**
-- [ ] Valider l'apprentissage : une course pleine par sens doit produire `Learned open/close duration` dans le log, et survivre à un reboot.
 - [ ] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %).
-- [ ] Épingler `ref: v0.1.0` une fois `smart_cover` validé sur le terrain.
+- [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).
 - [ ] Généraliser aux autres volets : `packages/shelly-plus-2-pm*.yaml` sont prévus pour, seules les valeurs mesurées changent d'un volet à l'autre.
+- [ ] Quand `smart_cover` v0.2 sortira (arbitrage des commandes), retirer le décodage bouton provisoire de `packages/shelly-plus-2-pm-cover.yaml`.
 - [ ] Déclarer le `cover.current_based` et supprimer le bloc calibration du device.
 - [ ] Vérifier côté HA que le vrai `pool-filtering-relay` a bien récupéré son nom.
 - [ ] Créer le repo `esphome-sun-cover` (composant `sun_cover` : géométrie solaire, modes, arbitrage bouton).

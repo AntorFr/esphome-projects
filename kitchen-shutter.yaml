@@ -69,14 +69,14 @@ packages:
   shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
   shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
 
-# Tracking main until the component has proven itself on real hardware; pin a
-# ref: vX.Y.Z once it has.
+# Pinned rather than tracking main: this shutter is what validated v0.1.0, and a
+# motor in a wall is not where an unreviewed upstream commit should land. No
+# refresh needed — a tag does not move.
 external_components:
   - source:
       type: git
       url: https://github.com/AntorFr/esphome-smart-cover
-      ref: main
-    refresh: 0s
+      ref: v0.1.0
     components: [smart_cover]
 
 # Learns the real travel durations from end-stop to end-stop runs and keeps them
