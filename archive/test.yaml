@@ -1,0 +1,90 @@
+# Test config for HomeAssistant switch control
+# Simple ESP32-S3 dev board
+
+substitutions:
+  device_name: test-switch
+  friendly_name: Test Switch
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+# API sans encryption pour simplifier
+api:
+
+ota:
+  platform: esphome
+
+# === Test 1: Switch avec homeassistant.service (contournement) ===
+switch:
+  - platform: template
+    id: fer_a_souder_service
+    name: "Fer à souder (service)"
+    optimistic: true
+    turn_on_action:
+      - homeassistant.service:
+          service: switch.turn_on
+          data:
+            entity_id: switch.office_solder_iron_switch_fer_souder
+    turn_off_action:
+      - homeassistant.service:
+          service: switch.turn_off
+          data:
+            entity_id: switch.office_solder_iron_switch_fer_souder
+
+  # === Test 2: Switch avec platform homeassistant (pour comparaison) ===
+  - platform: homeassistant
+    id: fer_a_souder_ha
+    entity_id: switch.office_solder_iron_switch_fer_souder
+    name: "Fer à souder (HA platform)"
+    internal: False
+
+# === Bouton qui appelle directement le service ===
+button:
+  - platform: template
+    id: btn_toggle_fer
+    name: "Toggle Fer à souder (button)"
+    on_press:
+      - homeassistant.service:
+          service: switch.toggle
+          data:
+            entity_id: switch.office_solder_iron_switch_fer_souder
+
+  - platform: template
+    id: btn_turn_on_fer
+    name: "Allumer Fer à souder"
+    on_press:
+      - homeassistant.service:
+          service: switch.turn_on
+          data:
+            entity_id: switch.office_solder_iron_switch_fer_souder
+
+  - platform: template
+    id: btn_turn_off_fer
+    name: "Eteindre Fer à souder"
+    on_press:
+      - homeassistant.service:
+          service: switch.turn_off
+          data:
+            entity_id: switch.office_solder_iron_switch_fer_souder
+
+# === Import de l'état pour vérifier la synchro ===
+binary_sensor:
+  - platform: homeassistant
+    id: fer_state
+    entity_id: switch.office_solder_iron_switch_fer_souder
+    name: "Fer à souder (état)"
