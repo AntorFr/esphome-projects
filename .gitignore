@@ -3,3 +3,12 @@
 # You can modify this file to suit your needs.
 /.esphome/
 /secrets.yaml
+
+# Données internes IDE / code-server (ne pas commiter)
+/.vscode/
+/.codex/
+/.test-sync
+
+# Caches Python
+__pycache__/
+*.pyc
