@@ -6,9 +6,9 @@
 # THIS shutter, and every number was measured on it rather than copied from a
 # reference config.
 #
-# Still to come: the smart_cover component (sun tracking, command arbitration,
-# continuous self-calibration), which will take the wall-button decoding over
-# from the YAML scripts in the cover package.
+# The smart_cover component supervises it: it learns the travel durations and
+# keeps the sun out. Still to come from it: full command arbitration, which will
+# take the wall-button decoding over from the YAML scripts in the cover package.
 # =============================================================================
 
 substitutions:
@@ -76,14 +76,62 @@ external_components:
   - source:
       type: git
       url: https://github.com/AntorFr/esphome-smart-cover
-      ref: v0.1.0
+      ref: v0.2.0
     components: [smart_cover]
 
+# SNTP rather than Home Assistant: the sun geometry is computed here, so it must
+# not go blind when HA does. The ESP keeps time across brief outages by itself.
+time:
+  - platform: sntp
+    id: device_time
+
+# Coordinates of the house. Everything solar is derived on-device from these.
+sun:
+  id: sun_position
+  time_id: device_time
+  latitude: 47.38643°
+  longitude: -1.44525°
+
 # Learns the real travel durations from end-stop to end-stop runs and keeps them
-# current. The durations in the substitutions above stay as the bootstrap: they
-# are what positions are based on until the first full travel is observed.
+# current — the durations in the substitutions above are only the bootstrap —
+# and drives the shutter to keep the sun out.
+#
+# Window geometry measured on site: the house axis runs 174.9°/354.9° (computed
+# from two GPS points along the facade), so the glass, facing east of that axis,
+# looks at 85°. Glazed height 200 cm, sill at floor level.
+#
+# closed_position is where the bottom rail lands with the slat gaps still open,
+# measured at 23%: the last 23% of travel only compresses the slats and changes
+# nothing the sun can see.
 smart_cover:
+  id: brain
   cover_id: shutter
+  sun:
+    sun_id: sun_position
+    window_azimuth: 85
+    window_height: 200
+    # Starting point, to be calibrated against the shadow line on a sunny
+    # morning. Raise it if the kitchen feels gloomy, lower it if it still heats.
+    max_penetration: 50
+    closed_position: 23%
+    min_elevation: 5
+    deadband: 8%
+    update_interval: 5min
+    min_move_interval: 10min
+
+switch:
+  - platform: smart_cover
+    smart_cover_id: brain
+    id: sun_auto
+    name: "Suivi solaire"
+
+script:
+  # Long press on the wall stop button re-arms tracking, which any manual move
+  # turns off. The gesture is decoded by the cover package; only its meaning
+  # belongs here.
+  - id: !extend on_stop_long_press
+    then:
+      - switch.turn_on: sun_auto
 
 # INFO rather than WARN: the cover reports malfunctions and obstacles at INFO,
 # and those are exactly the events worth catching in a log. WARN would silence

@@ -82,6 +82,12 @@ substitutions:
   # "just in case" — check the "Écart entrées au STOP" diagnostic instead.
   stop_detect_window: 50ms
 
+  # Holding the stop gesture (both inputs) this long is a deliberate command
+  # rather than a stop. It runs the on_stop_long_press script, which does
+  # nothing by default — a device extends it to attach a meaning, typically
+  # re-arming an automation that a manual move switched off.
+  long_press_time: 1s
+
 # The cover owns the motor now: the relays stop being separate HA entities.
 # Their interlock still guarantees the two windings are never energised together.
 # Each one timestamps its own release, which is what the masking below needs.
@@ -230,7 +236,7 @@ script:
             binary_sensor.is_on: input2
           then:
             - script.execute: publish_input_skew
-            - cover.stop: shutter
+            - script.execute: on_stop_detected
           else:
             - cover.open: shutter
 
@@ -244,9 +250,31 @@ script:
             binary_sensor.is_on: input1
           then:
             - script.execute: publish_input_skew
-            - cover.stop: shutter
+            - script.execute: on_stop_detected
           else:
             - cover.close: shutter
+
+  # Both direction scripts reach this one on a stop gesture; restart mode makes
+  # the duplicate call harmless.
+  - id: on_stop_detected
+    mode: restart
+    then:
+      - cover.stop: shutter
+      # Still held once the stop has been served? Then it was a long press.
+      - delay: ${long_press_time}
+      - if:
+          condition:
+            and:
+              - binary_sensor.is_on: input1
+              - binary_sensor.is_on: input2
+          then:
+            - script.execute: on_stop_long_press
+
+  # Deliberately inert: the package decodes the gesture, the device decides what
+  # it means. Extend it with `- id: !extend on_stop_long_press`.
+  - id: on_stop_long_press
+    then:
+      - logger.log: "Long press on stop"
 
   - id: publish_input_skew
     then:

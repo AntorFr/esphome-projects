@@ -65,8 +65,18 @@ maintient à jour. **Les durées des substitutions ne sont plus qu'un amorçage*
 valeurs qui font foi sont apprises et persistées en NVS (montée 26,4 s, descente 22,0 s
 au 2026-07-25). Validation détaillée dans le `status.md` du repo du composant.
 
+**Suivi solaire déployé (v0.2.0, non éprouvé).** Baie **est à 85°** (axe de la maison
+174,9°/354,9° calculé depuis deux points GPS de la façade ; la vitre regarde à l'est de
+cet axe), **200 cm** vitrés au sol, `closed_position: 23%` (lame finale posée, ajours
+encore ouverts). `max_penetration: 50 cm` en valeur de départ, à caler sur l'ombre réelle.
+Heure par **SNTP**, pas par HA : la géométrie se calcule ici et ne doit pas dépendre de HA.
+L'interrupteur « Suivi solaire » démarre à **OFF** ; c'est une automatisation HA (prévisions
+météo) qui décidera quand l'armer. Tout mouvement manuel le coupe ; un **appui long sur
+STOP** le rallume.
+
 **Prochaines étapes (volet) :**
-- [ ] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %).
+- [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
+- [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).
 - [ ] Généraliser aux autres volets : `packages/shelly-plus-2-pm*.yaml` sont prévus pour, seules les valeurs mesurées changent d'un volet à l'autre.
 - [ ] Quand `smart_cover` v0.2 sortira (arbitrage des commandes), retirer le décodage bouton provisoire de `packages/shelly-plus-2-pm-cover.yaml`.
