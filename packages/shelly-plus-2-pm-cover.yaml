@@ -1,0 +1,257 @@
+# =============================================================================
+# Shelly Plus 2PM — roller shutter movement layer
+# =============================================================================
+# Stacks on top of shelly-plus-2-pm.yaml and turns its two raw relays into a
+# positionable cover. Include BOTH packages in the device:
+#
+#   packages:
+#     device_base:           !include packages/device_base.yaml
+#     shelly-plus-2-pm:      !include packages/shelly-plus-2-pm.yaml
+#     shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
+#
+# Wiring assumed (measured, never guessed — see the calibration notes below):
+#   relay 1 / channel A -> raises   |   relay 2 / channel B -> lowers
+#   input 1 -> up button            |   input 2 -> down button
+#   both inputs at once             -> stop
+# If a unit turns out to be wired the other way round, swap the relay and sensor
+# references in the cover block rather than rewiring anything else.
+#
+# ---------------------------------------------------------------------------
+# How end positions are detected
+# ---------------------------------------------------------------------------
+# Roller shutter motors carry their own mechanical limit switches: at the end of
+# travel the motor cuts itself and the current collapses to the metering noise
+# floor while the relay is still energised. current_based reads exactly that —
+# "commanded to move, nothing is drawing" means arrived. Nothing here relies on
+# the duration to know where the ends are; the durations only interpolate the
+# intermediate positions.
+#
+# Consequence for the thresholds:
+#   moving_current_threshold   sits BETWEEN the noise floor and the running
+#                              current — anything below it means "not moving".
+#   obstacle_current_threshold sits ABOVE the running current — only a stalled
+#                              motor fighting an obstruction reaches it.
+#
+# ---------------------------------------------------------------------------
+# Calibrating a new shutter
+# ---------------------------------------------------------------------------
+# Flash the device WITHOUT this package first (raw relays exposed), then per
+# direction: energise the relay, let the shutter reach its stop, keep the relay
+# on a few seconds longer, and read the current trace.
+#   - time from relay-on to the current collapse = open_duration / close_duration
+#     (NOT the time the relay stayed on)
+#   - running current and noise floor give the two thresholds
+# =============================================================================
+
+substitutions:
+  cover_name: "Volet"
+
+  # ⚠️ Per-shutter values — these defaults are deliberately useless placeholders.
+  # A wrong duration does not break the end positions (the motor's own limit
+  # switches do that job) but it does skew every intermediate position.
+  open_duration: 30s
+  close_duration: 30s
+
+  # Backstop only: the motor normally cuts itself. Keep it comfortably above the
+  # longest travel so it never fires during a healthy run.
+  max_duration: 60s
+
+  # Skips the relay interlock delay plus the motor inrush before current is
+  # trusted. Must stay above interlock_wait_time.
+  start_sensing_delay: 1.5s
+
+  moving_current_threshold: "0.2"
+  obstacle_current_threshold: "0.8"
+
+  # How long the metering of a channel is ignored after its relay opens, in ms.
+  # The ADE7953 averages over its update interval, so its reading lags the
+  # physical cut-off by up to a second — see the masking sensors below. Must
+  # comfortably exceed the metering update interval, and stay well under the
+  # duration a genuinely welded relay would keep drawing.
+  metering_settle_ms: "2000"
+
+  # How long an input press waits for the other one before acting. Both inputs
+  # closing together is the stop gesture, and the two contacts never close on
+  # exactly the same millisecond — without this window a stop would read as a
+  # direction command immediately followed by a stop, and the shutter would
+  # twitch against the interlock dead time.
+  #
+  # Measured on-device on a real wall switch: the two contacts land 4 ms apart.
+  # 50 ms keeps an order of magnitude of margin while staying imperceptible; it
+  # is also the whole latency budget of a wall press, so do not inflate it
+  # "just in case" — check the "Écart entrées au STOP" diagnostic instead.
+  stop_detect_window: 50ms
+
+# The cover owns the motor now: the relays stop being separate HA entities.
+# Their interlock still guarantees the two windings are never energised together.
+# Each one timestamps its own release, which is what the masking below needs.
+# Zeroing the masked reading HERE rather than letting the template sensor poll
+# is what makes the mask effective. start_direction_() sets current_operation
+# before firing the action, so by the time the next loop() runs its malfunction
+# check the relay has already been released down this very call stack — but a
+# polled sensor would still be serving its last published value, which is the
+# full motor current. Publishing synchronously closes that window.
+switch:
+  - id: !extend relay1
+    internal: true
+    on_turn_off:
+      - lambda: |-
+          id(relay1_off_at) = millis();
+          id(open_current).publish_state(0.0f);
+  - id: !extend relay2
+    internal: true
+    on_turn_off:
+      - lambda: |-
+          id(relay2_off_at) = millis();
+          id(close_current).publish_state(0.0f);
+
+# --- Metering settle masking ------------------------------------------------
+# What the cover reads instead of the raw channels, and the reason it exists:
+#
+# current_based checks for a welded relay with `current flowing in the circuit
+# that should be open`, and that check runs every loop cycle with NO grace
+# period — unlike the end-of-travel check, which start_sensing_delay does guard.
+# Reversing direction therefore trips it every single time: the relay opens, but
+# the ADE7953 still reports the average of the second that just elapsed, motor
+# current included. The cover concludes "relay welded" and goes idle, so the
+# shutter stops instead of reversing.
+#
+# Masking a channel for metering_settle_ms after ITS OWN relay opens removes the
+# false positive without giving up the protection: a genuinely welded relay keeps
+# drawing long past the mask, and is still caught.
+globals:
+  - id: relay1_off_at
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: relay2_off_at
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  # Timestamps of the last press on each wall input, for the stop-gesture skew
+  # diagnostic further down.
+  - id: t_press_up
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: t_press_down
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+sensor:
+  - platform: template
+    id: open_current
+    internal: true
+    update_interval: 200ms
+    lambda: |-
+      if (!id(relay1).state && (millis() - id(relay1_off_at)) < ${metering_settle_ms})
+        return 0.0f;
+      return id(ch_a_current).state;
+
+  - platform: template
+    id: close_current
+    internal: true
+    update_interval: 200ms
+    lambda: |-
+      if (!id(relay2).state && (millis() - id(relay2_off_at)) < ${metering_settle_ms})
+        return 0.0f;
+      return id(ch_b_current).state;
+
+  # Diagnostic: how far apart the two contacts of the stop gesture actually
+  # closed, measured on-device. API log timestamps cannot answer this — they are
+  # client-side and the Shelly's WiFi power saving delivers them in bursts. This
+  # is the number that justifies (or corrects) stop_detect_window.
+  - platform: template
+    id: input_skew
+    name: "Écart entrées au STOP"
+    unit_of_measurement: ms
+    accuracy_decimals: 0
+    icon: mdi:arrow-expand-horizontal
+    entity_category: diagnostic
+    update_interval: never
+
+cover:
+  - platform: current_based
+    id: shutter
+    name: ${cover_name}
+    device_class: shutter
+
+    # turn_on is enough: the interlock opens the opposite relay and enforces the
+    # dead time before closing this one.
+    open_action:
+      - switch.turn_on: relay1
+    open_duration: ${open_duration}
+    # Settle-masked, not the raw channel — see the masking block above.
+    open_sensor: open_current
+    open_moving_current_threshold: ${moving_current_threshold}
+    open_obstacle_current_threshold: ${obstacle_current_threshold}
+
+    close_action:
+      - switch.turn_on: relay2
+    close_duration: ${close_duration}
+    close_sensor: close_current
+    close_moving_current_threshold: ${moving_current_threshold}
+    close_obstacle_current_threshold: ${obstacle_current_threshold}
+
+    stop_action:
+      - switch.turn_off: relay1
+      - switch.turn_off: relay2
+
+    max_duration: ${max_duration}
+    start_sensing_delay: ${start_sensing_delay}
+    # Catches a welded relay: current flowing while nothing is commanded.
+    malfunction_detection: true
+
+# --- Wall button ------------------------------------------------------------
+# Interim decoding, in YAML on purpose: it keeps the shutter usable from the wall
+# today. It is meant to be handed over to the smart_cover component, which owns
+# the real arbitration (wall button > Home Assistant > sun automation) along with
+# self-calibration.
+binary_sensor:
+  - id: !extend input1
+    on_press:
+      - script.execute: on_up_pressed
+  - id: !extend input2
+    on_press:
+      - script.execute: on_down_pressed
+
+script:
+  # Both scripts defer their decision by stop_detect_window. On a stop gesture
+  # both fire and both resolve to cover.stop — which is idempotent, so the double
+  # call is harmless.
+  - id: on_up_pressed
+    mode: restart
+    then:
+      - lambda: "id(t_press_up) = millis();"
+      - delay: ${stop_detect_window}
+      - if:
+          condition:
+            binary_sensor.is_on: input2
+          then:
+            - script.execute: publish_input_skew
+            - cover.stop: shutter
+          else:
+            - cover.open: shutter
+
+  - id: on_down_pressed
+    mode: restart
+    then:
+      - lambda: "id(t_press_down) = millis();"
+      - delay: ${stop_detect_window}
+      - if:
+          condition:
+            binary_sensor.is_on: input1
+          then:
+            - script.execute: publish_input_skew
+            - cover.stop: shutter
+          else:
+            - cover.close: shutter
+
+  - id: publish_input_skew
+    then:
+      - lambda: |-
+          const uint32_t a = id(t_press_up), b = id(t_press_down);
+          if (a != 0 && b != 0) {
+            id(input_skew).publish_state(a > b ? a - b : b - a);
+          }

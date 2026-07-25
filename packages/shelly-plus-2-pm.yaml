@@ -1,0 +1,217 @@
+# =============================================================================
+# Shelly Plus 2PM (gen 2) — hardware layer
+# =============================================================================
+# ESP32-U4WDH, 2 relays, ADE7953 dual-channel metering over I2C, 2 dry-contact
+# inputs, on-board button, internal NTC.
+#
+# This package declares the HARDWARE ONLY and deliberately gives the relays no
+# behaviour: the device file (or a feature package stacked on top, e.g. a
+# current_based cover) decides what they drive.
+#
+# ---------------------------------------------------------------------------
+# PCB revision — the two are PIN-INCOMPATIBLE on 5 pins
+# ---------------------------------------------------------------------------
+# Defaults below target PCB v0.1.9 (everything sold since 2022). On a v0.1.5
+# board, override in the device file:
+#
+#   sda_pin: GPIO33      input1_pin: GPIO2      button_pin: GPIO27
+#   irq_pin: GPIO36      ntc_pin: GPIO37
+#
+# The i2c scan at boot settles it: "Found i2c device at address 0x38" means the
+# ADE7953 answers on GPIO26 => v0.1.9. Nothing found => v0.1.5.
+# Relays (GPIO13/GPIO12), SCL (GPIO25), input 2 (GPIO18) and the LED (GPIO0)
+# are identical on both revisions.
+#
+# ---------------------------------------------------------------------------
+# Single core vs dual core
+# ---------------------------------------------------------------------------
+# The ESP32-U4WDH ships in a single-core 160 MHz and a dual-core 240 MHz
+# flavour, and a dual-core build does NOT boot on a single-core chip. This
+# package targets dual core (the common case since 2022-09). For a single-core
+# unit, override in the device file:
+#
+#   esphome:
+#     platformio_options:
+#       board_build.f_cpu: 160000000L
+#   esp32:
+#     framework:
+#       sdkconfig_options:
+#         CONFIG_FREERTOS_UNICORE: y
+#         CONFIG_ESP32_DEFAULT_CPU_FREQ_160: y
+#         CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "160"
+#
+# Pinout reference: https://devices.esphome.io/devices/Shelly-Plus-2PM
+# =============================================================================
+
+substitutions:
+  # --- PCB v0.1.9 pinout (see header for v0.1.5) ---------------------------
+  sda_pin: GPIO26
+  scl_pin: GPIO25
+  irq_pin: GPIO27
+  input1_pin: GPIO5
+  input2_pin: GPIO18
+  button_pin: GPIO4
+  ntc_pin: GPIO35
+  led_pin: GPIO0
+
+  # --- Entity naming (override per device) ---------------------------------
+  relay1_name: "Relay 1"
+  relay1_icon: "mdi:electric-switch"
+  relay2_name: "Relay 2"
+  relay2_icon: "mdi:electric-switch"
+  input1_name: "Input 1"
+  input2_name: "Input 2"
+  button_name: "Case button"
+  # Full entity names rather than a channel prefix: once a unit is wired up, "up"
+  # and "down" say far more than "A" and "B", and the label should be free to say
+  # so without fighting a template.
+  current_a_name: "Channel A current"
+  power_a_name: "Channel A power"
+  current_b_name: "Channel B current"
+  power_b_name: "Channel B power"
+
+  # Dead time enforced when reversing: both relays are guaranteed open in
+  # between. Mandatory when the two relays drive the two windings of a single
+  # motor — energising both at once destroys it.
+  interlock_wait_time: 300ms
+
+  # Sign of the active power per channel. Batches differ: some report a load as
+  # negative watts, some as positive. Default 1 = raw. Measure it on the unit
+  # (energise one relay and read the sign) and set -1 here for the channels that
+  # come out negative. Only the sign of the POWER is affected — the current is
+  # always positive, which is what the cover thresholds use.
+  power_a_sign: "1"
+  power_b_sign: "1"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+i2c:
+  sda: ${sda_pin}
+  scl: ${scl_pin}
+  # Left on: the boot scan is what identifies the PCB revision.
+  scan: true
+
+status_led:
+  pin:
+    number: ${led_pin}
+    inverted: true
+    ignore_strapping_warning: true
+
+switch:
+  - platform: gpio
+    id: relay1
+    name: ${relay1_name}
+    icon: ${relay1_icon}
+    pin: GPIO13
+    restore_mode: ALWAYS_OFF
+    interlock: [relay2]
+    interlock_wait_time: ${interlock_wait_time}
+
+  - platform: gpio
+    id: relay2
+    name: ${relay2_name}
+    icon: ${relay2_icon}
+    pin:
+      number: GPIO12
+      ignore_strapping_warning: true
+    restore_mode: ALWAYS_OFF
+    interlock: [relay1]
+    interlock_wait_time: ${interlock_wait_time}
+
+binary_sensor:
+  # Dry-contact inputs. No behaviour attached here on purpose.
+  - platform: gpio
+    id: input1
+    name: ${input1_name}
+    pin:
+      number: ${input1_pin}
+      ignore_strapping_warning: true
+    filters:
+      - delayed_on_off: 30ms
+
+  - platform: gpio
+    id: input2
+    name: ${input2_name}
+    pin: ${input2_pin}
+    filters:
+      - delayed_on_off: 30ms
+
+  # Button behind the case. Reachable only with the cover off, so it is exposed
+  # as a diagnostic entity rather than wired to an action.
+  - platform: gpio
+    id: case_button
+    name: "${button_name}"
+    entity_category: diagnostic
+    pin:
+      number: ${button_pin}
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+
+sensor:
+  # --- Metering ------------------------------------------------------------
+  # Currents are raw and always positive — they are what the cover thresholds
+  # compare against. Only the active power carries a batch-dependent sign,
+  # corrected per unit through power_a_sign / power_b_sign. The channel <-> relay
+  # mapping also varies between batches (the vendor doc contradicts itself on
+  # it), so it is measured, never assumed.
+  - platform: ade7953_i2c
+    irq_pin: ${irq_pin}
+    update_interval: 1s
+    voltage:
+      id: line_voltage
+      name: "Voltage"
+      entity_category: diagnostic
+    current_a:
+      id: ch_a_current
+      name: "${current_a_name}"
+      accuracy_decimals: 3
+    active_power_a:
+      id: ch_a_power
+      name: "${power_a_name}"
+      accuracy_decimals: 1
+      filters:
+        - multiply: ${power_a_sign}
+    current_b:
+      id: ch_b_current
+      name: "${current_b_name}"
+      accuracy_decimals: 3
+    active_power_b:
+      id: ch_b_power
+      name: "${power_b_name}"
+      accuracy_decimals: 1
+      filters:
+        - multiply: ${power_b_sign}
+
+  # --- Internal NTC --------------------------------------------------------
+  # 5.6k / 4.7k are the values used by the reference config that is actually
+  # deployed on these units; the prose of the same page claims 10k/10k. Kept as
+  # is — this is a diagnostic reading, not a control input.
+  - platform: adc
+    id: temp_analog_reading
+    pin: ${ntc_pin}
+    attenuation: 12db
+    update_interval: 10s
+
+  - platform: resistance
+    id: temp_resistance_reading
+    sensor: temp_analog_reading
+    configuration: DOWNSTREAM
+    resistor: 5.6kOhm
+
+  - platform: ntc
+    id: internal_temperature
+    sensor: temp_resistance_reading
+    name: "Temperature"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    entity_category: diagnostic
+    calibration:
+      b_constant: 3350
+      reference_resistance: 4.7kOhm
+      reference_temperature: 298.15K

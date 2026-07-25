@@ -1,0 +1,81 @@
+# =============================================================================
+# Kitchen roller shutter — Shelly Plus 2PM
+# =============================================================================
+# Hardware in packages/shelly-plus-2-pm.yaml, movement in
+# packages/shelly-plus-2-pm-cover.yaml. Everything below is what is specific to
+# THIS shutter, and every number was measured on it rather than copied from a
+# reference config.
+#
+# Still to come: the smart_cover component (sun tracking, command arbitration,
+# continuous self-calibration), which will take the wall-button decoding over
+# from the YAML scripts in the cover package.
+# =============================================================================
+
+substitutions:
+  device_name: kitchen-shutter
+  friendly_name: "Volet cuisine"
+  area: "Cuisine"
+
+  cover_name: "Volet"
+
+  # Named by what they actually do on this unit, not by the chip's channel
+  # letters — the mapping below was measured, so the labels may as well say so.
+  input1_name: "Bouton montée"
+  input2_name: "Bouton descente"
+  current_a_name: "Courant montée"
+  power_a_name: "Puissance montée"
+  current_b_name: "Courant descente"
+  power_b_name: "Puissance descente"
+  button_name: "Bouton du boîtier"
+
+  # --- Measured 2026-07-25 on this unit -------------------------------------
+  # Wiring: relay 1 (GPIO13) raises and feeds metering channel A, relay 2
+  # (GPIO12) lowers and feeds channel B. Input 1 is the up button, input 2 the
+  # down button, both together is stop.
+  #
+  # Both channels report a running motor as negative watts.
+  power_a_sign: "-1"
+  power_b_sign: "-1"
+
+  # Travel times read from the collapse of the motor current, not from how long
+  # the relay stayed energised. Up is ~20% slower than down: the motor lifts the
+  # slats instead of being helped by their weight.
+  open_duration: 25.7s
+  close_duration: 21.3s
+  max_duration: 40s
+
+  # Noise floor 0.018 A, running current 0.42-0.44 A, and the current collapses
+  # to the noise floor at both end stops (the motor has its own limit switches).
+  # 0.2 A sits squarely in the gap; 0.8 A is only reachable by a stalled motor.
+  moving_current_threshold: "0.2"
+  obstacle_current_threshold: "0.8"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+
+# Measured on this unit at boot: "ESP32 Chip: ESP32 rev3.1, 2 core(s)". Declaring
+# the floor lets esp-idf drop the workarounds for older silicon and shrink the
+# binary. Kept in the device rather than the package: it is a property of this
+# chip, not of the Shelly model.
+esp32:
+  framework:
+    advanced:
+      minimum_chip_revision: "3.1"
+
+packages:
+  device_base: !include packages/device_base.yaml
+  shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
+  shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
+
+# INFO rather than WARN: the cover reports malfunctions and obstacles at INFO,
+# and those are exactly the events worth catching in a log. WARN would silence
+# them while saving nothing that matters — the per-second sensor chatter is DEBUG
+# and is already gone at this level.
+logger:
+  level: INFO
+
+# Local control that does not depend on Home Assistant.
+web_server:
+  port: 80
