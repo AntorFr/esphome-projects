@@ -9,6 +9,13 @@ substitutions:
   relay2_name: "Filtration"
   relay2_icon: "mdi:air-filter"
 
+  # Une coupure secteur ou une perte d'API > reboot_timeout (15min) redemarre le
+  # module : sans restauration, la piscine reste sans filtration ni chloration.
+  # Electrolyse : reprend son etat, OFF si inconnu (jamais de marche a sec).
+  relay1_restore_mode: "RESTORE_DEFAULT_OFF"
+  # Filtration : reprend son etat, ON si inconnu (fail-safe piscine).
+  relay2_restore_mode: "RESTORE_DEFAULT_ON"
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
