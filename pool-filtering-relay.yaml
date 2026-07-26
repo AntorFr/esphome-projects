@@ -71,7 +71,7 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  - id: filter_recover_high125_s
+  - id: filter_recover_fast_s
     type: int
     restore_value: no
     initial_value: '0'
@@ -138,7 +138,7 @@ interval:
           // and reset continuity counters.
           if (!(pump_on && valid)) {
             id(filter_low_power_s) = 0;
-            id(filter_recover_high125_s) = 0;
+            id(filter_recover_fast_s) = 0;
             id(filter_recover_high120_s) = 0;
             return;
           }
@@ -159,9 +159,9 @@ interval:
           // 1) p > recover threshold for 2 minutes, OR
           // 2) p > trigger threshold for 10 minutes.
           if (p > thr_fast) {
-            if (id(filter_recover_high125_s) < 120) id(filter_recover_high125_s) += 1;
-          } else if (id(filter_recover_high125_s) > 0) {
-            id(filter_recover_high125_s) -= 1;
+            if (id(filter_recover_fast_s) < 120) id(filter_recover_fast_s) += 1;
+          } else if (id(filter_recover_fast_s) > 0) {
+            id(filter_recover_fast_s) -= 1;
           }
 
           if (p > thr_low) {
@@ -176,7 +176,7 @@ interval:
           }
 
           if (id(filter_clogged_latched) &&
-              (id(filter_recover_high125_s) >= 120 || id(filter_recover_high120_s) >= 600)) {
+              (id(filter_recover_fast_s) >= 120 || id(filter_recover_high120_s) >= 600)) {
             id(filter_clogged_latched) = false;
             id(pool_filter_clogged).publish_state(false);
           }
