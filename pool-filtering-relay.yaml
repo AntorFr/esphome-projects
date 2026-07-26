@@ -16,13 +16,12 @@ substitutions:
   # Filtration : reprend son etat, ON si inconnu (fail-safe piscine).
   relay2_restore_mode: "RESTORE_DEFAULT_ON"
 
-  # Puissance mesuree sur la pompe (26/07/2026), echelle AFFICHEE AVANT le
-  # correctif de calibration ADE7953 : ~118 W filtre neuf, ~104 W filtre
-  # completement bouche -> seulement 12 % d'ecart utile.
-  # Le correctif divise l'affichage par 2, donc les valeurs ci-dessous sont
-  # sur l'echelle corrigee : 55 W = 93 % du neuf, 57 W = 96 % du neuf.
-  filter_clog_power_default: "55"
-  filter_clog_recover_default: "57"
+  # Puissance mesuree sur la pompe (26/07/2026, calibration ADE7953 deja
+  # corrigee) : ~118 W filtre neuf, ~104 W filtre completement bouche, soit
+  # seulement 12 % d'ecart utile. D'ou les seuils : 110 W = 93 % du neuf
+  # (alerte a mi-chemin de l'obstruction), 114 W = 96,5 % pour le rearmement.
+  filter_clog_power_default: "110"
+  filter_clog_recover_default: "114"
 
 esphome:
   name: ${device_name}
