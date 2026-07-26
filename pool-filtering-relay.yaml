@@ -170,13 +170,18 @@ interval:
             id(filter_recover_slow_s) -= 1;
           }
 
+          // On each transition, clear the counters of the opposite direction so
+          // a leaky counter left mid-course cannot re-trip almost immediately.
           if (!id(filter_clogged_latched) && id(filter_low_power_s) >= 600) {
             id(filter_clogged_latched) = true;
+            id(filter_recover_fast_s) = 0;
+            id(filter_recover_slow_s) = 0;
             id(pool_filter_clogged).publish_state(true);
           }
 
           if (id(filter_clogged_latched) &&
               (id(filter_recover_fast_s) >= 120 || id(filter_recover_slow_s) >= 600)) {
             id(filter_clogged_latched) = false;
+            id(filter_low_power_s) = 0;
             id(pool_filter_clogged).publish_state(false);
           }
