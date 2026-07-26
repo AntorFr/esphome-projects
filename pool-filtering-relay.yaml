@@ -81,6 +81,38 @@ globals:
     restore_value: no
     initial_value: '0'
 
+number:
+  # Seuil de declenchement : sous cette puissance pendant 10 min, filtre encrasse.
+  - platform: template
+    name: "Seuil encrassement filtre"
+    id: filter_clog_threshold
+    icon: mdi:air-filter
+    entity_category: config
+    unit_of_measurement: W
+    optimistic: true
+    restore_value: true
+    initial_value: ${filter_clog_power_default}
+    min_value: 10
+    max_value: 500
+    step: 0.5
+    mode: box
+
+  # Seuil de rearmement rapide (2 min au-dessus). Doit rester >= au seuil de
+  # declenchement, sinon la lambda utilise le plus grand des deux.
+  - platform: template
+    name: "Seuil rearmement filtre"
+    id: filter_recover_threshold
+    icon: mdi:air-filter
+    entity_category: config
+    unit_of_measurement: W
+    optimistic: true
+    restore_value: true
+    initial_value: ${filter_clog_recover_default}
+    min_value: 10
+    max_value: 500
+    step: 0.5
+    mode: box
+
 binary_sensor:
   - platform: template
     id: pool_filter_clogged
