@@ -1,9 +1,16 @@
 # Status — esphome-projects
-> MàJ : 2026-07-13
+> MàJ : 2026-08-08
+
+**⚠ En attente de Monsieur :** `linky.yaml` porte le **barème Tempo TTC du 1ᵉʳ août 2026** en
+commit **local non publié**. Deux gestes restent les siens : `repo_commit` (bouclier) puis le
+**flash OTA** — tant que la carte n'est pas reflashée, le compteur facture à l'ancien barème.
 
 **État :** Fleet de devices ESPHome (un YAML par device à la racine, packages mutualisés). En cours : limiteur de courant soft sur `timothee-bed-light` (bande **WS2811 5V** à boules qui fait brown-out l'ESP32). Diagnostic posé : crash à ~0,8 A (palier 56% blanc OK / 57% crash) → l'ESP reset et ouvre le relais `power_supply`. À 0,8 A sur une alim 10A, c'est un **défaut du chemin d'alim** (fil/connecteur PSU→carte), pas un problème de budget. `max_current_ma: 700` posé comme pansement (throttle physique, HA reste à 100%).
 
 **Prochaines étapes :**
+- [ ] **Linky : publier puis flasher** le nouveau barème (cf. ci-dessus).
+- [ ] Dette repérée au passage : le capteur « Prix kWh Rouge HP » porte l'id `HPJV` et vit
+      isolé en bas de `linky.yaml` — à renommer `HPJR` dans un commit à part.
 - [ ] **Vrai fix : câble/connecteur d'alim PSU→carte** (gros/court) → doit restaurer le blanc plein (~3,6 A).
 - [ ] Condo ~1000 µF sur la rail 5V de l'ESP (amont du relais, PAS sur la bande — en aval l'inrush aggrave le brown-out).
 - [ ] Tester le retrait de `power_supply: relay` (supprime l'inrush de fermeture).
