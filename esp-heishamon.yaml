@@ -7,7 +7,7 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   area: ${area}
-  comment: HeishaMon v4.1.2
+  comment: HeishaMon protocol v4.1.6 (active mode)
   on_boot:
     priority: -100  # Run after everything is initialized
     then:
@@ -101,7 +101,9 @@ heishamon:
   id: heisha_main
   uart_id: heisha_uart
   update_interval: 30s
-  listen_only: true
+  # Active mode: the ESP is wired to CN-CNT and polls the pump itself
+  # (HeishaMon removed from the bus on 2026-08-10)
+  listen_only: false
   optional_pcb: false
 
 
