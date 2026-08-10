@@ -105,6 +105,8 @@ heishamon:
   # (HeishaMon removed from the bus on 2026-08-10)
   listen_only: false
   optional_pcb: false
+  # HeishaMon ESP32 board: GPIO5 gates the CN-CNT TX driver (ENABLEPIN)
+  tx_enable_pin: GPIO5
 
 
 
