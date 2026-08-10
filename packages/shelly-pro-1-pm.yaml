@@ -5,6 +5,9 @@ substitutions:
   relay1_name: "Relay 1"
   relay1_icon: "mdi:toggle-switch-variant-off"
 
+  # ALWAYS_OFF / ALWAYS_ON / RESTORE_DEFAULT_OFF / RESTORE_DEFAULT_ON
+  relay1_restore_mode: "ALWAYS_OFF"
+
 esphome:
   on_boot:
     priority: -100
@@ -145,6 +148,7 @@ sensor:
     id: temp_voltage1
     pin: GPIO36
     attenuation: auto
+    update_interval: 10s
   - platform: resistance
     id: temp_resistance1
     sensor: temp_voltage1
@@ -160,6 +164,12 @@ sensor:
       b_constant: 3350
       reference_resistance: 10kOhm
       reference_temperature: 298.15K
+    filters:
+      # Rejette un echantillon ADC parasite isole : sans ca un seul pic > 90 degC
+      # coupe le relais.
+      - median:
+          window_size: 3
+          send_every: 1
     on_value_range:
       - above: 90
         then:
@@ -170,6 +180,7 @@ sensor:
     id: temp_voltage2
     pin: GPIO37
     attenuation: auto
+    update_interval: 10s
   - platform: resistance
     id: temp_resistance2
     sensor: temp_voltage2
@@ -185,6 +196,10 @@ sensor:
       b_constant: 3350
       reference_resistance: 10kOhm
       reference_temperature: 298.15K
+    filters:
+      - median:
+          window_size: 3
+          send_every: 1
     on_value_range:
       - above: 90
         then:
@@ -197,11 +212,10 @@ sensor:
     cs_pin:
       number: GPIO0
       ignore_strapping_warning: true
-    voltage_pga_gain: 2x
-    current_pga_gain_a: 2x
-    current_pga_gain_b: 2x
-    active_power_gain_a: 0x200000
-    active_power_gain_b: 0x200000
+    # Aucun gain explicite : les defauts ESPHome (PGA 1x, gains 0x400000) sont
+    # les bonnes valeurs pour ce materiel. Le contournement esp-idf de
+    # devices.esphome.io (PGA 2x + active_power_gain 0x200000) doublait V/A/W
+    # depuis que esphome#14824 a corrige l'ecriture des registres en SPI/esp-idf.
     voltage:
       id: voltage1
       name: "Voltage ${relay1_name}"
@@ -254,6 +268,7 @@ switch:
   - platform: gpio
     name: "Relay 1"
     id: relay1
+    restore_mode: ${relay1_restore_mode}
     on_turn_on:
       then:
         - script.execute: refresh_power_relay1

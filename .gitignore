@@ -12,3 +12,4 @@
 # Caches Python
 __pycache__/
 *.pyc
+.device-builder.json
