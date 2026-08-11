@@ -1,15 +1,8 @@
 # Status — esphome-projects
 > MàJ : 2026-08-11
 
-**⚠ Barème Tempo publié, PAS ENCORE FLASHÉ (2026-08-10)** : `dff16b0` est sur `origin/master`
-— barème TTC du 1ᵉʳ août 2026, six substitutions. **Tant que la carte n'est pas reflashée en
-OTA, le compteur valorise à l'ancien barème** : les substitutions sont figées à la compilation.
-Le flash reste le geste de Monsieur.
-
-> Poussé depuis le pod par le **proxy git de rosetta** (0.15.0), pas par `repo_commit` : remote
-> sur `https://rosetta.mcp.berard.me/git/AntorFr/esphome-projects`, helper
-> `git-credential-rosetta`, un bouclier consommé. Premier push de ce pod vers une **branche
-> existante** — la voie ouverte la veille ne passait que sur des branches neuves.
+**Linky : barème Tempo du 1ᵉʳ août 2026 flashé en OTA (fait le 2026-08-11)** — le
+compteur valorise au nouveau barème (`dff16b0`, six substitutions).
 
 **esp-heishamon en mode actif (2026-08-10)** : l'ESP (carte HeishaMon ESP32) est seul maître
 sur le CN-CNT — `listen_only: false` + `tx_enable_pin: GPIO5`. Détails et suivi dans le
@@ -105,7 +98,7 @@ STOP** le rallume.
 **État :** Fleet de devices ESPHome (un YAML par device à la racine, packages mutualisés). En cours : limiteur de courant soft sur `timothee-bed-light` (bande **WS2811 5V** à boules qui fait brown-out l'ESP32). Diagnostic posé : crash à ~0,8 A (palier 56% blanc OK / 57% crash) → l'ESP reset et ouvre le relais `power_supply`. À 0,8 A sur une alim 10A, c'est un **défaut du chemin d'alim** (fil/connecteur PSU→carte), pas un problème de budget. `max_current_ma: 700` posé comme pansement (throttle physique, HA reste à 100%).
 
 **Prochaines étapes :**
-- [ ] **Linky : flasher** le nouveau barème en OTA (publié le 10/08, cf. ci-dessus).
+- [x] **Linky : flasher** le nouveau barème en OTA — fait le 2026-08-11.
 - [ ] Dette repérée au passage : le capteur « Prix kWh Rouge HP » porte l'id `HPJV` et vit
       isolé en bas de `linky.yaml` — à renommer `HPJR` dans un commit à part.
 - [ ] **Vrai fix : câble/connecteur d'alim PSU→carte** (gros/court) → doit restaurer le blanc plein (~3,6 A).
