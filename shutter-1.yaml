@@ -1,0 +1,34 @@
+# =============================================================================
+# Staging Shelly 2PM Gen3 — "shutter 1" (no room assigned yet)
+# =============================================================================
+# Generic bench bring-up: flashed serially so the unit is ESPHome-ready and
+# OTA-able before anyone knows which shutter it will drive. When it gets a
+# room: rename file + device to <room>-shutter[-n], run the calibration
+# protocol from packages/shelly-plus-2-pm-cover.yaml (which stacks unchanged
+# on the gen3 hardware package — same entity ids), then follow
+# kitchen-shutter.yaml as the model for the full cover stage.
+#
+# Flash size verified with esptool on this unit before flashing: 8 MB (GD) —
+# see the 4 MB trap in the hardware package header.
+# =============================================================================
+
+substitutions:
+  device_name: shutter-1
+  friendly_name: "Shutter 1"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+packages:
+  device_base: !include packages/device_base.yaml
+  shelly-2pm-gen3: !include packages/shelly-2pm-gen3.yaml
+
+# DEBUG while on the bench and during the future calibration; INFO once the
+# cover stage lands (the cover reports its anomalies at INFO).
+logger:
+  level: DEBUG
+
+# Local control for bench tests and calibration runs, without Home Assistant.
+web_server:
+  port: 80

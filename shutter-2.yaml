@@ -1,0 +1,25 @@
+# =============================================================================
+# Staging Shelly 2PM Gen3 — "shutter 2" (no room assigned yet)
+# =============================================================================
+# Twin of shutter-1.yaml — see its header for the staging rationale and the
+# path to a real room. ⚠️ Before flashing THIS unit: verify its flash size
+# with esptool (4 MB C38F units exist, see the hardware package header).
+# =============================================================================
+
+substitutions:
+  device_name: shutter-2
+  friendly_name: "Shutter 2"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+packages:
+  device_base: !include packages/device_base.yaml
+  shelly-2pm-gen3: !include packages/shelly-2pm-gen3.yaml
+
+logger:
+  level: DEBUG
+
+web_server:
+  port: 80

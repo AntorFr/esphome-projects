@@ -95,6 +95,15 @@ flash embarquée du U4WDH vit sur des pads SPI définis en eFuse (CLK:6 Q:17 D:8
 premier bloc quelle que soit la vitesse) — **`--no-stub` obligatoire**. Matériel de flash :
 VoltLink, EN+IO0 câblés = auto-reset esptool, zéro manipulation.
 
+**Deux Shelly 2PM Gen3 en staging (2026-08-11) :** `shutter-1.yaml` / `shutter-2.yaml`
+(noms génériques volontaires — pièces non affectées, à renommer à la pose) + nouveau
+package `packages/shelly-2pm-gen3.yaml` : ESP32-C3 8 Mo, même ADE7953 que le Plus 2PM,
+**mêmes ids d'entités** → le package cover s'empilera tel quel. Les deux flashées en
+série (stub OK sur C3 — le `--no-stub` est propre au U4WDH), sondées 8 Mo avant flash
+(des C38F 4 Mo existent → boot loop si on déclare 8, cf. en-tête du package), vérifiées
+en ligne : entités complètes via `/events`, ADE7953 répondant. MACs : shutter-1 =
+`28:37:2f:30:12:e0`, shutter-2 = `e4:b0:63:e8:f5:64`.
+
 **Prochaines étapes (volet) :**
 - [ ] Poser le Shelly salon 1 au mur, puis **calibration** (mapping relais/entrées/canaux,
       durées de course, seuils de courant, signes de puissance) — protocole dans l'en-tête

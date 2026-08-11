@@ -1,0 +1,182 @@
+# =============================================================================
+# Shelly 2PM Gen3 — hardware layer
+# =============================================================================
+# ESP32-C3 (single core, 160 MHz), 8 MB embedded flash, 2 relays, ADE7953
+# dual-channel metering over I2C (same chip as the Plus 2PM), 2 dry-contact
+# inputs, reset button, LED, internal NTC.
+#
+# Same philosophy and SAME ENTITY IDS as shelly-plus-2-pm.yaml: this package
+# declares the HARDWARE ONLY and gives the relays no behaviour. Because the
+# ids match (relay1/relay2, input1/input2, ch_a_current/ch_b_current, …), the
+# shelly-plus-2-pm-cover.yaml movement layer stacks unchanged on top of it.
+#
+# Pinout: https://devices.esphome.io/devices/shelly-2-pm-gen3 — note its table
+# and its own example YAML disagree on which relay is "1" (GPIO3 vs GPIO5).
+# Harmless: the relay <-> direction <-> metering-channel mapping is measured
+# per unit anyway, never assumed. This package follows the example config
+# (relay1 = GPIO5). The ADE7953 RST pad sits on GPIO0 and is left alone — the
+# hardware keeps the chip out of reset, and the reference config ignores it.
+#
+# ---------------------------------------------------------------------------
+# Flashing a fresh unit (stock Gen3 firmware -> serial)
+# ---------------------------------------------------------------------------
+#   - The esptool stub works on the C3 — the --no-stub dance is a U4WDH thing
+#     (see shelly-plus-2-pm.yaml).
+#   - VERIFY THE FLASH SIZE with esptool before the first flash: our units
+#     carry 8 MB (GD), but 4 MB C38F units exist in the wild, and declaring
+#     8 MB on one of those boot-loops (esphome/issues#6950).
+# =============================================================================
+
+substitutions:
+  # --- Entity naming (override per device) ---------------------------------
+  relay1_name: "Relay 1"
+  relay1_icon: "mdi:electric-switch"
+  relay2_name: "Relay 2"
+  relay2_icon: "mdi:electric-switch"
+  input1_name: "Input 1"
+  input2_name: "Input 2"
+  button_name: "Reset button"
+  current_a_name: "Channel A current"
+  power_a_name: "Channel A power"
+  current_b_name: "Channel B current"
+  power_b_name: "Channel B power"
+
+  # Dead time enforced when reversing: both relays are guaranteed open in
+  # between. Mandatory when the two relays drive the two windings of a single
+  # motor — energising both at once destroys it.
+  interlock_wait_time: 300ms
+
+  # Sign of the active power per channel, measured per unit (see the Plus 2PM
+  # package for the rationale). The reference Gen3 config needed -1 on both,
+  # but the default stays raw until this unit is measured.
+  power_a_sign: "1"
+  power_b_sign: "1"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+
+i2c:
+  sda: GPIO6
+  scl: GPIO7
+  # Left on: "Found i2c device at address 0x38" at boot is the cheap proof
+  # that the ADE7953 answers.
+  scan: true
+
+status_led:
+  pin:
+    # Strapping pin on the C3, LED in practice.
+    number: GPIO2
+    inverted: true
+    ignore_strapping_warning: true
+
+switch:
+  - platform: gpio
+    id: relay1
+    name: ${relay1_name}
+    icon: ${relay1_icon}
+    pin: GPIO5
+    restore_mode: ALWAYS_OFF
+    interlock: [relay2]
+    interlock_wait_time: ${interlock_wait_time}
+
+  - platform: gpio
+    id: relay2
+    name: ${relay2_name}
+    icon: ${relay2_icon}
+    pin: GPIO3
+    restore_mode: ALWAYS_OFF
+    interlock: [relay1]
+    interlock_wait_time: ${interlock_wait_time}
+
+binary_sensor:
+  # Dry-contact inputs. No behaviour attached here on purpose.
+  - platform: gpio
+    id: input1
+    name: ${input1_name}
+    pin: GPIO18
+    filters:
+      - delayed_on_off: 30ms
+
+  - platform: gpio
+    id: input2
+    name: ${input2_name}
+    pin: GPIO10
+    filters:
+      - delayed_on_off: 30ms
+
+  # Button behind the case, diagnostic only — same treatment as the Plus 2PM
+  # case button.
+  - platform: gpio
+    id: case_button
+    name: "${button_name}"
+    entity_category: diagnostic
+    pin:
+      number: GPIO19
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+
+sensor:
+  # --- Metering ------------------------------------------------------------
+  # Same ADE7953, same doctrine as the Plus 2PM package: currents raw and
+  # always positive (what the cover thresholds use), power sign corrected per
+  # unit, channel <-> relay mapping measured, never assumed.
+  - platform: ade7953_i2c
+    irq_pin: GPIO1
+    update_interval: 1s
+    voltage:
+      id: line_voltage
+      name: "Voltage"
+      entity_category: diagnostic
+    current_a:
+      id: ch_a_current
+      name: "${current_a_name}"
+      accuracy_decimals: 3
+    active_power_a:
+      id: ch_a_power
+      name: "${power_a_name}"
+      accuracy_decimals: 1
+      filters:
+        - multiply: ${power_a_sign}
+    current_b:
+      id: ch_b_current
+      name: "${current_b_name}"
+      accuracy_decimals: 3
+    active_power_b:
+      id: ch_b_power
+      name: "${power_b_name}"
+      accuracy_decimals: 1
+      filters:
+        - multiply: ${power_b_sign}
+
+  # --- Internal NTC --------------------------------------------------------
+  # Gen3 divider: 32k downstream, 10k NTC — values from the reference config.
+  - platform: adc
+    id: temp_analog_reading
+    pin: GPIO4
+    attenuation: 12db
+    update_interval: 10s
+
+  - platform: resistance
+    id: temp_resistance_reading
+    sensor: temp_analog_reading
+    configuration: DOWNSTREAM
+    resistor: 32kOhm
+
+  - platform: ntc
+    id: internal_temperature
+    sensor: temp_resistance_reading
+    name: "Temperature"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    entity_category: diagnostic
+    calibration:
+      b_constant: 3350
+      reference_resistance: 10kOhm
+      reference_temperature: 298.15K
