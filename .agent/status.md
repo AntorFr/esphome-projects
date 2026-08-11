@@ -118,7 +118,7 @@ d'entité** (`/switch/Relais 1/turn_on`, encodé), pas par un slug, et exige un
 **Salon 1 : suivi solaire déployé (2026-08-11, non éprouvé).** `smart_cover` v0.2.0 + sun.
 Baie **ouest à 265°** (même axe de façade que la cuisine 174,9°/354,9°, côté opposé →
 soleil d'après-midi/soirée), **200 cm** vitrés au sol (mesuré — l'amorçage cuisine tombait
-juste), **`closed_position: 11%`** (mesuré : volet posé à la main lame au sol / fentes
+juste), **`closed_position: 12%`** (mesuré : volet posé à la main lame au sol / fentes
 ouvertes, position relue dans le device — zone de compression bien plus courte que les
 23 % de la cuisine). `max_penetration: 50` à caler sur l'ombre réelle un après-midi
 ensoleillé. « Suivi solaire » démarre OFF (automatisation HA à créer, comme la cuisine) ;

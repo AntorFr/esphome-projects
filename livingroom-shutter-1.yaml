@@ -128,9 +128,10 @@ smart_cover:
     # afternoon. Raise it if the room feels gloomy, lower it if it heats.
     max_penetration: 50
     # Measured 2026-08-11: shutter parked by hand with the bottom rail on the
-    # floor and every slat gap open, position read back at 11.1%. A far
-    # shorter compression zone than the kitchen's 23% — per-shutter, as ever.
-    closed_position: 11%
+    # floor and every slat gap open, position read back at 11.1%, rounded up
+    # to 12% after visual check. A far shorter compression zone than the
+    # kitchen's 23% — per-shutter, as ever.
+    closed_position: 12%
     min_elevation: 5
     deadband: 8%
     update_interval: 5min
