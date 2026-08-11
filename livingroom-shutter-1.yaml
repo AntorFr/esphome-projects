@@ -140,7 +140,13 @@ smart_cover:
     # to 12% after visual check. A far shorter compression zone than the
     # kitchen's 23% — per-shutter, as ever.
     closed_position: 12%
-    min_elevation: 5
+    # The tree line west of the house, measured 2026-08-11: the sun stopped
+    # hitting the window between elevation 9.5 and 12.0 (user report, +/-15
+    # min) — below ~11 the trees do the shading and the shutter can give the
+    # room its light back. Winter midday still clears 11, so the window keeps
+    # its protection year-round; bare branches may leak some low sun off
+    # season — retune then if it shows.
+    min_elevation: 11
     deadband: 8%
     update_interval: 5min
     min_move_interval: 10min

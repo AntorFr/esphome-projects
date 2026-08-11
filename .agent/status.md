@@ -147,8 +147,12 @@ recale au premier contact de butée ; après un flash, une course vers une buté
       sur le nouveau cover (et retirer l'ancien module).
 - [ ] Salon 1 : automatisation HA (prévisions météo) pour armer « Suivi solaire » au
       quotidien (aujourd'hui il est armé manuellement).
-- [ ] Observer le comportement en soirée (soleil bas plein ouest → volet proche de 12 % :
-      voulu par les 20 cm, à confirmer au vécu).
+- [x] Comportement du soir calibré (2026-08-11) : `max_penetration` détendu à **50 cm** le
+      jour même (20 mesurés = plancher de tolérance, trop sombre au goût de l'utilisateur —
+      historique en commentaire du YAML) ; **`min_elevation: 11°`** mesuré sur la ligne
+      d'arbres ouest (soleil masqué entre 9,5° et 12°, rapport utilisateur ±15 min).
+      Validé en direct : à 20h42 le volet s'est rouvert en grand de lui-même, soleil
+      derrière les arbres. Cycle complet du suivi éprouvé sur une journée.
 - [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
 - [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).
