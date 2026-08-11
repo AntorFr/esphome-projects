@@ -83,7 +83,25 @@ L'interrupteur « Suivi solaire » démarre à **OFF** ; c'est une automatisatio
 météo) qui décidera quand l'armer. Tout mouvement manuel le coupe ; un **appui long sur
 STOP** le rallume.
 
+**Volet salon 1 / second Shelly Plus 2PM (2026-08-11) :** `livingroom-shutter-1.yaml` créé
+(étape 1 / calibration, relais bruts) et **flashé en série** (ESPHome 2026.7.4, désormais en
+venv `.venv/` local au repo). Remplacera `cover.salon_volet_roulant_1` (nommé `-1` car
+l'entité HA l'était — salon multi-volets présumé). Puce sondée par esptool avant flash :
+ESP32-U4WDH **rev 3.1 dual-core** — jumelle de la cuisine, donc PCB v0.1.9 attendu (aucun
+warning i2c/ade7953 au boot). Boot vérifié, WiFi joint, mDNS OK (config_hash du build).
+☠️ **Gotcha durable** (documenté dans l'en-tête de `packages/shelly-plus-2-pm.yaml`) : la
+flash embarquée du U4WDH vit sur des pads SPI définis en eFuse (CLK:6 Q:17 D:8 HD:11 CS:16)
+→ le stub esptool ne la voit pas (« Failed to communicate with the flash chip », mort au
+premier bloc quelle que soit la vitesse) — **`--no-stub` obligatoire**. Matériel de flash :
+VoltLink, EN+IO0 câblés = auto-reset esptool, zéro manipulation.
+
 **Prochaines étapes (volet) :**
+- [ ] Poser le Shelly salon 1 au mur, puis **calibration** (mapping relais/entrées/canaux,
+      durées de course, seuils de courant, signes de puissance) — protocole dans l'en-tête
+      de `packages/shelly-plus-2-pm-cover.yaml`.
+- [ ] Basculer `livingroom-shutter-1.yaml` en étape 2 : substitutions mesurées + package
+      cover + `smart_cover` (+ géométrie solaire propre à la baie du salon), sur le modèle
+      de `kitchen-shutter.yaml`.
 - [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
 - [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).

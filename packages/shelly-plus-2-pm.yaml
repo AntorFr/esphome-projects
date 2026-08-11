@@ -40,6 +40,24 @@
 #         CONFIG_ESP32_DEFAULT_CPU_FREQ_160: y
 #         CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "160"
 #
+# ---------------------------------------------------------------------------
+# Serial flashing — the stub flasher CANNOT talk to this flash
+# ---------------------------------------------------------------------------
+# Serial is needed for the first flash (stock Gen2 firmware takes no ESPHome
+# OTA) and whenever the partition layout must change (OTA never rewrites the
+# bootloader or partition table). Wiring: 3V3/GND/TX/RX, GPIO0 low at reset —
+# wire EN+IO0 too if the adapter has them (e.g. VoltLink) and esptool handles
+# entering/leaving download mode itself.
+#
+# MANDATORY: esptool --no-stub. The U4WDH's embedded flash hangs off
+# eFuse-defined SPI pads (livingroom-shutter-1 unit: CLK:6, Q:17, D:8, HD:11,
+# CS:16); the stub flasher assumes the default pads, warns "Failed to
+# communicate with the flash chip", and dies on the first write block at any
+# baud. The ROM loader reads the eFuse and just works:
+#
+#   esptool --no-stub --chip esp32 --port <tty> \
+#     write-flash --flash-size 4MB 0x0 firmware.factory.bin
+#
 # Pinout reference: https://devices.esphome.io/devices/Shelly-Plus-2PM
 # =============================================================================
 
