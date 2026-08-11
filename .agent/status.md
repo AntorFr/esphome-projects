@@ -155,7 +155,10 @@ recale au premier contact de butée ; après un flash, une course vers une buté
 - [ ] Généraliser aux autres volets : `packages/shelly-plus-2-pm*.yaml` sont prévus pour, seules les valeurs mesurées changent d'un volet à l'autre.
 - [ ] Quand `smart_cover` v0.2 sortira (arbitrage des commandes), retirer le décodage bouton provisoire de `packages/shelly-plus-2-pm-cover.yaml`.
 - [ ] Déclarer le `cover.current_based` et supprimer le bloc calibration du device.
-- [ ] Vérifier côté HA que le vrai `pool-filtering-relay` a bien récupéré son nom.
+- [x] Vérifier côté HA que le vrai `pool-filtering-relay` a bien récupéré son nom — fait le
+      2026-08-11 : re-flashé OTA avec la config à jour (il tournait sur un firmware ancien,
+      mDNS à moitié muet, capteurs d'énergie absents) ; `Energy Filtration`/`Énergie
+      Électrolyse` (kWh, `total_increasing`) désormais éligibles au tableau Énergie de HA.
 - [ ] Créer le repo `esphome-sun-cover` (composant `sun_cover` : géométrie solaire, modes, arbitrage bouton).
 
 ---
