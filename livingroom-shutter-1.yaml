@@ -10,8 +10,9 @@
 # than copied from kitchen-shutter.yaml — which proved wise: the wall buttons
 # land crossed relative to the kitchen unit.
 #
-# Still to come, following the kitchen model: smart_cover (duration learning),
-# then sun tracking once the window geometry is measured on site.
+# The smart_cover component supervises it: it learns the travel durations and
+# keeps the sun out. Same brain as the kitchen, opposite exposure: this window
+# faces WEST of the house axis, so it works the afternoons the kitchen ignores.
 # =============================================================================
 
 substitutions:
@@ -83,6 +84,71 @@ packages:
   device_base: !include packages/device_base.yaml
   shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
   shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
+
+# Pinned rather than tracking main: v0.2.0 is what the kitchen shutter
+# validated, and a motor in a wall is not where an unreviewed upstream commit
+# should land. No refresh needed — a tag does not move.
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-smart-cover
+      ref: v0.2.0
+    components: [smart_cover]
+
+# SNTP rather than Home Assistant: the sun geometry is computed here, so it
+# must not go blind when HA does. The ESP keeps time across brief outages.
+time:
+  - platform: sntp
+    id: device_time
+
+# Coordinates of the house. Everything solar is derived on-device from these.
+sun:
+  id: sun_position
+  time_id: device_time
+  latitude: 47.38643°
+  longitude: -1.44525°
+
+# Learns the real travel durations from end-stop to end-stop runs (the
+# substitutions above are only the bootstrap) and drives the shutter to keep
+# the sun out.
+#
+# Window geometry: same facade axis as the kitchen (174.9°/354.9°, computed
+# from two GPS points), OPPOSITE side of the house — the glass looks west of
+# the axis, at 265° (kitchen: 85°).
+smart_cover:
+  id: brain
+  cover_id: shutter
+  sun:
+    sun_id: sun_position
+    window_azimuth: 265
+    # Measured on site 2026-08-11: 2 m glazed, floor level — the kitchen
+    # bootstrap happened to be exact.
+    window_height: 200
+    # Starting point, to be calibrated against the shadow line on a sunny
+    # afternoon. Raise it if the room feels gloomy, lower it if it heats.
+    max_penetration: 50
+    # Measured 2026-08-11: shutter parked by hand with the bottom rail on the
+    # floor and every slat gap open, position read back at 11.1%. A far
+    # shorter compression zone than the kitchen's 23% — per-shutter, as ever.
+    closed_position: 11%
+    min_elevation: 5
+    deadband: 8%
+    update_interval: 5min
+    min_move_interval: 10min
+
+switch:
+  - platform: smart_cover
+    smart_cover_id: brain
+    id: sun_auto
+    name: "Suivi solaire"
+
+script:
+  # Long press on the wall stop button re-arms tracking, which any manual move
+  # turns off. The gesture is decoded by the cover package; only its meaning
+  # belongs here.
+  - id: !extend on_stop_long_press
+    then:
+      - switch.turn_on: sun_auto
 
 # INFO rather than WARN: the cover reports malfunctions and obstacles at INFO,
 # and those are exactly the events worth catching in a log — the per-second
