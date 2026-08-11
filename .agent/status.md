@@ -1,6 +1,13 @@
 # Status — esphome-projects
 > MàJ : 2026-08-11
 
+**salon-ble-relay : carte Olimex ESP32-POE-ISO morte, remplacée (2026-08-11).** Autopsie :
+offline depuis le matin, USB énumère (CH340 OK) mais ESP32 muet jusque dans sa ROM (esptool
+sans réponse malgré l'auto-reset natif) → module HS. Carte neuve (ESP32-D0WD-V3 rev 3.1,
+MAC `d8:bc:38:f7:9a:88`) flashée en série, YAML inchangé. Dette optionnelle relevée par le
+boot log : `minimum_chip_revision: "3.1"` + `sram1_as_iram: true` (+40 Ko d'IRAM, utile à
+un proxy BLE) — à poser lors d'un prochain OTA.
+
 **Linky : barème Tempo du 1ᵉʳ août 2026 flashé en OTA (fait le 2026-08-11)** — le
 compteur valorise au nouveau barème (`dff16b0`, six substitutions).
 
