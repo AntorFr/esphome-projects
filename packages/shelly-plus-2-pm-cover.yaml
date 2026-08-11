@@ -49,11 +49,18 @@
 substitutions:
   cover_name: "Volet"
 
-  # Which direction script each wall input fires. Measured per unit, like
-  # everything else: override both to cross them on a unit whose buttons land
-  # the other way round.
+  # Which direction script each wall input fires, and which input carries
+  # which physical button. Measured per unit, like everything else. ⚠️ These
+  # four encode ONE fact (the button wiring) — on a crossed unit, swap BOTH
+  # pairs together. Leaving the *_button_input pair at its default while
+  # crossing the scripts makes each direction script re-check ITS OWN input,
+  # and every press then reads as a stop gesture: the shutter goes deaf to
+  # the wall while everything looks fine from Home Assistant (lived on
+  # livingroom-shutter-1, 2026-08-11).
   input1_script: on_up_pressed
   input2_script: on_down_pressed
+  up_button_input: input1
+  down_button_input: input2
 
   # ⚠️ Per-shutter values — these defaults are deliberately useless placeholders.
   # A wrong duration does not break the end positions (the motor's own limit
@@ -242,7 +249,8 @@ script:
       - delay: ${stop_detect_window}
       - if:
           condition:
-            binary_sensor.is_on: input2
+            # The DOWN button, wherever this unit wired it — never "input2".
+            binary_sensor.is_on: ${down_button_input}
           then:
             - script.execute: publish_input_skew
             - script.execute: on_stop_detected
@@ -256,7 +264,7 @@ script:
       - delay: ${stop_detect_window}
       - if:
           condition:
-            binary_sensor.is_on: input1
+            binary_sensor.is_on: ${up_button_input}
           then:
             - script.execute: publish_input_skew
             - script.execute: on_stop_detected

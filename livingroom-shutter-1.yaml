@@ -37,8 +37,12 @@ substitutions:
   # are the opposite of the kitchen: up button -> input 2 (GPIO18), down
   # button -> input 1 (GPIO5) — hence the crossed scripts below. The stop
   # gesture (both buttons) was seen arming both inputs simultaneously.
+  # The four substitutions swap TOGETHER — see the cover package header for
+  # what happens when only the first pair is crossed.
   input1_script: on_down_pressed
   input2_script: on_up_pressed
+  up_button_input: input2
+  down_button_input: input1
 
   # Both channels report a running motor as negative watts (23/23 and 26/26
   # samples negative during the calibration runs).
