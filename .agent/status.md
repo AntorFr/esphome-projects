@@ -104,13 +104,23 @@ série (stub OK sur C3 — le `--no-stub` est propre au U4WDH), sondées 8 Mo av
 en ligne : entités complètes via `/events`, ADE7953 répondant. MACs : shutter-1 =
 `28:37:2f:30:12:e0`, shutter-2 = `e4:b0:63:e8:f5:64`.
 
+**Volet salon 1 EN SERVICE (2026-08-11, posé au mur + calibré + cover validé).** Mesures
+sur l'unité : relais 1/canal A = montée 28,1 s, relais 2/canal B = descente 25,0 s,
+régime 0,60 A / ~137 W (plancher 0,018 A) → seuils 0,2 / **1,0** A (moteur plus gourmand
+que la cuisine, obstacle relevé en proportion), signes puissance −1/−1. ⚠️ **Boutons
+muraux CROISÉS vs la cuisine** (montée → entrée 2, descente → entrée 1) → le package
+cover est désormais **paramétrable** (`input1_script`/`input2_script`, défauts inchangés).
+Test fonctionnel OTA : close 24,9 s → CLOSED, open 27,1 s → OPEN, butées par chute de
+courant. Piège rejoué au passage : l'API REST du web_server 2026 route par le **nom
+d'entité** (`/switch/Relais 1/turn_on`, encodé), pas par un slug, et exige un
+`Content-Length` sur les POST (sinon 411 silencieux).
+
 **Prochaines étapes (volet) :**
-- [ ] Poser le Shelly salon 1 au mur, puis **calibration** (mapping relais/entrées/canaux,
-      durées de course, seuils de courant, signes de puissance) — protocole dans l'en-tête
-      de `packages/shelly-plus-2-pm-cover.yaml`.
-- [ ] Basculer `livingroom-shutter-1.yaml` en étape 2 : substitutions mesurées + package
-      cover + `smart_cover` (+ géométrie solaire propre à la baie du salon), sur le modèle
-      de `kitchen-shutter.yaml`.
+- [ ] Salon 1 : côté HA, brancher les consommateurs de l'ancien `cover.salon_volet_roulant_1`
+      sur le nouveau cover (et retirer l'ancien module).
+- [ ] Salon 1 : ajouter `smart_cover` (apprentissage des durées), puis le suivi solaire
+      quand la géométrie de la baie sera mesurée (azimut, hauteur vitrée, closed_position).
+- [ ] Valider les boutons muraux du salon à l'usage (montée/descente/STOP, appui long).
 - [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
 - [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).

@@ -4,22 +4,14 @@
 # Replaces cover.salon_volet_roulant_1 in Home Assistant. Numbered because the
 # entity it replaces was: the living room has more than one shutter.
 #
-# CALIBRATION STAGE (step 1 of 2 — the protocol lives in
-# packages/shelly-plus-2-pm-cover.yaml, validated on kitchen-shutter.yaml).
-# The hardware package alone, raw relays exposed: nothing here assumes which
-# relay raises, which input is which button, or what the motor draws. Once the
-# unit is wired into the wall, measure per direction (relay on until the stop,
-# current trace read from the metering):
-#   - relay <-> direction <-> metering channel mapping, and input <-> button
-#   - open/close durations, read from the current collapse (not the relay time)
-#   - running current + noise floor -> the two thresholds
-#   - sign of the active power per channel (batch-dependent)
-# Then this stage is replaced by the measured substitutions plus
-# shelly-plus-2-pm-cover.yaml (+ smart_cover), following kitchen-shutter.yaml.
+# Hardware in packages/shelly-plus-2-pm.yaml, movement in
+# packages/shelly-plus-2-pm-cover.yaml. Everything below is what is specific
+# to THIS shutter, and every number was measured on it (2026-08-11) rather
+# than copied from kitchen-shutter.yaml — which proved wise: the wall buttons
+# land crossed relative to the kitchen unit.
 #
-# First boot log also settles the last hardware unknown (see the hardware
-# package header): the i2c scan identifies the PCB revision (ADE7953 at 0x38
-# => v0.1.9, nothing found => v0.1.5 pin overrides needed).
+# Still to come, following the kitchen model: smart_cover (duration learning),
+# then sun tracking once the window geometry is measured on site.
 # =============================================================================
 
 substitutions:
@@ -27,17 +19,47 @@ substitutions:
   friendly_name: "Volet salon 1"
   area: "Salon"
 
-  # Channel-letter labels on purpose: the mapping to up/down is not measured
-  # yet, so the names must not pretend otherwise. Renamed at the cover stage.
-  relay1_name: "Relais 1"
-  relay2_name: "Relais 2"
-  input1_name: "Entrée 1"
-  input2_name: "Entrée 2"
-  current_a_name: "Courant canal A"
-  power_a_name: "Puissance canal A"
-  current_b_name: "Courant canal B"
-  power_b_name: "Puissance canal B"
+  cover_name: "Volet"
+
+  # Named by what they actually do on this unit, not by the chip's channel
+  # letters — the mapping below was measured, so the labels may as well say so.
+  input1_name: "Bouton descente"
+  input2_name: "Bouton montée"
+  current_a_name: "Courant montée"
+  power_a_name: "Puissance montée"
+  current_b_name: "Courant descente"
+  power_b_name: "Puissance descente"
   button_name: "Bouton du boîtier"
+
+  # --- Measured 2026-08-11 on this unit -------------------------------------
+  # Relays wired like the kitchen: relay 1 (GPIO13) raises and feeds metering
+  # channel A, relay 2 (GPIO12) lowers and feeds channel B. The WALL BUTTONS
+  # are the opposite of the kitchen: up button -> input 2 (GPIO18), down
+  # button -> input 1 (GPIO5) — hence the crossed scripts below. The stop
+  # gesture (both buttons) was seen arming both inputs simultaneously.
+  input1_script: on_down_pressed
+  input2_script: on_up_pressed
+
+  # Both channels report a running motor as negative watts (23/23 and 26/26
+  # samples negative during the calibration runs).
+  power_a_sign: "-1"
+  power_b_sign: "-1"
+
+  # Travel times read from the collapse of the motor current on end-stop to
+  # end-stop runs. Up is ~12% slower than down: the motor lifts the slats.
+  # Bootstrap values only once smart_cover lands — it will learn and persist
+  # the real ones.
+  open_duration: 28.1s
+  close_duration: 25.0s
+  max_duration: 40s
+
+  # Noise floor 0.018 A on both channels, running current 0.59-0.60 A
+  # (~137 W), collapsing to the floor at both end stops (the motor has its
+  # own limit switches). 0.2 A sits squarely in the gap; this motor runs
+  # hungrier than the kitchen's 0.43 A, so the obstacle threshold moves up
+  # in proportion — 1.0 A is only reachable by a stalled motor.
+  moving_current_threshold: "0.2"
+  obstacle_current_threshold: "1.0"
 
 esphome:
   name: ${device_name}
@@ -56,13 +78,14 @@ esp32:
 packages:
   device_base: !include packages/device_base.yaml
   shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
+  shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
 
-# DEBUG while calibrating: the boot i2c scan and the 1 s metering publications
-# are exactly what this stage exists to read. Dropped to INFO with the cover.
+# INFO rather than WARN: the cover reports malfunctions and obstacles at INFO,
+# and those are exactly the events worth catching in a log — the per-second
+# sensor chatter is VERBOSE and already gone at this level.
 logger:
-  level: DEBUG
+  level: INFO
 
-# Local control for the calibration runs — clicking the raw relays from a
-# browser, no Home Assistant involved.
+# Local control that does not depend on Home Assistant.
 web_server:
   port: 80

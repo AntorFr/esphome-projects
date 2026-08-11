@@ -14,7 +14,10 @@
 #   input 1 -> up button            |   input 2 -> down button
 #   both inputs at once             -> stop
 # If a unit turns out to be wired the other way round, swap the relay and sensor
-# references in the cover block rather than rewiring anything else.
+# references in the cover block rather than rewiring anything else. The wall
+# buttons have their own escape hatch: input1_script / input2_script pick which
+# direction script each input fires (livingroom-shutter-1 measured its buttons
+# crossed relative to this default — up on input 2).
 #
 # ---------------------------------------------------------------------------
 # How end positions are detected
@@ -45,6 +48,12 @@
 
 substitutions:
   cover_name: "Volet"
+
+  # Which direction script each wall input fires. Measured per unit, like
+  # everything else: override both to cross them on a unit whose buttons land
+  # the other way round.
+  input1_script: on_up_pressed
+  input2_script: on_down_pressed
 
   # ⚠️ Per-shutter values — these defaults are deliberately useless placeholders.
   # A wrong duration does not break the end positions (the motor's own limit
@@ -217,10 +226,10 @@ cover:
 binary_sensor:
   - id: !extend input1
     on_press:
-      - script.execute: on_up_pressed
+      - script.execute: ${input1_script}
   - id: !extend input2
     on_press:
-      - script.execute: on_down_pressed
+      - script.execute: ${input2_script}
 
 script:
   # Both scripts defer their decision by stop_detect_window. On a stop gesture
