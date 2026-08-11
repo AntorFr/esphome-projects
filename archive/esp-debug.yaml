@@ -1,0 +1,67 @@
+
+substitutions:
+  device_name: esp-debug
+  friendly_name: esp-debug
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name} 
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: ${device_name}.intra.sberard.fr
+
+  ap:
+    ssid: ${device_name}
+    password: !secret ap_password
+
+api:
+  reboot_timeout: 15min
+  encryption:
+    key: !secret api_encryption
+
+ota:
+  password: !secret ota_password
+
+#captive_portal:
+
+logger:
+  level: DEBUG
+
+web_server:
+
+#######################################
+# Device specific Config Begins Below #
+#######################################
+
+packages:
+  device_base:
+    url: https://github.com/AntorFr/esphome-projects
+    file: packages/device_base.yaml
+
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+
+status_led:
+  pin: GPIO23
+
+sensor:
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+      oversampling: 16x
+    pressure:
+      name: "BME280 Pressure"
+    humidity:
+      name: "BME280 Humidity"
+    address: 0x76
+    update_interval: 60s

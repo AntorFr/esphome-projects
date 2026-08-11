@@ -9,6 +9,20 @@ substitutions:
   relay2_name: "Filtration"
   relay2_icon: "mdi:air-filter"
 
+  # Une coupure secteur ou une perte d'API > reboot_timeout (15min) redemarre le
+  # module : sans restauration, la piscine reste sans filtration ni chloration.
+  # Electrolyse : reprend son etat, OFF si inconnu (jamais de marche a sec).
+  relay1_restore_mode: "RESTORE_DEFAULT_OFF"
+  # Filtration : reprend son etat, ON si inconnu (fail-safe piscine).
+  relay2_restore_mode: "RESTORE_DEFAULT_ON"
+
+  # Puissance mesuree sur la pompe (26/07/2026, calibration ADE7953 deja
+  # corrigee) : ~118 W filtre neuf, ~104 W filtre completement bouche, soit
+  # seulement 12 % d'ecart utile. D'ou les seuils : 110 W = 93 % du neuf
+  # (alerte a mi-chemin de l'obstruction), 114 W = 96,5 % pour le rearmement.
+  filter_clog_power_default: "110"
+  filter_clog_recover_default: "114"
+
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name} 
@@ -56,15 +70,47 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  - id: filter_recover_high125_s
+  - id: filter_recover_fast_s
     type: int
     restore_value: no
     initial_value: '0'
 
-  - id: filter_recover_high120_s
+  - id: filter_recover_slow_s
     type: int
     restore_value: no
     initial_value: '0'
+
+number:
+  # Seuil de declenchement : sous cette puissance pendant 10 min, filtre encrasse.
+  - platform: template
+    name: "Seuil encrassement filtre"
+    id: filter_clog_threshold
+    icon: mdi:air-filter
+    entity_category: config
+    unit_of_measurement: W
+    optimistic: true
+    restore_value: true
+    initial_value: ${filter_clog_power_default}
+    min_value: 10
+    max_value: 500
+    step: 0.5
+    mode: box
+
+  # Seuil de rearmement rapide (2 min au-dessus). Doit rester >= au seuil de
+  # declenchement, sinon la lambda utilise le plus grand des deux.
+  - platform: template
+    name: "Seuil rearmement filtre"
+    id: filter_recover_threshold
+    icon: mdi:air-filter
+    entity_category: config
+    unit_of_measurement: W
+    optimistic: true
+    restore_value: true
+    initial_value: ${filter_clog_recover_default}
+    min_value: 10
+    max_value: 500
+    step: 0.5
+    mode: box
 
 binary_sensor:
   - platform: template
@@ -81,46 +127,60 @@ interval:
       - lambda: |-
           const bool pump_on = id(relay2).state;
           const float p = id(power2).state;
-          const bool valid = !isnan(p);
+          const float thr_low = id(filter_clog_threshold).state;
+          const float thr_fast = id(filter_recover_threshold).state > thr_low
+                                     ? id(filter_recover_threshold).state
+                                     : thr_low;
+          const bool valid = !isnan(p) && !isnan(thr_low) && !isnan(thr_fast);
 
           // If pump is off or power is invalid, we keep the latched state as-is
           // and reset continuity counters.
           if (!(pump_on && valid)) {
             id(filter_low_power_s) = 0;
-            id(filter_recover_high125_s) = 0;
-            id(filter_recover_high120_s) = 0;
+            id(filter_recover_fast_s) = 0;
+            id(filter_recover_slow_s) = 0;
             return;
           }
 
-          // Trigger condition: p < 120 W continuously for 10 minutes.
-          if (p < 120.0f) {
-            id(filter_low_power_s) += 1;
-          } else {
-            id(filter_low_power_s) = 0;
+          // Leaky counters: an isolated noisy sample on the opposite side no
+          // longer resets the counter to zero. The clean/clogged margin is only
+          // ~12 % of pump power, so strict continuity over 600 samples would
+          // realistically never complete.
+
+          // Trigger condition: p < threshold for a cumulated 10 minutes.
+          if (p < thr_low) {
+            if (id(filter_low_power_s) < 600) id(filter_low_power_s) += 1;
+          } else if (id(filter_low_power_s) > 0) {
+            id(filter_low_power_s) -= 1;
           }
 
           // Recovery conditions:
-          // 1) p > 125 W for 2 minutes, OR
-          // 2) p > 120 W for 10 minutes.
-          if (p > 125.0f) {
-            id(filter_recover_high125_s) += 1;
-          } else {
-            id(filter_recover_high125_s) = 0;
+          // 1) p > recover threshold for 2 minutes, OR
+          // 2) p > trigger threshold for 10 minutes.
+          if (p > thr_fast) {
+            if (id(filter_recover_fast_s) < 120) id(filter_recover_fast_s) += 1;
+          } else if (id(filter_recover_fast_s) > 0) {
+            id(filter_recover_fast_s) -= 1;
           }
 
-          if (p > 120.0f) {
-            id(filter_recover_high120_s) += 1;
-          } else {
-            id(filter_recover_high120_s) = 0;
+          if (p > thr_low) {
+            if (id(filter_recover_slow_s) < 600) id(filter_recover_slow_s) += 1;
+          } else if (id(filter_recover_slow_s) > 0) {
+            id(filter_recover_slow_s) -= 1;
           }
 
+          // On each transition, clear the counters of the opposite direction so
+          // a leaky counter left mid-course cannot re-trip almost immediately.
           if (!id(filter_clogged_latched) && id(filter_low_power_s) >= 600) {
             id(filter_clogged_latched) = true;
+            id(filter_recover_fast_s) = 0;
+            id(filter_recover_slow_s) = 0;
             id(pool_filter_clogged).publish_state(true);
           }
 
           if (id(filter_clogged_latched) &&
-              (id(filter_recover_high125_s) >= 120 || id(filter_recover_high120_s) >= 600)) {
+              (id(filter_recover_fast_s) >= 120 || id(filter_recover_slow_s) >= 600)) {
             id(filter_clogged_latched) = false;
+            id(filter_low_power_s) = 0;
             id(pool_filter_clogged).publish_state(false);
           }
