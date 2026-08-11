@@ -132,12 +132,23 @@ ensoleillé. « Suivi solaire » démarre OFF (automatisation HA à créer, comm
 appui long STOP le réarme. Boutons muraux validés à l'usage après correction du bug de
 contre-vérification croisée (commit `2a4920d`).
 
+**Salon 1 : suivi solaire CALIBRÉ ET EN SERVICE (2026-08-11 16h00).** Calibration à un seul
+geste : l'utilisateur a calé le volet à 27,1 % soleil entrant (15h55, soleil az 222,6°/él
+51,2°) ; inversion du modèle → **`max_penetration: 20 cm`** (pièce stricte — la cuisine
+tolère 50). **`fov_left: 62°`** encadré par deux observations (« n'entre pas » à γ=−64,
+« entre » à γ=−58) : l'embrasure coupe le rasant que la géométrie pure compterait.
+Validation immédiate : après OTA + recalage butée basse + armement, le cerveau a remonté
+le volet de lui-même à 26,2 % (= sa cible, ton calage corrigé de la course du soleil).
+⚠️ À savoir : **la position ne survit pas à un OTA** (préférences invalidées) — le cover se
+recale au premier contact de butée ; après un flash, une course vers une butée resynchronise.
+
 **Prochaines étapes (volet) :**
 - [ ] Salon 1 : côté HA, brancher les consommateurs de l'ancien `cover.salon_volet_roulant_1`
       sur le nouveau cover (et retirer l'ancien module).
-- [ ] Salon 1 : un après-midi ensoleillé, mesurer le tapis de lumière et caler
-      `max_penetration` (50 cm posé en valeur de départ).
-- [ ] Salon 1 : automatisation HA (prévisions météo) pour armer « Suivi solaire ».
+- [ ] Salon 1 : automatisation HA (prévisions météo) pour armer « Suivi solaire » au
+      quotidien (aujourd'hui il est armé manuellement).
+- [ ] Observer le comportement en soirée (soleil bas plein ouest → volet proche de 12 % :
+      voulu par les 20 cm, à confirmer au vécu).
 - [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
 - [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).
