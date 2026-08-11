@@ -130,10 +130,11 @@ smart_cover:
     # geometry would count. Evening side left at the default 90: the low
     # west sun is exactly what this window needs shading from.
     fov_left: 62
-    # Calibrated 2026-08-11 15:55: the user parked the shutter at 27.1% with
-    # the sun at azimuth 222.6 / elevation 51.2 (gamma -42.4); the model
-    # inverted lands on 20 cm. A strict room — the kitchen tolerates 50.
-    max_penetration: 20
+    # Calibrated 2026-08-11 15:55 at 20 cm (user parked the shutter at 27.1%
+    # with the sun at azimuth 222.6 / elevation 51.2; model inverted), then
+    # relaxed to 50 the same day: 20 kept the room too dark for taste. The
+    # gesture measured the floor of tolerance, daylight won the arbitrage.
+    max_penetration: 50
     # Measured 2026-08-11: shutter parked by hand with the bottom rail on the
     # floor and every slat gap open, position read back at 11.1%, rounded up
     # to 12% after visual check. A far shorter compression zone than the
