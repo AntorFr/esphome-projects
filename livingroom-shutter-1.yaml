@@ -1,0 +1,68 @@
+# =============================================================================
+# Living-room roller shutter 1 — Shelly Plus 2PM
+# =============================================================================
+# Replaces cover.salon_volet_roulant_1 in Home Assistant. Numbered because the
+# entity it replaces was: the living room has more than one shutter.
+#
+# CALIBRATION STAGE (step 1 of 2 — the protocol lives in
+# packages/shelly-plus-2-pm-cover.yaml, validated on kitchen-shutter.yaml).
+# The hardware package alone, raw relays exposed: nothing here assumes which
+# relay raises, which input is which button, or what the motor draws. Once the
+# unit is wired into the wall, measure per direction (relay on until the stop,
+# current trace read from the metering):
+#   - relay <-> direction <-> metering channel mapping, and input <-> button
+#   - open/close durations, read from the current collapse (not the relay time)
+#   - running current + noise floor -> the two thresholds
+#   - sign of the active power per channel (batch-dependent)
+# Then this stage is replaced by the measured substitutions plus
+# shelly-plus-2-pm-cover.yaml (+ smart_cover), following kitchen-shutter.yaml.
+#
+# First boot log also settles the last hardware unknown (see the hardware
+# package header): the i2c scan identifies the PCB revision (ADE7953 at 0x38
+# => v0.1.9, nothing found => v0.1.5 pin overrides needed).
+# =============================================================================
+
+substitutions:
+  device_name: livingroom-shutter-1
+  friendly_name: "Volet salon 1"
+  area: "Salon"
+
+  # Channel-letter labels on purpose: the mapping to up/down is not measured
+  # yet, so the names must not pretend otherwise. Renamed at the cover stage.
+  relay1_name: "Relais 1"
+  relay2_name: "Relais 2"
+  input1_name: "Entrée 1"
+  input2_name: "Entrée 2"
+  current_a_name: "Courant canal A"
+  power_a_name: "Puissance canal A"
+  current_b_name: "Courant canal B"
+  power_b_name: "Puissance canal B"
+  button_name: "Bouton du boîtier"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+
+# Read by esptool on this unit before the first flash: "ESP32-U4WDH (revision
+# v3.1), Dual Core". Declaring the floor lets esp-idf drop the workarounds for
+# older silicon and shrink the binary. Kept in the device rather than the
+# package: it is a property of this chip, not of the Shelly model.
+esp32:
+  framework:
+    advanced:
+      minimum_chip_revision: "3.1"
+
+packages:
+  device_base: !include packages/device_base.yaml
+  shelly-plus-2-pm: !include packages/shelly-plus-2-pm.yaml
+
+# DEBUG while calibrating: the boot i2c scan and the 1 s metering publications
+# are exactly what this stage exists to read. Dropped to INFO with the cover.
+logger:
+  level: DEBUG
+
+# Local control for the calibration runs — clicking the raw relays from a
+# browser, no Home Assistant involved.
+web_server:
+  port: 80
