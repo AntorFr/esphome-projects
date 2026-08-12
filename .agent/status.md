@@ -1,6 +1,13 @@
 # Status — esphome-projects
 > MàJ : 2026-08-11
 
+**salon-ble-relay : carte Olimex ESP32-POE-ISO morte, remplacée (2026-08-11).** Autopsie :
+offline depuis le matin, USB énumère (CH340 OK) mais ESP32 muet jusque dans sa ROM (esptool
+sans réponse malgré l'auto-reset natif) → module HS. Carte neuve (ESP32-D0WD-V3 rev 3.1,
+MAC `d8:bc:38:f7:9a:88`) flashée en série, YAML inchangé. Dette optionnelle relevée par le
+boot log : `minimum_chip_revision: "3.1"` + `sram1_as_iram: true` (+40 Ko d'IRAM, utile à
+un proxy BLE) — à poser lors d'un prochain OTA.
+
 **Linky : barème Tempo du 1ᵉʳ août 2026 flashé en OTA (fait le 2026-08-11)** — le
 compteur valorise au nouveau barème (`dff16b0`, six substitutions).
 
@@ -125,19 +132,33 @@ ensoleillé. « Suivi solaire » démarre OFF (automatisation HA à créer, comm
 appui long STOP le réarme. Boutons muraux validés à l'usage après correction du bug de
 contre-vérification croisée (commit `2a4920d`).
 
+**Salon 1 : suivi solaire CALIBRÉ ET EN SERVICE (2026-08-11 16h00).** Calibration à un seul
+geste : l'utilisateur a calé le volet à 27,1 % soleil entrant (15h55, soleil az 222,6°/él
+51,2°) ; inversion du modèle → **`max_penetration: 20 cm`** (pièce stricte — la cuisine
+tolère 50). **`fov_left: 62°`** encadré par deux observations (« n'entre pas » à γ=−64,
+« entre » à γ=−58) : l'embrasure coupe le rasant que la géométrie pure compterait.
+Validation immédiate : après OTA + recalage butée basse + armement, le cerveau a remonté
+le volet de lui-même à 26,2 % (= sa cible, ton calage corrigé de la course du soleil).
+⚠️ À savoir : **la position ne survit pas à un OTA** (préférences invalidées) — le cover se
+recale au premier contact de butée ; après un flash, une course vers une butée resynchronise.
+
 **Prochaines étapes (volet) :**
 - [ ] Salon 1 : côté HA, brancher les consommateurs de l'ancien `cover.salon_volet_roulant_1`
       sur le nouveau cover (et retirer l'ancien module).
-- [ ] Salon 1 : un après-midi ensoleillé, mesurer le tapis de lumière et caler
-      `max_penetration` (50 cm posé en valeur de départ).
-- [ ] Salon 1 : automatisation HA (prévisions météo) pour armer « Suivi solaire ».
+- [ ] Salon 1 : automatisation HA (prévisions météo) pour armer « Suivi solaire » au
+      quotidien (aujourd'hui il est armé manuellement).
+- [ ] Observer le comportement en soirée (soleil bas plein ouest → volet proche de 12 % :
+      voulu par les 20 cm, à confirmer au vécu).
 - [x] Vérifier la justesse d'un `cover.set_position` intermédiaire (40 %) — validé.
 - [ ] **2026-07-26 au matin** : mesurer la profondeur du tapis de lumière volet ouvert, à une heure notée, pour recaler le modèle et régler `max_penetration`.
 - [ ] Ajouter une coupure thermique au package (le `shelly-pro-2-pm.yaml` en a une à 90 °C, celui-ci n'en a pas — la sonde monte à 54 °C après une série de courses).
 - [ ] Généraliser aux autres volets : `packages/shelly-plus-2-pm*.yaml` sont prévus pour, seules les valeurs mesurées changent d'un volet à l'autre.
 - [ ] Quand `smart_cover` v0.2 sortira (arbitrage des commandes), retirer le décodage bouton provisoire de `packages/shelly-plus-2-pm-cover.yaml`.
 - [ ] Déclarer le `cover.current_based` et supprimer le bloc calibration du device.
-- [ ] Vérifier côté HA que le vrai `pool-filtering-relay` a bien récupéré son nom.
+- [x] Vérifier côté HA que le vrai `pool-filtering-relay` a bien récupéré son nom — fait le
+      2026-08-11 : re-flashé OTA avec la config à jour (il tournait sur un firmware ancien,
+      mDNS à moitié muet, capteurs d'énergie absents) ; `Energy Filtration`/`Énergie
+      Électrolyse` (kWh, `total_increasing`) désormais éligibles au tableau Énergie de HA.
 - [ ] Créer le repo `esphome-sun-cover` (composant `sun_cover` : géométrie solaire, modes, arbitrage bouton).
 
 ---

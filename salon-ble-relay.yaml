@@ -15,6 +15,12 @@ esp32:
   board: esp32-poe-iso
   framework:
     type: esp-idf
+    advanced:
+      # Both prompted by this unit's own boot log (ESP32-D0WD-V3 rev 3.1,
+      # flashed 2026-08-11): drop pre-3.0 silicon workarounds, and reclaim
+      # SRAM1 as IRAM (+40 KB) — RAM a bluetooth proxy puts to good use.
+      minimum_chip_revision: "3.1"
+      sram1_as_iram: true
 
 ethernet:
   type: LAN8720
