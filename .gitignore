@@ -13,3 +13,4 @@
 __pycache__/
 *.pyc
 .device-builder.json
+.device-builder-preferences.json
