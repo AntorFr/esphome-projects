@@ -102,6 +102,18 @@ flash embarquée du U4WDH vit sur des pads SPI définis en eFuse (CLK:6 Q:17 D:8
 premier bloc quelle que soit la vitesse) — **`--no-stub` obligatoire**. Matériel de flash :
 VoltLink, EN+IO0 câblés = auto-reset esptool, zéro manipulation.
 
+**Volet salle à manger 1 EN SERVICE, suivi solaire compris (2026-08-13).** L'ex `shutter-2`
+(Gen3) posé et renommé `dining-shutter-1` — remplace `cover.salle_a_manger_volet_roulant_1`.
+**Premier empilement du package cover sur le hardware Gen3 : zéro adaptation**, le pari des
+ids communs tenu. Mesures sur l'unité : relais 1/A = montée 26,4 s, relais 2/B = descente
+22,7 s, moteur **poids plume 0,117 A / 26 W** → seuils sur mesure **0,06 / 0,3 A** (les
+défauts 0,2/0,8 ne l'auraient jamais vu bouger !), signes −1/−1, boutons **croisés comme le
+salon** (la cuisine est l'exception de la maison), `closed_position` **25 %** (12 au salon,
+23 en cuisine — trois volets, trois personnalités). Géométrie solaire héritée du salon
+(265°, fov 62°, arbres 11°, 50 cm, 200 cm confirmés). Première décision autonome validée à
+14h11 (soleil hors champ → grand ouvert). Reste côté HA : migrer l'ancienne entité, armer
+le suivi au quotidien.
+
 **Deux Shelly 2PM Gen3 en staging (2026-08-11) :** `shutter-1.yaml` / `shutter-2.yaml`
 (noms génériques volontaires — pièces non affectées, à renommer à la pose) + nouveau
 package `packages/shelly-2pm-gen3.yaml` : ESP32-C3 8 Mo, même ADE7953 que le Plus 2PM,

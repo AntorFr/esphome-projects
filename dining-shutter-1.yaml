@@ -1,0 +1,133 @@
+# =============================================================================
+# Dining-room roller shutter 1 — Shelly 2PM Gen3 (ex staging "shutter 2")
+# =============================================================================
+# Replaces cover.salle_a_manger_volet_roulant_1 in Home Assistant. Numbered
+# because the entity it replaces was.
+#
+# First device to stack the (misnamed by now) shelly-plus-2-pm-cover package
+# on the Gen3 hardware layer — same entity ids, zero adaptation. Every number
+# below was measured on this unit (2026-08-13); the calibration protocol lives
+# in the cover package header.
+#
+# Still to come: smart_cover + sun. The solar geometry inherits from
+# livingroom-shutter-1 (same west facade, same tree line) except the glazed
+# height and closed_position, which stay per-window.
+# =============================================================================
+
+substitutions:
+  device_name: dining-shutter-1
+  friendly_name: "Volet salle à manger 1"
+  area: "Salle à manger"
+
+  cover_name: "Volet"
+
+  # Named by what they actually do on this unit — measured, as ever.
+  input1_name: "Bouton descente"
+  input2_name: "Bouton montée"
+  current_a_name: "Courant montée"
+  power_a_name: "Puissance montée"
+  current_b_name: "Courant descente"
+  power_b_name: "Puissance descente"
+  button_name: "Bouton du boîtier"
+
+  # --- Measured 2026-08-13 on this unit -------------------------------------
+  # Relays wired like every unit so far: relay 1 (GPIO5) raises and feeds
+  # channel A, relay 2 (GPIO3) lowers and feeds channel B. Wall buttons
+  # CROSSED like the salon (up -> input 2, down -> input 1) — the kitchen is
+  # now the house exception. The four substitutions swap together.
+  input1_script: on_down_pressed
+  input2_script: on_up_pressed
+  up_button_input: input2
+  down_button_input: input1
+
+  # Both channels negative during the calibration runs (24/24 and 21/21).
+  power_a_sign: "-1"
+  power_b_sign: "-1"
+
+  # Travel read from the current collapse: up ~16% slower, lifting the slats.
+  # Bootstrap only once smart_cover lands.
+  open_duration: 26.4s
+  close_duration: 22.7s
+  max_duration: 40s
+
+  # A featherweight motor: 0.115-0.119 A / ~26 W running (salon: 0.60 A!),
+  # noise floor ~0.018 A. The package defaults (0.2 A) would sit ABOVE the
+  # running current and never see it move — thresholds cut to fit: 0.06 in
+  # the gap, 0.3 only reachable by a stall.
+  moving_current_threshold: "0.06"
+  obstacle_current_threshold: "0.3"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+
+packages:
+  device_base: !include packages/device_base.yaml
+  shelly-2pm-gen3: !include packages/shelly-2pm-gen3.yaml
+  shelly-plus-2-pm-cover: !include packages/shelly-plus-2-pm-cover.yaml
+
+# Pinned rather than tracking main — see the salon and kitchen files.
+external_components:
+  - source:
+      type: git
+      url: https://github.com/AntorFr/esphome-smart-cover
+      ref: v0.2.0
+    components: [smart_cover]
+
+# SNTP rather than Home Assistant: the sun geometry must not go blind with HA.
+time:
+  - platform: sntp
+    id: device_time
+
+sun:
+  id: sun_position
+  time_id: device_time
+  latitude: 47.38643°
+  longitude: -1.44525°
+
+# Solar geometry inherited from livingroom-shutter-1 (same west facade, same
+# tree line, same taste), except what is per-window and was measured HERE.
+smart_cover:
+  id: brain
+  cover_id: shutter
+  sun:
+    sun_id: sun_position
+    window_azimuth: 265
+    # Same glazed height as the salon — user-confirmed 2026-08-13.
+    window_height: 200
+    # Inherited from the salon's bracketing (not re-measured on this reveal);
+    # retune if grazing light ever shows before the shutter reacts.
+    fov_left: 62
+    # House taste, settled on the salon after one day of living with 20.
+    max_penetration: 50
+    # Measured 2026-08-13: rail on floor, every gap open, read back at 25.2%.
+    # Salon: 12, kitchen: 23 — three shutters, three personalities.
+    closed_position: 25%
+    # The same west trees that shade the salon below ~11 degrees.
+    min_elevation: 11
+    deadband: 8%
+    update_interval: 5min
+    min_move_interval: 10min
+
+switch:
+  - platform: smart_cover
+    smart_cover_id: brain
+    id: sun_auto
+    name: "Suivi solaire"
+
+script:
+  # Long press on the wall stop button re-arms tracking; the cover package
+  # decodes the gesture, only its meaning lives here.
+  - id: !extend on_stop_long_press
+    then:
+      - switch.turn_on: sun_auto
+
+# INFO: the cover reports malfunctions and obstacles there; the per-second
+# sensor chatter is VERBOSE and already gone.
+logger:
+  level: INFO
+
+# Local control that does not depend on Home Assistant.
+web_server:
+  port: 80
