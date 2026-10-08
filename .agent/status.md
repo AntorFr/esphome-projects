@@ -1,5 +1,12 @@
 # Status — esphome-projects
-> MàJ : 2026-08-11
+> MàJ : 2026-10-08
+
+**Voice PE en mode « remote » (wake word côté HA) : cercle LED bloqué sur « réponse » après
+chaque échange — corrigé dans `packages/home-assistant-voice_local-remote.yaml` (2026-10-08),
+À FLASHER** sur ha-voice-office / -kitchen / -garage2. Cause : `on_end` attendait
+`not voice_assistant.is_running`, qui vaut `is_running() || is_continuous()` → jamais faux en
+flux continu (média aussi laissé à -20 dB). Nettoyage déplacé dans un script `end_conversation`,
+lancé par `on_idle` en remote. Config validée (ESPHome 2026.9.1), **pas compilé**.
 
 **salon-ble-relay : carte Olimex ESP32-POE-ISO morte, remplacée (2026-08-11).** Autopsie :
 offline depuis le matin, USB énumère (CH340 OK) mais ESP32 muet jusque dans sa ROM (esptool

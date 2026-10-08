@@ -14,6 +14,9 @@
 #   5. Watchdog interval restarting a dropped continuous stream, with a debounced
 #      `remote_stream_lost` flag driving the LED ring
 #   6. Custom "Nestor" micro_wake_word model + its sensitivity cutoffs
+#   7. End-of-conversation cleanup (unduck + LED back to idle) moved to an `end_conversation`
+#      script: run from on_end in local mode, from on_idle in remote mode (on_end's
+#      `wait_until: not voice_assistant.is_running` never returns with a continuous stream)
 #
 # Everything else is upstream, untouched.
 
@@ -1507,6 +1510,25 @@ script:
           pipeline: announcement
           delay: 0ms
 
+  # [local] End-of-conversation cleanup, moved out of voice_assistant.on_end (upstream body,
+  # unchanged) so that remote mode can run it from on_idle. See on_end / on_idle.
+  - id: end_conversation
+    then:
+      # Stop ducking audio.
+      - mixer_speaker.apply_ducking:
+          id: media_mixing_input
+          decibel_reduction: 0
+          duration: 1.0s
+      # If the end happened because of an error, let the error phase on for a second
+      - if:
+          condition:
+            lambda: return id(voice_assistant_phase) == ${voice_assist_error_phase_id};
+          then:
+            - delay: 1s
+      # Reset the voice assistant phase id and reset the LED animations.
+      - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+      - script.execute: control_leds
+
   # Script executed when we want to play sounds on the device.
   - id: play_sound
     parameters:
@@ -2041,24 +2063,34 @@ voice_assistant:
           # Start a script that would potentially enable the stop word if the response is longer than a second
           - script.execute: activate_stop_word_once
   # When the voice assistant ends ...
+  # [local] Local mode only. `voice_assistant.is_running` is `is_running_or_continuous()`, so in
+  # remote mode (continuous stream) it never goes false and this wait_until would hang forever:
+  # LED ring stuck on "replying" and media left 20 dB down until the next wake word. Remote mode
+  # runs the same cleanup from on_idle below.
   on_end:
-    - wait_until:
-        not:
-          voice_assistant.is_running:
-    # Stop ducking audio.
-    - mixer_speaker.apply_ducking:
-        id: media_mixing_input
-        decibel_reduction: 0
-        duration: 1.0s
-    # If the end happened because of an error, let the error phase on for a second
     - if:
         condition:
-          lambda: return id(voice_assistant_phase) == ${voice_assist_error_phase_id};
+          switch.is_on: use_local_wake_word
         then:
-          - delay: 1s
-    # Reset the voice assistant phase id and reset the LED animations.
-    - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-    - script.execute: control_leds
+          - wait_until:
+              not:
+                voice_assistant.is_running:
+          - script.execute: end_conversation
+  # [local] Remote mode only. In continuous mode the state machine passes through IDLE (firing
+  # this trigger) right before restarting the stream, i.e. once the response has finished
+  # playing (RESPONSE_FINISHED -> IDLE) or the run ended without one. A follow-up question
+  # (continue_conversation) skips IDLE, so this never cuts a conversation short. Skipped when
+  # idle or not ready: the stream also restarts after every wake word timeout, and at boot.
+  on_idle:
+    - if:
+        condition:
+          and:
+            - switch.is_off: use_local_wake_word
+            - lambda: |-
+                return id(voice_assistant_phase) != ${voice_assist_idle_phase_id}
+                    && id(voice_assistant_phase) != ${voice_assist_not_ready_phase_id};
+        then:
+          - script.execute: end_conversation
   on_timer_finished:
     - switch.turn_on: timer_ringing
   on_timer_started:
