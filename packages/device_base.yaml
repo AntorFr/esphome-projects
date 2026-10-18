@@ -9,6 +9,8 @@ wifi:
 
 ota:
   - platform: esphome
+    # id lets a device `!extend` this block (e.g. swap the password for encryption).
+    id: ota_esphome
     password: !secret ota_password
 
 api:
