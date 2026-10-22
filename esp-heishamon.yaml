@@ -60,7 +60,7 @@ packages:
 # Status LED configuration
 light:
   - platform: esp32_rmt_led_strip
-    rgb_order: GRB
+    channel_colors: GRB
     pin: GPIO42
     num_leds: 1
     chipset: ws2812
@@ -668,7 +668,7 @@ switch:
   - platform: heishamon
     heishamon_id: heisha_main
     topic: "quiet_mode"
-    name: "Silencieux (on/off)"  # Quiet Mode Switch (SET3-TOP18)
+    name: "Silencieux (on⁄off)"  # Quiet Mode Switch (SET3-TOP18) - U+2044, ESPHome reserves "/" (same name it already substituted)
 
 # =============================================================================
 # CLIMATE - Zone 1 temperature control (heating only)
