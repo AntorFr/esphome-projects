@@ -1,5 +1,13 @@
 # Status — esphome-projects
-> MàJ : 2026-10-08
+> MàJ : 2026-10-23
+
+**Mode Halloween des TX Ultimate (2026-10-23, local, NON poussé)** : pack sonore
+`sounds/tx_ultimate/halloween/` (os OpenGameArt CC0, chaînes Eneria, fantôme et tonnerre
+ElevenLabs — provenance dans son README ; outils de mise au format dans `sounds/tx_ultimate/tools/`) + doublon de thèmes retiré
+de `packages/tx_ultimate_migrated.yaml`. Va avec `esphome-tx-ultimate` v2.3.0 et
+`esphome-addressable-effects` (yeux, éclair). Compilé en ESPHome 2026.10 (bureau : flash
+97,1 %). **À faire** : pilote sur office-light-switch, pousser (ce dépôt EN PREMIER : le
+package TX télécharge les sons depuis `master`), puis reflasher les 12 TX.
 
 **Voice PE en mode « remote » (wake word côté HA) : cercle LED bloqué sur « réponse » après
 chaque échange — corrigé dans `packages/home-assistant-voice_local-remote.yaml` (2026-10-08),

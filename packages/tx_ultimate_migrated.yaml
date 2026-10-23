@@ -11,12 +11,8 @@ packages:
     files:
       - packages/tx_ultimate_hw.yaml
     refresh: 0s
-  theme_stars:
-    url: https://github.com/AntorFr/esphome-tx-ultimate
-    ref: main
-    files:
-      - packages/themes/default.yaml
-    refresh: 0s
+  # Themes come from the hw package (packages/themes/default.yaml): including
+  # them here again loaded every theme twice (duplicated options in the select).
 
 binary_sensor:
   - platform: homeassistant
