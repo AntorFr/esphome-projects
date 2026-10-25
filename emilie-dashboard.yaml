@@ -427,6 +427,7 @@ ha_dashboard:
   # Halloween decor on the idle clock, night-purple tint elsewhere.
   font_decor: ha_font_decor
   font_decor_sm: ha_font_decor_sm
+  font_decor_bg: ha_font_decor_bg
   ambiance:
     id: dash_ambiance
     name: Ambiance
