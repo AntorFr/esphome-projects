@@ -378,7 +378,7 @@ ha_dashboard:
   id: office_dash
   profile: reterminal_d1001
   language: fr
-  inactivity_timeout: 120s
+  inactivity_timeout: 60s
   time_id: sntp_time
   # Audible click feedback on button/tile taps — gated by the "Clic tactile" switch (HA entity).
   on_tap:
