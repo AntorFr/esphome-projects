@@ -213,6 +213,8 @@ media_player:
         file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
       - id: click_sound   # short UI click for touch feedback (FLAC — avoids the mono-MP3 issue)
         file: sounds/tx_ultimate/explore_the_stars/clic.flac
+      - id: click_sound_halloween   # Halloween ambiance: the TX switches' bone rattle
+        file: sounds/tx_ultimate/halloween/clic.flac
 
 # Local custom wake word "Ok Nestor" (model shipped in this repo).
 micro_wake_word:
@@ -389,10 +391,19 @@ ha_dashboard:
         condition:
           switch.is_on: cfg_click
         then:
-          - media_player.speaker.play_on_device_media_file:
-              id: d1001_media
-              media_file: click_sound
-              announcement: true
+          - if:
+              condition:
+                lambda: 'return id(dash_ambiance).current_option() == "Halloween";'
+              then:
+                - media_player.speaker.play_on_device_media_file:
+                    id: d1001_media
+                    media_file: click_sound_halloween
+                    announcement: true
+              else:
+                - media_player.speaker.play_on_device_media_file:
+                    id: d1001_media
+                    media_file: click_sound
+                    announcement: true
   # Extended standby: the backlight turns off after the "Mise en veille" delay; the next touch
   # or wake word turns it back on.
   on_deep_standby:
@@ -422,6 +433,7 @@ ha_dashboard:
   font_decor: ha_font_decor
   font_decor_sm: ha_font_decor_sm
   ambiance:
+    id: dash_ambiance
     name: Ambiance
   # Touch-only navigation (no encoder/button on the D1001).
   groups:
