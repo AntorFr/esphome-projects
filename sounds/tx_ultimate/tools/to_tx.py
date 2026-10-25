@@ -50,16 +50,33 @@ def highpass(x, cutoff=200.0):
     return np.fft.irfft(spec, len(x))
 
 
+def limit(x, ceiling_db=-1.0, knee_db=-6.0):
+    """Peak limiter: linear below the knee, soft (tanh) between knee and ceiling."""
+    c, k = 10 ** (ceiling_db / 20), 10 ** (knee_db / 20)
+    a = np.abs(x)
+    over = a > k
+    out = x.copy()
+    out[over] = np.sign(x[over]) * (k + (c - k) * np.tanh((a[over] - k) / (c - k)))
+    return out
+
+
+def gain_to(x, measure, target, passes=4):
+    """Gain the ORIGINAL signal so that measure(limit(g * x)) hits target.
+
+    Each pass limits a freshly gained copy of x, so limiting never compounds."""
+    g = target / (measure(x) + 1e-12)
+    for _ in range(passes):
+        y = limit(g * x)
+        g *= target / (measure(y) + 1e-12)
+    return limit(g * x)
+
+
 def finish(x, max_s, rms_db):
     x = x[: int(max_s * SR)]
     fade_in, fade_out = int(0.003 * SR), int(min(0.15, len(x) / SR / 4) * SR)
     x[:fade_in] *= np.linspace(0, 1, fade_in)
     x[-fade_out:] *= np.linspace(1, 0, fade_out) ** 2
-    ceiling = 10 ** (-1.0 / 20)
-    for _ in range(4):
-        x *= 10 ** (rms_db / 20) / (np.sqrt(np.mean(x ** 2)) + 1e-9)
-        x = ceiling * np.tanh(x / ceiling)
-    return x
+    return gain_to(x, lambda v: np.sqrt(np.mean(v ** 2)), 10 ** (rms_db / 20))
 
 
 def encode(x, path):
