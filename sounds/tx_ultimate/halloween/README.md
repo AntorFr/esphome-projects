@@ -22,5 +22,6 @@ intense window of a long recording, starting on its attack) and
 
 - `long_press`: high-pass 450 Hz, harmonics of the moan added (`--excite 10`), 5 dB above
   the chains, measured up to 10 kHz. The moan sits below 500 Hz, which the speaker barely plays.
-- `multi_press`: high-pass 250 Hz, lookahead limiter (`--limiter smooth`), as loud as it
-  gets without clipping. Thunder peaks far above its average: pushing it further saturates.
+- `multi_press`: high-pass 450 Hz, +6 dB presence, lookahead limiter (`--limiter smooth`),
+  as loud as it gets without clipping. Thunder peaks far above its average: pushing it
+  further saturates.
