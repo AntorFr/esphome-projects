@@ -412,6 +412,11 @@ ha_dashboard:
   font_voice: ha_font_voice
   font_nestor: ha_font_nestor
   font_nestor_lg: ha_font_nestor_lg
+  # House ambiance: Halloween decor on the idle clock, night-purple tint elsewhere.
+  font_decor: ha_font_decor
+  font_decor_sm: ha_font_decor_sm
+  ambiance:
+    entity: input_select.maison_ambiance
   # Touch-only navigation (no encoder/button on the D1001).
   groups:
     - name: "Lumières"
