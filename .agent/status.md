@@ -5,9 +5,9 @@
 (os OGA CC0, chaînes Eneria, fantôme ElevenLabs, tonnerre « Thunder Strike » de tanweraman —
 provenance et traitements dans son README ; outils `sounds/tx_ultimate/tools/`, dont
 `match_level.py`). Va avec `esphome-tx-ultimate` v2.3.0 (flash 8 Mo) et `esphome-addressable-effects`.
-**Flotte TX passée en 8 Mo en OTA** (bootloader + table, NVS conservée à 0x9000) : 8/12 faits le
-25/10 ; restent emilie-desk, emilie-entrance, timothee-bed, timothee-entrance (`day_only`, de jour).
-Verdict à l'oreille encore attendu sur le fantôme et le tonnerre.
+**Flotte TX passée en 8 Mo en OTA** (bootloader + table, NVS conservée à 0x9000) : les 12 le 25/10,
+puis toutes reflashées depuis leurs configs de production (sons publiés, tonnerre +5 dB). Toutes en
+thème Default. Reste : Wi-Fi dégradé du dressing (latence ~1,7 s, cause inconnue).
 
 **Voice PE en mode « remote » (wake word côté HA) : cercle LED bloqué sur « réponse » après
 chaque échange — corrigé dans `packages/home-assistant-voice_local-remote.yaml` (2026-10-08),
