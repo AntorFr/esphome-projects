@@ -1,12 +1,20 @@
 substitutions:
   rotation: 180°
+  # Halloween ambiance: pause between two characters passing over the time (ms).
+  halloween_gap_min: "45000"
+  halloween_gap_max: "120000"
 
 esphome:
+  includes:
+    - packages/matrix_halloween.h
   on_boot:
     - priority: -20
-      then: 
+      then:
         - script.execute:
             id: init_display_mode
+        - lambda: |-
+            halloween_decor.seed(random_uint32());
+            halloween_decor.set_gap(${halloween_gap_min}, ${halloween_gap_max});
 
 sensor:
   - platform: homeassistant
@@ -45,6 +53,21 @@ select:
         if(id(init_done)) {
           id(set_display_mode)->execute(i);
         }
+  # House ambiance, set by HA's ambiance automation (same options as input_select.maison_ambiance)
+  # and remembered across reboots. Halloween: pumpkin and passing characters in Clock mode.
+  - platform: template
+    name: "Ambiance"
+    id: clock_ambiance
+    icon: mdi:party-popper
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    options:
+      - Normal
+      - Noël
+      - Reveillon
+      - Halloween
+    initial_option: Normal
 
 light:
   - platform: esp32_rmt_led_strip
@@ -151,7 +174,20 @@ display:
             switch (index.value())
             {
                 case 1:
-                  if(brightness >= 0.50) {
+                  if(brightness >= 0.50 && id(clock_ambiance).current_option() == "Halloween") {
+                    // Halloween: the pumpkin takes the clock icon's place and characters pass over
+                    // the time, which keeps the light's colour (the evening routine uses it). Dimmed
+                    // (bedtime), the clock stays plain.
+                    auto now = id(_time).now();
+                    it.strftime(11, -4, id(monobit), light_color, "%H:%M", now);
+                    char hours[4];
+                    now.strftime(hours, sizeof(hours), "%H");
+                    int x1, y1, w, h;
+                    it.get_text_bounds(11, -4, hours, id(monobit), display::TextAlign::TOP_LEFT, &x1, &y1, &w, &h);
+                    halloween_decor.draw(
+                        [&it](int x, int y, matrix_halloween::Rgb c) { it.draw_pixel_at(x, y, Color(c.r, c.g, c.b)); },
+                        millis(), 11 + w);
+                  } else if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   } else {
