@@ -85,6 +85,7 @@ sensor:
 
     current:
       name: "Ampere"
+      id: plug_current
       unit_of_measurement: A
       device_class: current
       state_class: measurement

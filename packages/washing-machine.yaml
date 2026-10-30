@@ -1,102 +1,106 @@
+################################################################################
+#                       Washing machine cycle phases                           #
+################################################################################
+# Read from the plug's current (A). Levels measured on five real cycles
+# (HA history, 23-29/10/2026):
+#   standby                          ~0.02 A
+#   machine on, nothing turning      ~0.06 A  (before a cycle, door opened after)
+#   washing, rinsing                 0.1-0.4 A
+#   heating                          ~4 A
+#   spinning                         0.5-1.1 A
+#   anti-crease                      ~0.1 A flat, drum turned every ~15 min,
+#                                    until the door is opened (up to 6.5 h)
+# The wash is over once the current stays flat in the anti-crease band for
+# 5 min (pauses during the wash never exceeded 3 min), or once the machine
+# goes quiet after at least 20 min of washing (door opened before that).
+#
+# The HLW8012 only measures current part of the time (change_mode_every), so
+# the logic runs on each new current sample and keeps time with millis().
+################################################################################
+
+text_sensor:
+  - platform: template
+    name: "Phase"
+    id: washer_phase
+    icon: mdi:washing-machine
+    update_interval: never
 
 binary_sensor:
-################################################################################
-#                               Machine running                                #
-################################################################################
+  # On while a cycle runs; off from the anti-crease onwards.
   - platform: template
     name: "RUN"
     id: machine_running
-    filters:
-      - delayed_on: 60s # MINIMUM TIME TO AVOID FALSE POSITIVES
-      - delayed_off: 300s
-    lambda: |-
-      if (isnan(id(power).state)) {
-        return {};
-      } else if (id(power).state > 4) {
-        // Running
-        return true;
-      } else {
-        // Not running
-        return false;
-      }
-    on_press:
-      then: # at cycle start i reset all binary sensors
-        - lambda: |-  
-            {
-              id(machine_end).publish_state(false);
-              id(minimum_working_time).publish_state(false);
-              id(cycle_centrifughe).publish_state(false);
-              id(cycle_drain).publish_state(false);
-            }
-    on_release:
-      then: # at the end of cycle turn on end cycle
-        - lambda: |-  
-            {
-              id(machine_end).publish_state(true);
-            }        
-################################################################################
-#                           Minimum duration cycle                             #
-################################################################################
-  - platform: template
-    name: "Washing Machine Minimum time"
-    internal: true # minimum working time 30m
-    id: minimum_working_time 
-    filters:
-      - delayed_on: 30min
-      - delayed_off: 180s
-    lambda: |-
-      if (isnan(id(power).state)) {
-        return {};
-      } else if (id(power).state > 4) {
-        // Running
-        return true;
-      } else {
-        // Not running (the two braces means it does nothing)
-        return {};
-      }
 
-################################################################################
-#                                Centrifuge                                    #
-################################################################################
-  - platform: template
-    name: "CENTRIFUGE"
-    id: cycle_centrifughe
-    filters:
-      - delayed_on: 60s
-    # >< 90W-400W for 60s (centrifuge)  010520 changed threshold to 100W
-    lambda: |-  
-      if (isnan(id(power).state)) {
-        return {};
-      } else if ( (id(power).state > 100)&&(id(power).state < 400)&&(id(minimum_working_time).state) ){
-        // Running
-        return true;
-      } else {
-        // Not running
-        return {};
-      }
-################################################################################
-#                                Water drain                                   #
-################################################################################
-  - platform: template
-    name: "DRAIN"
-    id: cycle_drain
-    filters:
-      - delayed_on: 60s
-    # >< 15W-50W for 60s (drain pump)  
-    lambda: |-  
-      if (isnan(id(power).state)) {
-        return {};
-      } else if ( (id(power).state > 15) && (id(power).state < 60) && (id(cycle_centrifughe).state) ){
-        // Running
-        return true;
-      } else {
-        // Not running
-        return {};
-      }                             
-################################################################################
-#                                 Machine end                                  #
-################################################################################
+  # On when the wash is over, back off when the next cycle starts.
   - platform: template
     name: "END"
-    id: machine_end      
-################################################################################
+    id: machine_end
+
+sensor:
+  - platform: copy
+    source_id: plug_current
+    id: washer_current
+    internal: true
+    on_value:
+      - lambda: |-
+          enum { STANDBY, ON, WASHING, ANTI_CREASE, DONE };
+          static const char *const NAMES[] = {"Éteinte", "Allumée", "Lavage", "Anti-froissage", "Terminé"};
+          static int state = STANDBY;
+          static bool first = true;
+          static uint32_t since = 0, awake = 0, loud = 0, out_of_band = 0, heat = 0;
+          static uint32_t active[3] = {0, 0, 0};  // last three samples above 0.15 A
+          static int spin_n = 0, low_n = 0;
+
+          if (std::isnan(x)) return;
+          const uint32_t now = millis();
+          auto secs = [now](uint32_t t) { return (now - t) / 1000; };
+
+          if (x >= 0.04f) awake = now;
+          if (x >= 0.08f) loud = now;
+          if (x < 0.07f || x > 0.14f) out_of_band = now;
+          if (x > 0.15f) { active[0] = active[1]; active[1] = active[2]; active[2] = now; }
+
+          const bool started = active[0] != 0 && secs(active[0]) < 60;  // 3 samples in a minute
+          const bool off = secs(awake) >= 60;
+          const bool quiet = secs(loud) >= 120;
+
+          int next = state;
+          switch (state) {
+            case STANDBY:
+            case ON:
+            case DONE:
+              if (started) next = WASHING;
+              else if (off) next = STANDBY;
+              else if (state == STANDBY) next = ON;
+              break;
+            case WASHING:
+              if (secs(out_of_band) >= 300) next = ANTI_CREASE;
+              else if (quiet || off) next = secs(since) >= 1200 ? DONE : (off ? STANDBY : ON);
+              break;
+            case ANTI_CREASE:
+              if (quiet || off) next = DONE;
+              break;
+          }
+
+          if (first || next != state) {
+            ESP_LOGI("washer", "%s -> %s", NAMES[state], NAMES[next]);
+            if (next == WASHING) { heat = 0; spin_n = 0; low_n = 0; }
+            id(machine_running).publish_state(next == WASHING);
+            if (next == WASHING) id(machine_end).publish_state(false);
+            else if (state == WASHING && (next == ANTI_CREASE || next == DONE)) id(machine_end).publish_state(true);
+            else if (first) id(machine_end).publish_state(false);
+            state = next;
+            since = now;
+            first = false;
+          }
+
+          // What the drum is doing, while washing only.
+          std::string phase = NAMES[state];
+          if (state == WASHING) {
+            if (x > 2.0f) heat = now;
+            if (x >= 0.47f && x <= 2.0f) { spin_n++; low_n = 0; }
+            else if (++low_n >= 4) spin_n = 0;
+            if (heat != 0 && secs(heat) < 300) phase = "Chauffe";
+            else if (spin_n >= 8) phase = "Essorage";
+          }
+          if (id(washer_phase).state != phase) id(washer_phase).publish_state(phase);
