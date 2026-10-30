@@ -44,3 +44,4 @@ packages:
     #url: https://github.com/AntorFr/esphome-projects
     #file: packages/device_base.yaml
   nous-a1t: !include packages/nous-a1t.yaml
+  dryer: !include packages/dryer.yaml

@@ -1,0 +1,88 @@
+################################################################################
+#                          Tumble dryer cycle phases                           #
+################################################################################
+# Read from the plug's current (A). Levels measured on five real cycles
+# (HA history, 25-29/10/2026):
+#   standby                          ~0.015 A
+#   drum turning, no heat            ~0.55 A
+#   heating                          ~3.9 A (one element) or ~7.3 A (both)
+#   anti-crease                      a short tumble every ~1.5 min, standby
+#                                    level in between, for ~10 min
+# The drum stops briefly to reverse while drying (standby level for up to
+# 28 s, always right after heating). Drying is over once the current stays
+# at standby level for 40 s with no heating for 3 min; anti-crease is over
+# after 3 min without a tumble.
+#
+# The HLW8012 only measures current part of the time (change_mode_every), so
+# the logic runs on each new current sample and keeps time with millis().
+################################################################################
+
+text_sensor:
+  - platform: template
+    name: "Phase"
+    id: dryer_phase
+    icon: mdi:tumble-dryer
+    update_interval: never
+
+binary_sensor:
+  # On while drying; off from the anti-crease onwards.
+  - platform: template
+    name: "RUN"
+    id: dryer_running
+
+  # On when drying is over, back off when the next cycle starts.
+  - platform: template
+    name: "END"
+    id: dryer_end
+
+sensor:
+  - platform: copy
+    source_id: plug_current
+    id: dryer_current
+    internal: true
+    on_value:
+      - lambda: |-
+          enum { STANDBY, DRYING, ANTI_CREASE };
+          static const char *const NAMES[] = {"Éteint", "Séchage", "Anti-froissage"};
+          static int state = STANDBY;
+          static bool first = true;
+          static uint32_t since = 0, awake = 0, tumble = 0, heat = 0;
+          static uint32_t active[3] = {0, 0, 0};  // last three samples above 0.15 A
+
+          if (std::isnan(x)) return;
+          const uint32_t now = millis();
+          auto secs = [now](uint32_t t) { return (now - t) / 1000; };
+
+          if (x >= 0.04f) awake = now;
+          if (x > 0.15f) { tumble = now; active[0] = active[1]; active[1] = active[2]; active[2] = now; }
+          if (x > 2.0f) heat = now;
+
+          const bool heating = heat != 0 && secs(heat) < 180;
+          // Heat, or the drum turning for a while (a program without heat).
+          const bool started = x > 2.0f || (active[0] != 0 && secs(active[0]) < 60);
+
+          int next = state;
+          switch (state) {
+            case STANDBY:
+              if (started) next = DRYING;
+              break;
+            case DRYING:
+              if (secs(awake) >= 40 && !heating) next = secs(since) >= 1200 ? ANTI_CREASE : STANDBY;
+              break;
+            case ANTI_CREASE:
+              if (x > 2.0f) next = DRYING;
+              else if (secs(tumble) >= 180) next = STANDBY;
+              break;
+          }
+
+          if (first || next != state) {
+            ESP_LOGI("dryer", "%s -> %s", NAMES[state], NAMES[next]);
+            id(dryer_running).publish_state(next == DRYING);
+            if (next == DRYING) id(dryer_end).publish_state(false);
+            else if (next == ANTI_CREASE) id(dryer_end).publish_state(true);
+            else if (first) id(dryer_end).publish_state(false);
+            state = next;
+            since = now;
+            first = false;
+            id(dryer_phase).publish_state(NAMES[state]);
+          }
