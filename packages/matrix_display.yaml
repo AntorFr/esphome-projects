@@ -1,12 +1,14 @@
 substitutions:
   rotation: 180°
-  # Halloween ambiance: pause between two characters passing over the time (ms).
-  halloween_gap_min: "45000"
-  halloween_gap_max: "120000"
+  # Halloween and Christmas ambiances: pause between two characters passing over the time (ms).
+  decor_gap_min: "45000"
+  decor_gap_max: "120000"
 
 esphome:
   includes:
+    - packages/matrix_decor.h
     - packages/matrix_halloween.h
+    - packages/matrix_christmas.h
   on_boot:
     - priority: -20
       then:
@@ -14,7 +16,9 @@ esphome:
             id: init_display_mode
         - lambda: |-
             halloween_decor.seed(random_uint32());
-            halloween_decor.set_gap(${halloween_gap_min}, ${halloween_gap_max});
+            halloween_decor.set_gap(${decor_gap_min}, ${decor_gap_max});
+            christmas_decor.seed(random_uint32());
+            christmas_decor.set_gap(${decor_gap_min}, ${decor_gap_max});
 
 sensor:
   - platform: homeassistant
@@ -54,7 +58,8 @@ select:
           id(set_display_mode)->execute(i);
         }
   # House ambiance, set by HA's ambiance automation (same options as input_select.maison_ambiance)
-  # and remembered across reboots. Halloween: pumpkin and passing characters in Clock mode.
+  # and remembered across reboots. In Clock mode, Halloween: pumpkin and passing characters;
+  # Noël: Christmas tree and passing characters.
   - platform: template
     name: "Ambiance"
     id: clock_ambiance
@@ -173,20 +178,24 @@ display:
           if (index.has_value()) {
             switch (index.value())
             {
-                case 1:
-                  if(brightness >= 0.50 && id(clock_ambiance).current_option() == "Halloween") {
-                    // Halloween: the pumpkin takes the clock icon's place and characters pass over
-                    // the time, which keeps the light's colour (the evening routine uses it). Dimmed
-                    // (bedtime), the clock stays plain.
+                case 1: {
+                  bool halloween = id(clock_ambiance).current_option() == "Halloween";
+                  bool christmas = id(clock_ambiance).current_option() == "Noël";
+                  if(brightness >= 0.50 && (halloween || christmas)) {
+                    // Halloween / Noël: the pumpkin or the Christmas tree takes the clock icon's
+                    // place and characters pass over the time, which keeps the light's colour (the
+                    // evening routine uses it). Dimmed (bedtime), the clock stays plain.
                     auto now = id(_time).now();
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", now);
                     char hours[4];
                     now.strftime(hours, sizeof(hours), "%H");
                     int x1, y1, w, h;
                     it.get_text_bounds(11, -4, hours, id(monobit), display::TextAlign::TOP_LEFT, &x1, &y1, &w, &h);
-                    halloween_decor.draw(
-                        [&it](int x, int y, matrix_halloween::Rgb c) { it.draw_pixel_at(x, y, Color(c.r, c.g, c.b)); },
-                        millis(), 11 + w);
+                    auto put = [&it](int x, int y, matrix_decor::Rgb c) { it.draw_pixel_at(x, y, Color(c.r, c.g, c.b)); };
+                    if(halloween)
+                      halloween_decor.draw(put, millis(), 11 + w);
+                    else
+                      christmas_decor.draw(put, millis(), 11 + w);
                   } else if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());
@@ -194,6 +203,7 @@ display:
                     it.strftime(7, -4, id(monobit), light_color, "%H:%M", id(_time).now());
                   }
                   break;
+                }
                 case 2:
                   if(id(weather).state == "clear-night")
                     { it.image(0, 0, id(moon));}

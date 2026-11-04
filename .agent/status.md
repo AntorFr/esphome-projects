@@ -1,5 +1,9 @@
 # Status — esphome-projects
-> MàJ : 2026-10-25
+> MàJ : 2026-11-04
+
+**Mode Noël (branche `noel`, 2026-11-04, non flashé)** : horloges à LED — sapin et personnages de Noël
+(`packages/matrix_christmas.h`) ; la mécanique commune avec Halloween vit dans `packages/matrix_decor.h`
+(Halloween rend les mêmes images qu'avant, vérifié sur 10 min par un banc natif).
 
 **Mode Halloween des TX Ultimate (2026-10-25)** : pack sonore `sounds/tx_ultimate/halloween/`
 (os OGA CC0, chaînes Eneria, fantôme ElevenLabs, tonnerre « Thunder Strike » de tanweraman —

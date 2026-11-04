@@ -4,26 +4,19 @@
 // bat, spider, witch on her broom, or two eyes in place of the colon). Pixels go through a
 // put(x, y, Rgb) callable and the time comes in as an argument, so the same code also renders a
 // desktop preview.
-#include <cmath>
-#include <cstdint>
+#include "matrix_decor.h"
 
 namespace matrix_halloween {
 
-struct Rgb {
-  uint8_t r, g, b;
-};
+using matrix_decor::BLACK;
+using matrix_decor::Rgb;
+using matrix_decor::Sprite;
+using matrix_decor::TWO_PI;
+using matrix_decor::blit;
+using matrix_decor::put_clipped;
+using matrix_decor::scale;
 
-static constexpr int WIDTH = 32;
-static constexpr int HEIGHT = 8;
-static constexpr float TWO_PI = 6.2831853f;
-
-// One character per pixel, row by row: '.' transparent, 'k' opaque black, other letters from
-// palette() ('y' follows the candle flicker).
-struct Sprite {
-  int w, h;
-  const char *px;
-};
-
+// 'k' is opaque black, 'y' follows the candle flicker (see palette()).
 static const Sprite PUMPKIN = {8, 8,
                                "...gg..."
                                ".oooooo."
@@ -80,18 +73,9 @@ static const Sprite WITCH = {11, 7,
                              "hhhbbbbbbbb"
                              "....v.v...."};
 
-static constexpr Rgb BLACK = {0, 0, 0};
 static constexpr Rgb THREAD = {45, 45, 45};
 static constexpr Rgb SPARK = {255, 110, 0};
 static constexpr Rgb EYE = {30, 255, 30};
-
-inline Rgb scale(Rgb c, float k) {
-  if (k <= 0.0f)
-    return BLACK;
-  if (k >= 1.0f)
-    return c;
-  return {(uint8_t) (c.r * k), (uint8_t) (c.g * k), (uint8_t) (c.b * k)};
-}
 
 inline Rgb palette(char c, float candle) {
   switch (c) {
@@ -122,42 +106,17 @@ inline Rgb palette(char c, float candle) {
   }
 }
 
-template<class Put> inline void put_clipped(Put &put, int x, int y, Rgb c) {
-  if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT)
-    put(x, y, c);
-}
-
-template<class Put> void blit(Put &put, const Sprite &s, int x0, int y0, bool mirror, float candle = 1.0f) {
-  for (int y = 0; y < s.h; y++) {
-    for (int x = 0; x < s.w; x++) {
-      char c = s.px[y * s.w + (mirror ? s.w - 1 - x : x)];
-      if (c != '.')
-        put_clipped(put, x0 + x, y0 + y, palette(c, candle));
-    }
-  }
-}
+inline Rgb ink(char c) { return palette(c, 1.0f); }
 
 enum Kind : uint8_t { NONE, GHOST, BAT, SPIDER_KIND, WITCH_KIND, EYES, KIND_COUNT };
 
-class Decor {
+class Decor : public matrix_decor::Cast {
  public:
-  void seed(uint32_t s) { this->rng_ = s != 0 ? s : 1; }
-  // Pause between two characters, drawn at random in [min_ms, max_ms].
-  void set_gap(uint32_t min_ms, uint32_t max_ms) {
-    this->gap_min_ = min_ms;
-    this->gap_max_ = max_ms;
-  }
+  Decor() : Cast(KIND_COUNT - 1) {}
+
   // Starts a character now; NONE picks one at random, never the previous one.
   void start(uint32_t now, Kind kind = NONE) {
-    if (kind == NONE) {
-      do {
-        kind = (Kind) (1 + this->next_() % (KIND_COUNT - 1));
-      } while (kind == this->last_kind_);
-    }
-    this->kind_ = kind;
-    this->last_kind_ = kind;
-    this->start_at_ = now;
-    this->dir_ = this->next_() % 2 ? 1 : -1;
+    this->pick_(now, kind);
     this->spider_x_ = 11 + (int) (this->next_() % 15);  // over the time
     for (auto &s : this->sparks_)
       s.life = 0;
@@ -167,17 +126,9 @@ class Decor {
   // Draws the pumpkin at (0, 0), then the current character. `colon_x` is the column of the
   // time's colon (drawn before this call), which the eyes take over.
   template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
-    // Back after a pause (other ambiance, night, display off): the next character comes soon,
-    // not at a time that went by meanwhile.
-    if (!this->drawn_ || now - this->last_draw_ > 1000) {
-      this->kind_ = NONE;
-      this->next_at_ = now + this->between_(FIRST_GAP_MIN, FIRST_GAP_MAX);
-    }
-    this->drawn_ = true;
-    this->last_draw_ = now;
-
+    bool due = this->due_(now);
     this->draw_pumpkin_(put, now);
-    if (this->kind_ == NONE && (int32_t) (now - this->next_at_) >= 0)
+    if (due)
       this->start(now);
     if (this->kind_ == NONE)
       return;
@@ -202,39 +153,11 @@ class Decor {
       default:
         break;
     }
-    if (!running) {
-      this->kind_ = NONE;
-      this->next_at_ = now + this->between_(this->gap_min_, this->gap_max_);
-    }
+    if (!running)
+      this->done_(now);
   }
 
  protected:
-  static constexpr uint32_t FIRST_GAP_MIN = 5000;
-  static constexpr uint32_t FIRST_GAP_MAX = 20000;
-
-  struct Spark {
-    int8_t x, y;
-    uint32_t born;
-    uint16_t life;  // ms, 0 = free slot
-  };
-
-  uint32_t next_() {
-    uint32_t x = this->rng_;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    return this->rng_ = x;
-  }
-  float unit_() { return (this->next_() & 0xFFFF) / 65535.0f; }
-  uint32_t between_(uint32_t lo, uint32_t hi) { return hi > lo ? lo + this->next_() % (hi - lo + 1) : lo; }
-
-  // x of a sprite crossing the whole width in `dur` ms, in the current direction.
-  int across_(uint32_t t, uint32_t dur, int w) const {
-    float f = (float) t / dur;
-    float x = this->dir_ > 0 ? -w + f * (WIDTH + w) : WIDTH - f * (WIDTH + w);
-    return (int) std::lround(x);
-  }
-
   // Candle: a new random level every 60-160 ms, approached quickly. It never drops below 70 %:
   // dimmer, the carved face blends into the pumpkin.
   template<class Put> void draw_pumpkin_(Put &put, uint32_t now) {
@@ -243,7 +166,7 @@ class Decor {
       this->flicker_at_ = now + this->between_(60, 160);
     }
     this->candle_ += (this->candle_target_ - this->candle_) * 0.35f;
-    blit(put, PUMPKIN, 0, 0, false, this->candle_);
+    blit(put, PUMPKIN, 0, 0, false, [this](char c) { return palette(c, this->candle_); });
   }
 
   // Floats across, bobbing, its hem waving.
@@ -252,7 +175,7 @@ class Decor {
     if (t >= dur)
       return false;
     int y = std::sin(t * TWO_PI / 1000.0f) > 0.0f ? 0 : 1;
-    blit(put, (t / 250) % 2 ? GHOST_B : GHOST_A, this->across_(t, dur, GHOST_A.w), y, this->dir_ < 0);
+    blit(put, (t / 250) % 2 ? GHOST_B : GHOST_A, this->across_(t, dur, GHOST_A.w), y, this->dir_ < 0, ink);
     return true;
   }
 
@@ -262,7 +185,7 @@ class Decor {
     if (t >= dur)
       return false;
     int y = 2 + (int) std::lround(1.6f * std::sin(t * TWO_PI / 800.0f));
-    blit(put, (t / 110) % 2 ? BAT_DOWN : BAT_UP, this->across_(t, dur, BAT_UP.w), y, false);
+    blit(put, (t / 110) % 2 ? BAT_DOWN : BAT_UP, this->across_(t, dur, BAT_UP.w), y, false, ink);
     return true;
   }
 
@@ -287,7 +210,7 @@ class Decor {
     int x = this->spider_x_ + sway;
     for (int ty = 0; ty < yi; ty++)
       put_clipped(put, x + SPIDER.w / 2, ty, THREAD);
-    blit(put, SPIDER, x, yi, false);
+    blit(put, SPIDER, x, yi, false, ink);
     return true;
   }
 
@@ -322,7 +245,7 @@ class Decor {
       put_clipped(put, s.x, s.y, scale(SPARK, 1.0f - (float) age / s.life));
     }
     if (flying)
-      blit(put, WITCH, x, y, this->dir_ < 0);
+      blit(put, WITCH, x, y, this->dir_ < 0, ink);
     return flying || sparks;
   }
 
@@ -347,18 +270,10 @@ class Decor {
     return true;
   }
 
-  uint32_t rng_{1};
-  uint32_t gap_min_{45000}, gap_max_{120000};
-  bool drawn_{false};
-  uint32_t last_draw_{0};
-  uint32_t next_at_{0};
-  Kind kind_{NONE}, last_kind_{NONE};
-  uint32_t start_at_{0};
-  int dir_{1};
   int spider_x_{16};
   float candle_{1.0f}, candle_target_{1.0f};
   uint32_t flicker_at_{0};
-  Spark sparks_[12]{};
+  matrix_decor::Spark sparks_[12]{};
   uint32_t spark_at_{0};
 };
 
