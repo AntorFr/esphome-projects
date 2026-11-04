@@ -222,6 +222,8 @@ media_player:
         file: sounds/tx_ultimate/explore_the_stars/clic.flac
       - id: click_sound_halloween   # Halloween ambiance: the TX switches' bone rattle
         file: sounds/tx_ultimate/halloween/clic.flac
+      - id: click_sound_noel   # Noël ambiance: the TX switches' Christmas bell
+        file: sounds/tx_ultimate/christmas/clic.flac
 
 micro_wake_word:
   models:
@@ -395,10 +397,19 @@ ha_dashboard:
                     media_file: click_sound_halloween
                     announcement: true
               else:
-                - media_player.speaker.play_on_device_media_file:
-                    id: d1001_media
-                    media_file: click_sound
-                    announcement: true
+                - if:
+                    condition:
+                      lambda: 'return id(dash_ambiance).current_option() == "Noël";'
+                    then:
+                      - media_player.speaker.play_on_device_media_file:
+                          id: d1001_media
+                          media_file: click_sound_noel
+                          announcement: true
+                    else:
+                      - media_player.speaker.play_on_device_media_file:
+                          id: d1001_media
+                          media_file: click_sound
+                          announcement: true
   # Extended standby: the backlight turns off after the "Mise en veille" delay (the cfg_standby
   # number drives set_deep_standby_timeout); the next touch or wake word turns it back on.
   on_deep_standby:
