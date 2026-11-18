@@ -1,14 +1,15 @@
 # Status — esphome-projects
 > MàJ : 2026-11-18
 
-**Thème Pokémon (branche `pokemon`, 2026-11-18, non flashé)** : horloges à LED — option « Pokémon »
+**Thème Pokémon (2026-11-18, flashé sur l'horloge de Timothée, pas sur celle d'Émilie)** : horloges à LED — option « Pokémon »
 du sélecteur Ambiance, choisie à la main depuis HA (pas d'ambiance maison correspondante : la prochaine
 bascule de l'ambiance maison l'écrase). Tête de Pikachu qui cligne et crépite, et Pikachu, Poké Ball,
 Tonnerre, Salamèche, Rondoudou, Magicarpe qui traversent l'heure (`packages/matrix_pokemon.h`).
 Les deux horloges compilent (ESPHome 2026.10.0, celui de `esphome-dashboard/.venv` : le `.venv` du
 repo est resté en 2026.7.4, en retard sur la flotte). Pointes d'oreilles en marron **à juger sur
 l'horloge** (derrière le PVC blanc, le marron peut se fondre : repli = jaune). À venir : un bouton
-pour que Timothée choisisse le thème lui-même.
+pour que Timothée choisisse le thème lui-même. Ce flash a aussi livré le décor de Noël à l'horloge de Timothée
+(elle tournait encore sur le firmware Halloween du 2026-10-28).
 
 **Mode Noël (branche `noel`, 2026-11-04, non flashé)** : horloges à LED — sapin et personnages de Noël
 (`packages/matrix_christmas.h`) ; la mécanique commune avec Halloween vit dans `packages/matrix_decor.h`
