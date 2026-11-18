@@ -19,17 +19,18 @@ using matrix_decor::blit;
 using matrix_decor::put_clipped;
 using matrix_decor::scale;
 
-// 'x' is opaque black (eyes, the Poké Ball's band). The tips of Pikachu's ears are dark brown
-// ('k'): black would not light at all. 'r' are its cheeks, which crackle (see Decor::draw_face_).
+// 'x' is opaque black (mouth, the Poké Ball's band). The tips of Pikachu's ears are dark brown
+// ('k'): black would not light at all. Its big eyes are black too, their upper half ('u') closing
+// on a blink; 'r' are its cheeks, which crackle (see Decor::draw_face_).
 static const Sprite FACE = {10, 8,
-                            "kk......kk"
+                            "k........k"
+                            "ky......yk"
                             ".yy....yy."
-                            "..yy..yy.."
                             "..yyyyyy.."
+                            ".yuyyyyuy."
                             ".yxyyyyxy."
-                            ".ryyyyyyr."
-                            ".rryyyyrr."
-                            "..yyyyyy.."};
+                            "rryyxxyyrr"
+                            ".yyyyyyyy."};
 
 // Running right on all fours, its zigzag tail behind ('b' its brown base).
 static const Sprite PIKACHU_A = {12, 8,
@@ -169,8 +170,8 @@ inline Rgb ink(char c) {
 }
 
 // Off the face, around the cheeks: where the sparks of a crackle appear.
-static constexpr int8_t CHEEK_SPARKS[][2] = {{0, 4}, {0, 5}, {0, 6}, {0, 7}, {1, 7},
-                                             {9, 4}, {9, 5}, {9, 6}, {9, 7}, {8, 7}};
+static constexpr int8_t CHEEK_SPARKS[][2] = {{0, 4}, {0, 5}, {0, 7}, {9, 4}, {9, 5},
+                                             {9, 7}, {10, 5}, {10, 6}, {10, 7}};
 static constexpr int CHEEK_SPARK_COUNT = sizeof(CHEEK_SPARKS) / sizeof(CHEEK_SPARKS[0]);
 
 enum Kind : uint8_t { NONE, PIKACHU, POKE_BALL, THUNDER, CHARMANDER, JIGGLYPUFF_KIND, MAGIKARP, KIND_COUNT };
@@ -244,7 +245,7 @@ class Decor : public matrix_decor::Cast {
     uint32_t slot = now / 70;
     bool flash = crackling && slot % 2 == 0;
     blit(put, FACE, 0, 0, false, [closed, flash](char c) -> Rgb {
-      if (c == 'x' && closed)
+      if (c == 'u' && closed)
         return ink('y');
       if (c == 'r' && flash)
         return CHEEK_FLASH;
