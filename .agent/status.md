@@ -1,5 +1,12 @@
 # Status — esphome-projects
-> MàJ : 2026-11-04
+> MàJ : 2026-11-18
+
+**Thème Pokémon (branche `pokemon`, 2026-11-18, non flashé)** : horloges à LED — option « Pokémon »
+du sélecteur Ambiance, choisie à la main depuis HA (pas d'ambiance maison correspondante : la prochaine
+bascule de l'ambiance maison l'écrase). Tête de Pikachu qui cligne et crépite, et Pikachu, Poké Ball,
+Tonnerre, Salamèche, Rondoudou, Magicarpe qui traversent l'heure (`packages/matrix_pokemon.h`).
+Config validée (ESPHome 2026.7.4), rendu vérifié sur un banc natif, **pas compilé**. À venir : un
+bouton pour que Timothée choisisse le thème lui-même.
 
 **Mode Noël (branche `noel`, 2026-11-04, non flashé)** : horloges à LED — sapin et personnages de Noël
 (`packages/matrix_christmas.h`) ; la mécanique commune avec Halloween vit dans `packages/matrix_decor.h`
