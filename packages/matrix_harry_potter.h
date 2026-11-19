@@ -111,15 +111,15 @@ static const Sprite STAG_B = {10, 7,
                               "P..P.P..P."
                               "P...P...P."};
 
-// Flat, then tilted: the envelopes flutter. 'S' is the red wax seal.
-static const Sprite LETTER_FLAT = {5, 3,
-                                   "EEEEE"
-                                   "EESEE"
-                                   "EEEEE"};
-static const Sprite LETTER_TILTED = {5, 3,
-                                     "EEE.."
-                                     "EESEE"
-                                     "..EEE"};
+// An envelope's outline and flap, closed by a red wax seal ('S'). Its inside ('x') is opaque, so
+// that the time does not show through.
+static const Sprite LETTER = {10, 6,
+                              "EEEEEEEEEE"
+                              "EExxxxxxEE"
+                              "ExExxxxExE"
+                              "ExxESSExxE"
+                              "ExxxSSxxxE"
+                              "EEEEEEEEEE"};
 
 // 'q' is its quill.
 static const Sprite FEATHER = {5, 6,
@@ -202,10 +202,9 @@ class Decor : public matrix_decor::Cast {
     this->puff_at_ = now;
     uint32_t at = 0;
     for (auto &l : this->letters_) {
-      l.y = (int8_t) (this->next_() % 6);
+      l.y = (int8_t) (this->next_() % 2);
       l.born = (uint16_t) at;
-      l.dur = (uint16_t) this->between_(1500, 2600);
-      at += this->between_(150, 450);
+      at += this->between_(750, 1100);  // same speed, far enough apart not to overlap
     }
     this->feather_x_ = 14 + (int) (this->next_() % 11);
     for (auto &w : this->waypoints_) {
@@ -259,7 +258,6 @@ class Decor : public matrix_decor::Cast {
   struct Letter {
     int8_t y;
     uint16_t born;  // ms after the start
-    uint16_t dur;   // ms to cross
   };
 
   // Hovers, bobbing, its wings beating; every 4-9 s its ball glints.
@@ -363,8 +361,9 @@ class Decor : public matrix_decor::Cast {
     return galloping || sparks;
   }
 
-  // Hogwarts letters fly across one after another, fluttering, at all heights.
+  // Hogwarts letters fly across one after another, bobbing up and down.
   template<class Put> bool draw_letters_(Put &put, uint32_t t) {
+    const uint32_t dur = 2400;
     bool flying = false;
     for (const auto &l : this->letters_) {
       if (t < l.born) {
@@ -372,11 +371,11 @@ class Decor : public matrix_decor::Cast {
         continue;
       }
       uint32_t age = t - l.born;
-      if (age >= l.dur)
+      if (age >= dur)
         continue;
       flying = true;
-      const Sprite &s = ((age + l.born) / 180) % 2 ? LETTER_TILTED : LETTER_FLAT;
-      blit(put, s, this->across_(age, l.dur, s.w), l.y, false, ink);
+      int y = l.y + (int) (((age + l.born) / 300) % 2);
+      blit(put, LETTER, this->across_(age, dur, LETTER.w), y, false, ink);
     }
     return flying;
   }
@@ -460,7 +459,7 @@ class Decor : public matrix_decor::Cast {
   uint32_t glint_at_{0}, glint_until_{0};
   matrix_decor::Spark puffs_[16]{};
   uint32_t puff_at_{0};
-  Letter letters_[7]{};
+  Letter letters_[4]{};
   int feather_x_{18};
   int8_t waypoints_[4][2]{};
 };
