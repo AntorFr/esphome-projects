@@ -1,6 +1,7 @@
 substitutions:
   rotation: 180°
-  # Halloween, Christmas and Pokémon ambiances: pause between two characters passing over the time (ms).
+  # Halloween, Christmas, Pokémon and Harry Potter ambiances: pause between two characters passing
+  # over the time (ms).
   decor_gap_min: "45000"
   decor_gap_max: "120000"
 
@@ -10,6 +11,7 @@ esphome:
     - packages/matrix_halloween.h
     - packages/matrix_christmas.h
     - packages/matrix_pokemon.h
+    - packages/matrix_harry_potter.h
   on_boot:
     - priority: -20
       then:
@@ -22,6 +24,8 @@ esphome:
             christmas_decor.set_gap(${decor_gap_min}, ${decor_gap_max});
             pokemon_decor.seed(random_uint32());
             pokemon_decor.set_gap(${decor_gap_min}, ${decor_gap_max});
+            harry_potter_decor.seed(random_uint32());
+            harry_potter_decor.set_gap(${decor_gap_min}, ${decor_gap_max});
 
 sensor:
   - platform: homeassistant
@@ -62,9 +66,10 @@ select:
         }
   # House ambiance, set by HA's ambiance automation (same options as input_select.maison_ambiance)
   # and remembered across reboots. In Clock mode, Halloween: pumpkin and passing characters;
-  # Noël: Christmas tree and passing characters. Pokémon is the clock's own: chosen by hand
-  # (the house has no such ambiance), Pikachu and passing Pokémon, until the house ambiance
-  # next changes and the automation sets it again.
+  # Noël: Christmas tree and passing characters. Pokémon and Harry Potter are the clock's own:
+  # chosen by hand (the house has no such ambiances), Pikachu and passing Pokémon, or the Golden
+  # Snitch and passing characters, until the house ambiance next changes and the automation sets
+  # it again.
   - platform: template
     name: "Ambiance"
     id: clock_ambiance
@@ -78,6 +83,7 @@ select:
       - Reveillon
       - Halloween
       - Pokémon
+      - Harry Potter
     initial_option: Normal
 
 light:
@@ -188,11 +194,12 @@ display:
                   bool halloween = id(clock_ambiance).current_option() == "Halloween";
                   bool christmas = id(clock_ambiance).current_option() == "Noël";
                   bool pokemon = id(clock_ambiance).current_option() == "Pokémon";
-                  if(brightness >= 0.50 && (halloween || christmas || pokemon)) {
-                    // Halloween / Noël / Pokémon: the pumpkin, the Christmas tree or Pikachu takes
-                    // the clock icon's place and characters pass over the time, which keeps the
-                    // light's colour (the evening routine uses it). Dimmed (bedtime), the clock
-                    // stays plain.
+                  bool harry_potter = id(clock_ambiance).current_option() == "Harry Potter";
+                  if(brightness >= 0.50 && (halloween || christmas || pokemon || harry_potter)) {
+                    // Halloween / Noël / Pokémon / Harry Potter: the pumpkin, the Christmas tree,
+                    // Pikachu or the Golden Snitch takes the clock icon's place and characters pass
+                    // over the time, which keeps the light's colour (the evening routine uses it).
+                    // Dimmed (bedtime), the clock stays plain.
                     auto now = id(_time).now();
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", now);
                     char hours[4];
@@ -204,8 +211,10 @@ display:
                       halloween_decor.draw(put, millis(), 11 + w);
                     else if(christmas)
                       christmas_decor.draw(put, millis(), 11 + w);
-                    else
+                    else if(pokemon)
                       pokemon_decor.draw(put, millis(), 11 + w);
+                    else
+                      harry_potter_decor.draw(put, millis(), 11 + w);
                   } else if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());
