@@ -67,9 +67,8 @@ select:
   # House ambiance, set by HA's ambiance automation (same options as input_select.maison_ambiance)
   # and remembered across reboots. In Clock mode, Halloween: pumpkin and passing characters;
   # Noël: Christmas tree and passing characters. Pokémon and Harry Potter are the clock's own:
-  # chosen by hand (the house has no such ambiances), Pikachu and passing Pokémon, or the Golden
-  # Snitch and passing characters, until the house ambiance next changes and the automation sets
-  # it again.
+  # chosen by hand (the house has no such ambiances), Pikachu and passing Pokémon, or Hedwig and
+  # passing characters, until the house ambiance next changes and the automation sets it again.
   - platform: template
     name: "Ambiance"
     id: clock_ambiance
@@ -197,9 +196,9 @@ display:
                   bool harry_potter = id(clock_ambiance).current_option() == "Harry Potter";
                   if(brightness >= 0.50 && (halloween || christmas || pokemon || harry_potter)) {
                     // Halloween / Noël / Pokémon / Harry Potter: the pumpkin, the Christmas tree,
-                    // Pikachu or the Golden Snitch takes the clock icon's place and characters pass
-                    // over the time, which keeps the light's colour (the evening routine uses it).
-                    // Dimmed (bedtime), the clock stays plain.
+                    // Pikachu or Hedwig takes the clock icon's place and characters pass over the
+                    // time, which keeps the light's colour (the evening routine uses it). Dimmed
+                    // (bedtime), the clock stays plain.
                     auto now = id(_time).now();
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", now);
                     char hours[4];

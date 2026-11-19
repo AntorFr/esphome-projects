@@ -1,9 +1,9 @@
 #pragma once
-// Harry Potter decor of the 32x8 matrix clock (packages/matrix_display.yaml): the Golden Snitch
-// fluttering in place of the clock icon and, every minute or two, something passing over the
-// time (Hedwig bringing a letter, the Hogwarts Express, a stag Patronus, a flurry of Hogwarts
-// letters, a levitated feather, or Harry on his broom chasing the Snitch, which leaves its place
-// for it). Same drawing contract as matrix_halloween.h.
+// Harry Potter decor of the 32x8 matrix clock (packages/matrix_display.yaml): Hedwig on her perch
+// in place of the clock icon, blinking and glancing at the time and, every minute or two,
+// something passing over the time (Hedwig herself flying off to deliver a letter, the Hogwarts
+// Express, a stag Patronus, a flurry of Hogwarts letters, a levitated feather, or Harry on his
+// broom chasing the Golden Snitch). Same drawing contract as matrix_halloween.h.
 #include "matrix_decor.h"
 
 namespace matrix_harry_potter {
@@ -17,37 +17,20 @@ using matrix_decor::blit;
 using matrix_decor::put_clipped;
 using matrix_decor::scale;
 
-// The Snitch's wings beat up, level, down, level. 'H' is the light on its ball, which glints now
-// and then (see Decor::draw_snitch_).
-static const Sprite SNITCH_UP = {10, 8,
-                                 "w........w"
-                                 "ww......ww"
-                                 ".ww.GG.ww."
-                                 "..wHGGGw.."
-                                 "...GGGG..."
-                                 "....GG...."
-                                 ".........."
-                                 ".........."};
-static const Sprite SNITCH_LEVEL = {10, 8,
-                                    ".........."
-                                    ".........."
-                                    "....GG...."
-                                    "wwwHGGGwww"
-                                    "...GGGG..."
-                                    "....GG...."
-                                    ".........."
-                                    ".........."};
-static const Sprite SNITCH_DOWN = {10, 8,
-                                   ".........."
-                                   ".........."
-                                   "....GG...."
-                                   "...HGGG..."
-                                   "wwwGGGGwww"
-                                   ".ww.GG.ww."
-                                   "ww......ww"
-                                   ".........."};
+// Hedwig on her perch, 'k' her beak and talons, 'x' the specks of her plumage. Her eyes: 'e' always
+// amber, 'u' the left pupil, and the right eye's inner 'n' and outer 'm' cells, which swap when she
+// glances at the time (see Decor::draw_perched_hedwig_).
+static const Sprite PERCHED_HEDWIG = {10, 8,
+                                      "..o....o.."
+                                      "..oooooo.."
+                                      ".oeeooeeo."
+                                      ".oeuoonmo."
+                                      "..ookkoo.."
+                                      ".oooooooo."
+                                      ".oxooooxo."
+                                      "..k.kk.k.."};
 
-// The Snitch flying about during the Quidditch chase: its ball stays on rows 1-2.
+// The Golden Snitch, its wings beating: its ball stays on rows 1-2.
 static const Sprite FLYING_SNITCH_UP = {6, 4,
                                         "w....w"
                                         ".wGGw."
@@ -59,21 +42,19 @@ static const Sprite FLYING_SNITCH_DOWN = {6, 4,
                                           ".wGGw."
                                           "w....w"};
 
-// Seen from the front, wings up then down, a letter ('E') in her talons.
-static const Sprite HEDWIG_UP = {11, 6,
+// Hedwig flying, seen from the front, wings up then down; the letter she carries hangs below.
+static const Sprite HEDWIG_UP = {11, 5,
                                  "oo.......oo"
                                  ".oo.ooo.oo."
                                  "..ooeoeoo.."
                                  "....oko...."
-                                 "....ooo...."
-                                 "....EEE...."};
-static const Sprite HEDWIG_DOWN = {11, 6,
+                                 "....ooo...."};
+static const Sprite HEDWIG_DOWN = {11, 5,
                                    "..........."
                                    "....ooo...."
                                    "...oeoeo..."
                                    "oooookooooo"
-                                   "oo..ooo..oo"
-                                   "....EEE...."};
+                                   "oo..ooo..oo"};
 
 // Going right: a carriage with lit windows, then the engine, its chimney at columns 20-21. The
 // wheels' rods ('s') turn between the two frames.
@@ -140,7 +121,6 @@ static const Sprite HARRY = {13, 6,
                              "SS...RRR....."
                              "......R......"};
 
-static constexpr Rgb GLINT = {255, 255, 255};
 static constexpr Rgb SMOKE = {235, 235, 245};
 static constexpr Rgb SILVER = {190, 220, 255};
 
@@ -148,8 +128,6 @@ inline Rgb ink(char c) {
   switch (c) {
     case 'G':
       return {255, 170, 0};  // the Snitch's ball; the Express's gold stripe
-    case 'H':
-      return {255, 225, 120};  // the light on the ball
     case 'w':
       return {190, 190, 200};  // the Snitch's wings
     case 'o':
@@ -157,7 +135,7 @@ inline Rgb ink(char c) {
     case 'e':
       return {255, 150, 0};  // her eyes
     case 'k':
-      return {70, 70, 70};  // her beak; the Express's coupling
+      return {70, 70, 70};  // her beak and talons; the Express's coupling
     case 'E':
       return {230, 200, 140};  // parchment
     case 'S':
@@ -213,14 +191,15 @@ class Decor : public matrix_decor::Cast {
     }
   }
 
-  // Draws the Snitch at (0, 0), unless it is out chasing Harry, then the current character.
-  // `colon_x` (the column of the time's colon) is unused: same signature as the Halloween decor.
+  // Draws Hedwig on her perch at (0, 0), unless she is out delivering a letter, then the current
+  // character. `colon_x` (the column of the time's colon) is unused: same signature as the
+  // Halloween decor.
   template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
     (void) colon_x;
     if (this->due_(now))
       this->start(now);
-    if (this->kind_ != QUIDDITCH)
-      this->draw_snitch_(put, now);
+    if (this->kind_ != HEDWIG)
+      this->draw_perched_hedwig_(put, now);
     if (this->kind_ == NONE)
       return;
     uint32_t t = now - this->start_at_;
@@ -249,8 +228,8 @@ class Decor : public matrix_decor::Cast {
     }
     if (!running) {
       this->done_(now);
-      if (this->last_kind_ == QUIDDITCH)
-        this->draw_snitch_(put, now);  // back home this very frame
+      if (this->last_kind_ == HEDWIG)
+        this->draw_perched_hedwig_(put, now);  // back on her perch this very frame
     }
   }
 
@@ -260,26 +239,52 @@ class Decor : public matrix_decor::Cast {
     uint16_t born;  // ms after the start
   };
 
-  // Hovers, bobbing, its wings beating; every 4-9 s its ball glints.
-  template<class Put> void draw_snitch_(Put &put, uint32_t now) {
-    if ((int32_t) (now - this->glint_at_) >= 0) {
-      this->glint_until_ = now + 180;
-      this->glint_at_ = now + this->between_(4000, 9000);
+  // Blinks every 3-7 s; every 8-20 s she glances at the time for a moment.
+  template<class Put> void draw_perched_hedwig_(Put &put, uint32_t now) {
+    if ((int32_t) (now - this->blink_at_) >= 0) {
+      this->blink_until_ = now + 150;
+      this->blink_at_ = now + this->between_(3000, 7000);
     }
-    bool glint = (int32_t) (this->glint_until_ - now) > 0;
-    uint32_t beat = (now / 90) % 4;
-    const Sprite &s = beat == 0 ? SNITCH_UP : beat == 2 ? SNITCH_DOWN : SNITCH_LEVEL;
-    int y = (now / 900) % 2;
-    blit(put, s, 0, y, false, [glint](char c) { return c == 'H' && glint ? GLINT : ink(c); });
+    if ((int32_t) (now - this->glance_at_) >= 0) {
+      this->glance_until_ = now + 1500;
+      this->glance_at_ = now + this->between_(8000, 20000);
+    }
+    bool closed = (int32_t) (this->blink_until_ - now) > 0;
+    bool glance = (int32_t) (this->glance_until_ - now) > 0;
+    blit(put, PERCHED_HEDWIG, 0, 0, false, [closed, glance](char c) -> Rgb {
+      bool eye = c == 'e' || c == 'u' || c == 'n' || c == 'm';
+      if (closed && eye)
+        return ink('o');
+      if (c == 'u' || c == (glance ? 'm' : 'n'))
+        return BLACK;  // pupils
+      return ink(eye ? 'e' : c);
+    });
   }
 
-  // Flies across, wings flapping, bringing a letter.
+  // Leaves her perch with a letter, flies over the time and out of sight to deliver it, then comes
+  // back without it and lands.
   template<class Put> bool draw_hedwig_(Put &put, uint32_t t) {
-    const uint32_t dur = 4000;
-    if (t >= dur)
+    const uint32_t out = 3000, away = 700, back = 2600;
+    const int perch_x = -1;  // her flying sprite over the perch
+    if (t >= out + away + back)
       return false;
+    if (t >= out && t < out + away)
+      return true;  // delivering it
+    float x;
+    if (t < out) {
+      float f = (float) t / out;
+      x = perch_x + (WIDTH - perch_x) * f * f;  // taking off
+    } else {
+      float f = (float) (t - out - away) / back;
+      x = WIDTH + (perch_x - WIDTH) * (1.0f - (1.0f - f) * (1.0f - f));  // slowing down to land
+    }
     const Sprite &s = (t / 220) % 2 ? HEDWIG_DOWN : HEDWIG_UP;
-    blit(put, s, this->across_(t, dur, s.w), (t / 440) % 2 ? 1 : 2, false, ink);
+    int ix = (int) std::lround(x), y = (t / 440) % 2 ? 1 : 2;
+    blit(put, s, ix, y, false, ink);
+    if (t < out) {
+      for (int i = 4; i <= 6; i++)
+        put_clipped(put, ix + i, y + s.h, ink('E'));
+    }
     return true;
   }
 
@@ -410,44 +415,36 @@ class Decor : public matrix_decor::Cast {
     return true;
   }
 
-  // The Snitch leaves its place and darts about over the time; Harry flies in after it on his
-  // broom, it shoots off to the right and he chases it out of sight. Then it flies back home on
-  // its own.
+  // The Snitch zips in and darts about over the time; Harry flies in after it on his broom, it
+  // shoots off to the right and he chases it out of sight.
   template<class Put> bool draw_quidditch_(Put &put, uint32_t t) {
-    const uint32_t hop = 450, dash = 400, back_at = 3600, back = 1600;
-    const int home_x = 2, home_y = 2;
+    const uint32_t hop = 450, dash = 400;
     const int hops = sizeof(this->waypoints_) / sizeof(this->waypoints_[0]);
     const uint32_t darting = hops * hop;
-    if (t >= back_at + back)
+    const uint32_t enter = 700, gone = darting + 1500;
+    if (t >= gone)
       return false;
-    float sx, sy;
+    float sx = WIDTH, sy = 0;
     if (t < darting) {
-      // From one random point over the time to the next, slowing down at each.
+      // From the left edge, then from one random point over the time to the next, slowing down at
+      // each.
       int i = (int) (t / hop);
       float f = (float) (t % hop) / hop;
       f = 1.0f - (1.0f - f) * (1.0f - f);
-      float fx = i == 0 ? home_x : this->waypoints_[i - 1][0], fy = i == 0 ? home_y : this->waypoints_[i - 1][1];
+      float fx = i == 0 ? -FLYING_SNITCH_UP.w : this->waypoints_[i - 1][0];
+      float fy = i == 0 ? 2 : this->waypoints_[i - 1][1];
       sx = fx + (this->waypoints_[i][0] - fx) * f;
       sy = fy + (this->waypoints_[i][1] - fy) * f;
     } else if (t < darting + dash) {
       float f = (float) (t - darting) / dash;
       sx = this->waypoints_[hops - 1][0] + (WIDTH - this->waypoints_[hops - 1][0]) * f * f;
       sy = this->waypoints_[hops - 1][1];
-    } else if (t < back_at) {
-      sx = WIDTH;
-      sy = 0;
-    } else {
-      // Back from the right, weaving.
-      float f = (float) (t - back_at) / back;
-      sx = WIDTH + (home_x - WIDTH) * f;
-      sy = home_y + 1.5f * std::sin(f * TWO_PI * 1.5f);
     }
     // Harry: in from the left as it darts about, closing in once it shoots off. The Snitch stays
     // in front of him.
-    const uint32_t enter = 700, close = darting, gone = 3300;
-    if (t >= enter && t < gone) {
-      float hx = t < close ? -HARRY.w + (8.0f + HARRY.w) * (float) (t - enter) / (close - enter)
-                           : 8.0f + (WIDTH - 8.0f) * (float) (t - close) / (gone - close);
+    if (t >= enter) {
+      float hx = t < darting ? -HARRY.w + (8.0f + HARRY.w) * (float) (t - enter) / (darting - enter)
+                             : 8.0f + (WIDTH - 8.0f) * (float) (t - darting) / (gone - darting);
       blit(put, HARRY, (int) std::lround(hx), (t / 300) % 2 ? 1 : 2, false, harry_ink);
     }
     if (sx < WIDTH)
@@ -456,7 +453,8 @@ class Decor : public matrix_decor::Cast {
     return true;
   }
 
-  uint32_t glint_at_{0}, glint_until_{0};
+  uint32_t blink_at_{0}, blink_until_{0};
+  uint32_t glance_at_{0}, glance_until_{0};
   matrix_decor::Spark puffs_[16]{};
   uint32_t puff_at_{0};
   Letter letters_[4]{};

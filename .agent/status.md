@@ -4,10 +4,11 @@
 **Thème Harry Potter (branche `harry-potter`, 2026-11-19, non flashé)** : horloges à LED — option
 « Harry Potter » du sélecteur Ambiance, choisie à la main depuis HA comme Pokémon (la prochaine
 bascule de l'ambiance maison l'écrase). Pensé pour l'horloge d'Émilie, présent sur les deux comme
-Pokémon. Vif d'or qui bat des ailes à la place de l'icône (sa bille brille de temps en temps), et
-Hedwige avec une lettre, le Poudlard Express et sa fumée, le Patronus (cerf), une volée de lettres
-de Poudlard, la plume de Wingardium Leviosa, et Harry sur son balai qui poursuit le vif d'or
-(celui-ci quitte sa place puis revient) traversent l'heure (`packages/matrix_harry_potter.h`).
+Pokémon. Hedwige perchée à la place de l'icône (cligne des yeux, jette un œil à l'heure), et
+traversent l'heure : Hedwige elle-même qui s'envole porter une lettre puis revient se poser, le
+Poudlard Express et sa fumée, le Patronus (cerf), une volée de grandes lettres de Poudlard (rabat et
+cachet rouge), la plume de Wingardium Leviosa, Harry sur son balai qui poursuit le vif d'or
+(`packages/matrix_harry_potter.h`). Icône et lettres choisies sur rendus « derrière le PVC ».
 Les deux horloges compilent (ESPHome 2026.10.0). À juger sur l'horloge : les cheveux de Harry
 (marron foncé, peut se fondre derrière le PVC).
 
