@@ -74,23 +74,25 @@ static const Sprite EXPRESS_B = {26, 6,
                                  "s.ss..s.ss..s.sss..s.sss.."};
 static constexpr int CHIMNEY_X = 20;
 
-// Galloping right, antlers up.
-static const Sprite STAG_A = {10, 7,
-                              "......P..P"
-                              ".......PP."
-                              ".......PPP"
-                              "PPPPPPPPP."
-                              ".PPPPPPP.."
-                              ".P.P..P.P."
-                              ".P.P..P.P."};
-static const Sprite STAG_B = {10, 7,
-                              "......P..P"
-                              ".......PP."
-                              ".......PPP"
-                              "PPPPPPPPP."
-                              ".PPPPPPP.."
-                              "P..P.P..P."
-                              "P...P...P."};
+// Galloping right, its neck up, its antlers' three tines above its head.
+static const Sprite STAG_A = {11, 8,
+                              ".....P.P.P."
+                              "......PPP.."
+                              ".......PPPP"
+                              ".......PP.."
+                              "PPPPPPPPP.."
+                              ".PPPPPPP..."
+                              ".PP...PP..."
+                              ".P.P..P.P.."};
+static const Sprite STAG_B = {11, 8,
+                              ".....P.P.P."
+                              "......PPP.."
+                              ".......PPPP"
+                              ".......PP.."
+                              "PPPPPPPPP.."
+                              ".PPPPPPP..."
+                              "P.P..P.P..."
+                              "P..P.P...P."};
 
 // An envelope's outline and flap, closed by a red wax seal ('S'). Its inside ('x') is opaque, so
 // that the time does not show through.
@@ -147,7 +149,7 @@ inline Rgb ink(char c) {
     case 's':
       return {150, 150, 175};  // wheels
     case 'P':
-      return {110, 170, 255};  // the Patronus
+      return {210, 230, 255};  // the Patronus, silvery (not blue: the time often is)
     case 'F':
       return {240, 240, 255};  // feather
     case 'q':
@@ -161,6 +163,21 @@ inline Rgb ink(char c) {
     default:
       return BLACK;
   }
+}
+
+// Clears a ring of unlit pixels around the sprite's shape, then draws it: the time's digits, which
+// may be of the same colour, do not touch it.
+template<class Put, class Pal> void blit_outlined(Put &put, const Sprite &s, int x0, int y0, bool mirror, Pal &&pal) {
+  for (int y = 0; y < s.h; y++) {
+    for (int x = 0; x < s.w; x++) {
+      if (s.px[y * s.w + (mirror ? s.w - 1 - x : x)] == '.')
+        continue;
+      for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+          put_clipped(put, x0 + x + dx, y0 + y + dy, BLACK);
+    }
+  }
+  blit(put, s, x0, y0, mirror, pal);
 }
 
 // The broom's bristles share 'S' with the wax seal in the sprites, not the colour.
@@ -328,20 +345,19 @@ class Decor : public matrix_decor::Cast {
     return going || smoke;
   }
 
-  // Gallops across, shimmering, leaving a trail of silver sparks.
+  // Gallops across, leaving a trail of silver sparks.
   template<class Put> bool draw_patronus_(Put &put, uint32_t now, uint32_t t) {
     const uint32_t dur = 3400;
     bool galloping = t < dur;
     const Sprite &s = (t / 150) % 2 ? STAG_B : STAG_A;
     int x = this->across_(t, dur, s.w);
-    int y = (t / 300) % 2;
     if (galloping && (int32_t) (now - this->puff_at_) >= 0) {
       this->puff_at_ = now + 40;
       for (auto &p : this->puffs_) {
         if (p.life != 0)
           continue;
         p.x = (int8_t) (this->dir_ > 0 ? x : x + s.w - 1);
-        p.y = (int8_t) (y + 2 + (int) (this->next_() % 5));
+        p.y = (int8_t) (3 + (int) (this->next_() % 4));
         p.born = now;
         p.life = (uint16_t) this->between_(300, 700);
         break;
@@ -359,10 +375,8 @@ class Decor : public matrix_decor::Cast {
       sparks = true;
       put_clipped(put, p.x, p.y, scale(SILVER, 1.0f - (float) age / p.life));
     }
-    if (galloping) {
-      float glow = 0.85f + 0.15f * std::sin(t * TWO_PI / 600.0f);
-      blit(put, s, x, y, this->dir_ < 0, [glow](char c) { return scale(ink(c), glow); });
-    }
+    if (galloping)
+      blit_outlined(put, s, x, 0, this->dir_ < 0, ink);
     return galloping || sparks;
   }
 

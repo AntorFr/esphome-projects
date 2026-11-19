@@ -6,7 +6,8 @@
 bascule de l'ambiance maison l'écrase). Pensé pour l'horloge d'Émilie, présent sur les deux comme
 Pokémon. Hedwige perchée à la place de l'icône (cligne des yeux, jette un œil à l'heure), et
 traversent l'heure : Hedwige elle-même qui s'envole porter une lettre puis revient se poser, le
-Poudlard Express et sa fumée, le Patronus (cerf), une volée de grandes lettres de Poudlard (rabat et
+Poudlard Express et sa fumée, le Patronus (cerf argenté cerné de LED éteintes : en bleu, il se
+confondait avec l'heure bleue), une volée de grandes lettres de Poudlard (rabat et
 cachet rouge), la plume de Wingardium Leviosa, Harry sur son balai qui poursuit le vif d'or
 (`packages/matrix_harry_potter.h`). Icône et lettres choisies sur rendus « derrière le PVC ».
 Les deux horloges compilent (ESPHome 2026.10.0). À juger sur l'horloge : les cheveux de Harry
