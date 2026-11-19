@@ -1,7 +1,7 @@
 # Status — esphome-projects
 > MàJ : 2026-11-19
 
-**Thème Harry Potter (branche `harry-potter`, 2026-11-19, non flashé)** : horloges à LED — option
+**Thème Harry Potter (2026-11-19, flashé sur l'horloge d'Émilie, pas sur celle de Timothée)** : horloges à LED — option
 « Harry Potter » du sélecteur Ambiance, choisie à la main depuis HA comme Pokémon (la prochaine
 bascule de l'ambiance maison l'écrase). Pensé pour l'horloge d'Émilie, présent sur les deux comme
 Pokémon. Hedwige perchée à la place de l'icône (cligne des yeux, jette un œil à l'heure), et
@@ -11,9 +11,10 @@ confondait avec l'heure bleue), une volée de grandes lettres de Poudlard (rabat
 cachet rouge), la plume de Wingardium Leviosa, Harry sur son balai qui poursuit le vif d'or
 (`packages/matrix_harry_potter.h`). Icône et lettres choisies sur rendus « derrière le PVC ».
 Les deux horloges compilent (ESPHome 2026.10.0). À juger sur l'horloge : les cheveux de Harry
-(marron foncé, peut se fondre derrière le PVC).
+(marron foncé, peut se fondre derrière le PVC). Ce flash a aussi livré Noël et Pokémon à l'horloge
+d'Émilie : les deux horloges ont désormais les mêmes décors, Harry Potter en plus chez Émilie.
 
-**Thème Pokémon (2026-11-18, flashé sur l'horloge de Timothée, pas sur celle d'Émilie)** : horloges à LED — option « Pokémon »
+**Thème Pokémon (2026-11-18, flashé sur l'horloge de Timothée, puis le 2026-11-19 sur celle d'Émilie)** : horloges à LED — option « Pokémon »
 du sélecteur Ambiance, choisie à la main depuis HA (pas d'ambiance maison correspondante : la prochaine
 bascule de l'ambiance maison l'écrase). Tête de Pikachu qui cligne et crépite, et Pikachu, Poké Ball,
 Tonnerre, Salamèche, Rondoudou, Magicarpe qui traversent l'heure (`packages/matrix_pokemon.h`).
@@ -23,7 +24,7 @@ l'horloge** (derrière le PVC blanc, le marron peut se fondre : repli = jaune). 
 pour que Timothée choisisse le thème lui-même. Ce flash a aussi livré le décor de Noël à l'horloge de Timothée
 (elle tournait encore sur le firmware Halloween du 2026-10-28).
 
-**Mode Noël (branche `noel`, 2026-11-04, non flashé)** : horloges à LED — sapin et personnages de Noël
+**Mode Noël (2026-11-04, décor flashé sur les deux horloges avec Pokémon puis Harry Potter)** : horloges à LED — sapin et personnages de Noël
 (`packages/matrix_christmas.h`) ; la mécanique commune avec Halloween vit dans `packages/matrix_decor.h`
 (Halloween rend les mêmes images qu'avant, vérifié sur 10 min par un banc natif). Tablettes : clic de Noël
 (`sounds/tx_ultimate/christmas/clic.flac`) quand l'ambiance est « Noël » ; le décor vient d'`esphome-dashboard`.
