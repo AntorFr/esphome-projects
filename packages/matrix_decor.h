@@ -1,7 +1,7 @@
 #pragma once
-// Shared pieces of the seasonal decors of the 32x8 matrix clock (matrix_halloween.h,
-// matrix_christmas.h): sprites drawn through a put(x, y, Rgb) callable, random draws, and the
-// schedule of the characters passing over the time.
+// Shared pieces of the decors of the 32x8 matrix clock (matrix_halloween.h, matrix_christmas.h,
+// matrix_pokemon.h, matrix_harry_potter.h): sprites drawn through a put(x, y, Rgb) callable, random
+// draws, the schedule of the characters passing over the time, and their night version.
 #include <cmath>
 #include <cstdint>
 
@@ -47,6 +47,42 @@ template<class Put, class Pal> void blit(Put &put, const Sprite &s, int x0, int 
   }
 }
 
+// Like blit(), but first clears a ring of unlit pixels around the sprite and through its
+// interior: a sprite of the same colour as the time would melt into it.
+template<class Put, class Pal> void blit_outlined(Put &put, const Sprite &s, int x0, int y0, bool mirror, Pal &&pal) {
+  for (int y = 0; y < s.h; y++) {
+    for (int x = 0; x < s.w; x++) {
+      if (s.px[y * s.w + (mirror ? s.w - 1 - x : x)] == '.')
+        continue;
+      for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+          put_clipped(put, x0 + x + dx, y0 + y + dy, BLACK);
+    }
+  }
+  blit(put, s, x0, y0, mirror, pal);
+}
+
+// Night version, below half brightness (bedtime). The light scales and gamma-corrects every
+// channel, and a lit pixel stays lit at level 1 at least: at 22 % every pixel is off or at level 1
+// on each channel it keeps, so colours collapse into a few flat dim ones (red, yellow, white...).
+// At night the decor draws every lit pixel in one red, a pixel it paints black stays unlit (it
+// hides what is behind), and anything fainter than NIGHT_MIN (a dark detail, the end of a fading
+// spark) is not drawn: it would light as much as the rest.
+static constexpr Rgb NIGHT_RED = {255, 0, 0};
+static constexpr uint8_t NIGHT_MIN = 100;
+
+// Returns false when the pixel is not drawn at night.
+inline bool to_night(Rgb &c) {
+  uint8_t m = c.r > c.g ? c.r : c.g;
+  m = m > c.b ? m : c.b;
+  if (m == 0)
+    return true;
+  if (m < NIGHT_MIN)
+    return false;
+  c = NIGHT_RED;
+  return true;
+}
+
 // A fading spark of a trail (witch's broom, Santa's sleigh).
 struct Spark {
   int8_t x, y;
@@ -70,7 +106,34 @@ class Cast {
   static constexpr uint32_t FIRST_GAP_MIN = 5000;
   static constexpr uint32_t FIRST_GAP_MAX = 20000;
 
-  explicit Cast(int kinds) : kinds_(kinds) {}
+  // `night_holes`: the letters of the decor's characters left unlit at night (see sprite_()).
+  explicit Cast(int kinds, const char *night_holes = "") : kinds_(kinds), night_holes_(night_holes) {}
+
+  // The put() a decor draws through: at night, each pixel in its night version.
+  template<class Put> auto night_filter_(Put &put, bool night) {
+    this->night_ = night;
+    return [&put, night](int x, int y, Rgb c) {
+      if (!night || to_night(c))
+        put(x, y, c);
+    };
+  }
+
+  // A character passing over the time. At night it is ringed with unlit pixels (all in one red, it
+  // would melt into the time) and its night holes (eyes, windows) are left unlit: in one colour,
+  // only an unlit pixel still draws a detail.
+  template<class Put, class Pal> void sprite_(Put &put, const Sprite &s, int x, int y, bool mirror, Pal &&pal) const {
+    if (!this->night_) {
+      blit(put, s, x, y, mirror, pal);
+      return;
+    }
+    blit_outlined(put, s, x, y, mirror, [this, &pal](char c) {
+      for (const char *h = this->night_holes_; *h != '\0'; h++) {
+        if (*h == c)
+          return BLACK;
+      }
+      return pal(c);
+    });
+  }
 
   // Picks the character (0: at random, never the previous one) and its direction.
   int pick_(uint32_t now, int kind) {
@@ -123,6 +186,7 @@ class Cast {
   }
 
   int kinds_;
+  const char *night_holes_;
   uint32_t rng_{1};
   uint32_t gap_min_{45000}, gap_max_{120000};
   bool drawn_{false};
@@ -131,6 +195,7 @@ class Cast {
   int kind_{0}, last_kind_{0};
   uint32_t start_at_{0};
   int dir_{1};
+  bool night_{false};
 };
 
 }  // namespace matrix_decor

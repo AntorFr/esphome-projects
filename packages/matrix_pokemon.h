@@ -178,7 +178,7 @@ enum Kind : uint8_t { NONE, PIKACHU, POKE_BALL, THUNDER, CHARMANDER, JIGGLYPUFF_
 
 class Decor : public matrix_decor::Cast {
  public:
-  Decor() : Cast(KIND_COUNT - 1) {}
+  Decor() : Cast(KIND_COUNT - 1, "Bw") {}
 
   // Starts a character now; NONE picks one at random, never the previous one.
   void start(uint32_t now, Kind kind = NONE) {
@@ -193,7 +193,8 @@ class Decor : public matrix_decor::Cast {
 
   // Draws Pikachu's face at (0, 0), then the current character. `colon_x` (the column of the
   // time's colon) is unused: same signature as the Halloween decor.
-  template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
+  template<class Put> void draw(Put &&raw, uint32_t now, int colon_x, bool night = false) {
+    auto put = this->night_filter_(raw, night);
     (void) colon_x;
     if (this->due_(now))
       this->start(now);
@@ -268,7 +269,7 @@ class Decor : public matrix_decor::Cast {
     if (t >= dur)
       return false;
     const Sprite &s = (t / 100) % 2 ? PIKACHU_B : PIKACHU_A;
-    blit(put, s, this->across_(t, dur, s.w), 0, this->dir_ < 0, ink);
+    this->sprite_(put, s, this->across_(t, dur, s.w), 0, this->dir_ < 0, ink);
     return true;
   }
 
@@ -312,12 +313,23 @@ class Decor : public matrix_decor::Cast {
       if (s >= sparkle)
         gone = (float) (s - sparkle) / vanish;
     }
-    // A wobble leans the top half one way, then the other.
-    for (int sy = 0; sy < BALL.h; sy++) {
-      for (int sx = 0; sx < BALL.w; sx++) {
-        char c = BALL.px[sy * BALL.w + sx];
-        if (c != '.' && (sx * 5 + sy * 3) % 7 >= gone * 7)
-          put_clipped(put, x + sx + (sy < 3 ? tilt : 0), y + sy, ink(c));
+    // A wobble leans the top half one way, then the other. At night the ball is first ringed with
+    // unlit pixels, like the other characters (see sprite_()).
+    for (int pass = this->night_ ? 0 : 1; pass < 2; pass++) {
+      for (int sy = 0; sy < BALL.h; sy++) {
+        for (int sx = 0; sx < BALL.w; sx++) {
+          char c = BALL.px[sy * BALL.w + sx];
+          if (c == '.' || (sx * 5 + sy * 3) % 7 < gone * 7)
+            continue;
+          int px = x + sx + (sy < 3 ? tilt : 0), py = y + sy;
+          if (pass == 1) {
+            put_clipped(put, px, py, ink(c));
+            continue;
+          }
+          for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+              put_clipped(put, px + dx, py + dy, BLACK);
+        }
       }
     }
     return true;
@@ -337,7 +349,8 @@ class Decor : public matrix_decor::Cast {
       return true;
     // Flash, flicker off, back on, fade.
     float level = u < 70 ? 1.0f : u < 120 ? 0.0f : u < 260 ? 1.0f : 1.0f - (float) (u - 260) / (strike - 260);
-    blit(put, BOLT, this->bolt_x_[i], 0, this->bolt_mirror_[i], [level](char c) { return scale(ink(c), level); });
+    this->sprite_(put, BOLT, this->bolt_x_[i], 0, this->bolt_mirror_[i],
+                  [level](char c) { return scale(ink(c), level); });
     return true;
   }
 
@@ -352,7 +365,8 @@ class Decor : public matrix_decor::Cast {
     }
     Rgb flame = FLAMES[this->flame_];
     const Sprite &s = (t / 250) % 2 ? CHARMANDER_B : CHARMANDER_A;
-    blit(put, s, this->across_(t, dur, s.w), 0, this->dir_ < 0, [flame](char c) { return c == 'F' ? flame : ink(c); });
+    this->sprite_(put, s, this->across_(t, dur, s.w), 0, this->dir_ < 0,
+                  [flame](char c) { return c == 'F' ? flame : ink(c); });
     return true;
   }
 
@@ -387,7 +401,7 @@ class Decor : public matrix_decor::Cast {
       float level = age < note_life - 300 ? 1.0f : (float) (note_life - age) / 300;
       blit(put, NOTE, nx, ny, false, [level](char c) { return scale(ink(c), level); });
     }
-    blit(put, JIGGLYPUFF, (int) std::lround(x), y, false, ink);
+    this->sprite_(put, JIGGLYPUFF, (int) std::lround(x), y, false, ink);
     return true;
   }
 
@@ -412,7 +426,7 @@ class Decor : public matrix_decor::Cast {
         put_clipped(put, lx + dx, 7 - dy + (d == -1 || d == 1 ? -1 : 0), c);
       }
     }
-    blit(put, (t / 150) % 2 ? MAGIKARP_B : MAGIKARP_A, x, y, this->dir_ < 0, ink);
+    this->sprite_(put, (t / 150) % 2 ? MAGIKARP_B : MAGIKARP_A, x, y, this->dir_ < 0, ink);
     return true;
   }
 

@@ -124,8 +124,10 @@ class Decor : public matrix_decor::Cast {
   }
 
   // Draws the pumpkin at (0, 0), then the current character. `colon_x` is the column of the
-  // time's colon (drawn before this call), which the eyes take over.
-  template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
+  // time's colon (drawn before this call), which the eyes take over. `night`: below half
+  // brightness, the night version (see matrix_decor::to_night()).
+  template<class Put> void draw(Put &&raw, uint32_t now, int colon_x, bool night = false) {
+    auto put = this->night_filter_(raw, night);
     bool due = this->due_(now);
     this->draw_pumpkin_(put, now);
     if (due)
@@ -166,7 +168,9 @@ class Decor : public matrix_decor::Cast {
       this->flicker_at_ = now + this->between_(60, 160);
     }
     this->candle_ += (this->candle_target_ - this->candle_) * 0.35f;
-    blit(put, PUMPKIN, 0, 0, false, [this](char c) { return palette(c, this->candle_); });
+    // At night the carved face is left unlit: in one red, the pumpkin would be a blob.
+    blit(put, PUMPKIN, 0, 0, false,
+         [this](char c) { return this->night_ && c == 'y' ? BLACK : palette(c, this->candle_); });
   }
 
   // Floats across, bobbing, its hem waving.
@@ -175,7 +179,7 @@ class Decor : public matrix_decor::Cast {
     if (t >= dur)
       return false;
     int y = std::sin(t * TWO_PI / 1000.0f) > 0.0f ? 0 : 1;
-    blit(put, (t / 250) % 2 ? GHOST_B : GHOST_A, this->across_(t, dur, GHOST_A.w), y, this->dir_ < 0, ink);
+    this->sprite_(put, (t / 250) % 2 ? GHOST_B : GHOST_A, this->across_(t, dur, GHOST_A.w), y, this->dir_ < 0, ink);
     return true;
   }
 
@@ -185,7 +189,7 @@ class Decor : public matrix_decor::Cast {
     if (t >= dur)
       return false;
     int y = 2 + (int) std::lround(1.6f * std::sin(t * TWO_PI / 800.0f));
-    blit(put, (t / 110) % 2 ? BAT_DOWN : BAT_UP, this->across_(t, dur, BAT_UP.w), y, false, ink);
+    this->sprite_(put, (t / 110) % 2 ? BAT_DOWN : BAT_UP, this->across_(t, dur, BAT_UP.w), y, false, ink);
     return true;
   }
 
@@ -210,7 +214,7 @@ class Decor : public matrix_decor::Cast {
     int x = this->spider_x_ + sway;
     for (int ty = 0; ty < yi; ty++)
       put_clipped(put, x + SPIDER.w / 2, ty, THREAD);
-    blit(put, SPIDER, x, yi, false, ink);
+    this->sprite_(put, SPIDER, x, yi, false, ink);
     return true;
   }
 
@@ -245,7 +249,7 @@ class Decor : public matrix_decor::Cast {
       put_clipped(put, s.x, s.y, scale(SPARK, 1.0f - (float) age / s.life));
     }
     if (flying)
-      blit(put, WITCH, x, y, this->dir_ < 0, ink);
+      this->sprite_(put, WITCH, x, y, this->dir_ < 0, ink);
     return flying || sparks;
   }
 

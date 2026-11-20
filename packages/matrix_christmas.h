@@ -111,7 +111,7 @@ enum Kind : uint8_t { NONE, SLEIGH, SNOWFALL, GARLAND, SHOOTING_STAR, SNOWMAN, K
 
 class Decor : public matrix_decor::Cast {
  public:
-  Decor() : Cast(KIND_COUNT - 1) {}
+  Decor() : Cast(KIND_COUNT - 1, "r") {}
 
   // Starts a character now; NONE picks one at random, never the previous one.
   void start(uint32_t now, Kind kind = NONE) {
@@ -132,7 +132,8 @@ class Decor : public matrix_decor::Cast {
 
   // Draws the tree at (0, 0), then the current character. `colon_x` (the column of the time's
   // colon) is unused: same signature as the Halloween decor.
-  template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
+  template<class Put> void draw(Put &&raw, uint32_t now, int colon_x, bool night = false) {
+    auto put = this->night_filter_(raw, night);
     (void) colon_x;
     bool due = this->due_(now);
     this->draw_tree_(put, now);
@@ -193,6 +194,8 @@ class Decor : public matrix_decor::Cast {
       if (c >= '1' && c <= '6') {
         int i = c - '1';
         uint32_t age = now - this->lit_at_[i];
+        if (this->night_)
+          return age < 200 ? ink('g') : BLACK;  // in one red: holes in the fir, filled as they change
         return scale(LIGHTS[this->light_[i]], age < 200 ? 1.0f : 0.6f);
       }
       return ink(c);
@@ -233,7 +236,7 @@ class Decor : public matrix_decor::Cast {
     if (flying) {
       // Rudolph's nose glows.
       float glow = 0.55f + 0.45f * std::sin(t * TWO_PI / 500.0f);
-      blit(put, s, x, y, this->dir_ < 0, [glow](char c) { return c == 'n' ? scale(ink(c), glow) : ink(c); });
+      this->sprite_(put, s, x, y, this->dir_ < 0, [glow](char c) { return c == 'n' ? scale(ink(c), glow) : ink(c); });
     }
     return flying || sparks;
   }
@@ -299,7 +302,8 @@ class Decor : public matrix_decor::Cast {
     if (t >= dur)
       return false;
     int y = (t / 400) % 2 ? 1 : 0;
-    blit(put, (t / 300) % 2 ? SNOWMAN_B : SNOWMAN_A, this->across_(t, dur, SNOWMAN_A.w), y, this->dir_ < 0, ink);
+    this->sprite_(put, (t / 300) % 2 ? SNOWMAN_B : SNOWMAN_A, this->across_(t, dur, SNOWMAN_A.w), y, this->dir_ < 0,
+                  ink);
     return true;
   }
 

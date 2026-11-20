@@ -194,11 +194,13 @@ display:
                   bool christmas = id(clock_ambiance).current_option() == "Noël";
                   bool pokemon = id(clock_ambiance).current_option() == "Pokémon";
                   bool harry_potter = id(clock_ambiance).current_option() == "Harry Potter";
-                  if(brightness >= 0.50 && (halloween || christmas || pokemon || harry_potter)) {
+                  if(halloween || christmas || pokemon || harry_potter) {
                     // Halloween / Noël / Pokémon / Harry Potter: the pumpkin, the Christmas tree,
                     // Pikachu or Hedwig takes the clock icon's place and characters pass over the
                     // time, which keeps the light's colour (the evening routine uses it). Dimmed
-                    // (bedtime), the clock stays plain.
+                    // below half brightness (bedtime), the decor turns to its night version: all
+                    // in one dim red, details drawn by unlit pixels.
+                    bool night = brightness < 0.50f;
                     auto now = id(_time).now();
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", now);
                     char hours[4];
@@ -207,13 +209,13 @@ display:
                     it.get_text_bounds(11, -4, hours, id(monobit), display::TextAlign::TOP_LEFT, &x1, &y1, &w, &h);
                     auto put = [&it](int x, int y, matrix_decor::Rgb c) { it.draw_pixel_at(x, y, Color(c.r, c.g, c.b)); };
                     if(halloween)
-                      halloween_decor.draw(put, millis(), 11 + w);
+                      halloween_decor.draw(put, millis(), 11 + w, night);
                     else if(christmas)
-                      christmas_decor.draw(put, millis(), 11 + w);
+                      christmas_decor.draw(put, millis(), 11 + w, night);
                     else if(pokemon)
-                      pokemon_decor.draw(put, millis(), 11 + w);
+                      pokemon_decor.draw(put, millis(), 11 + w, night);
                     else
-                      harry_potter_decor.draw(put, millis(), 11 + w);
+                      harry_potter_decor.draw(put, millis(), 11 + w, night);
                   } else if(brightness >= 0.50) {
                     it.image(0, 0, id(_clock));
                     it.strftime(11, -4, id(monobit), light_color, "%H:%M", id(_time).now());

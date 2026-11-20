@@ -14,6 +14,7 @@ using matrix_decor::Sprite;
 using matrix_decor::TWO_PI;
 using matrix_decor::WIDTH;
 using matrix_decor::blit;
+using matrix_decor::blit_outlined;
 using matrix_decor::put_clipped;
 using matrix_decor::scale;
 
@@ -165,21 +166,6 @@ inline Rgb ink(char c) {
   }
 }
 
-// Clears a ring of unlit pixels around the sprite's shape, then draws it: the time's digits, which
-// may be of the same colour, do not touch it.
-template<class Put, class Pal> void blit_outlined(Put &put, const Sprite &s, int x0, int y0, bool mirror, Pal &&pal) {
-  for (int y = 0; y < s.h; y++) {
-    for (int x = 0; x < s.w; x++) {
-      if (s.px[y * s.w + (mirror ? s.w - 1 - x : x)] == '.')
-        continue;
-      for (int dy = -1; dy <= 1; dy++)
-        for (int dx = -1; dx <= 1; dx++)
-          put_clipped(put, x0 + x + dx, y0 + y + dy, BLACK);
-    }
-  }
-  blit(put, s, x0, y0, mirror, pal);
-}
-
 // The broom's bristles share 'S' with the wax seal in the sprites, not the colour.
 inline Rgb harry_ink(char c) { return c == 'S' ? Rgb{220, 150, 20} : ink(c); }
 
@@ -187,7 +173,7 @@ enum Kind : uint8_t { NONE, HEDWIG, EXPRESS, PATRONUS, LETTERS, LEVIOSA, QUIDDIT
 
 class Decor : public matrix_decor::Cast {
  public:
-  Decor() : Cast(KIND_COUNT - 1) {}
+  Decor() : Cast(KIND_COUNT - 1, "y") {}
 
   // Starts a character now; NONE picks one at random, never the previous one.
   void start(uint32_t now, Kind kind = NONE) {
@@ -211,7 +197,8 @@ class Decor : public matrix_decor::Cast {
   // Draws Hedwig on her perch at (0, 0), unless she is out delivering a letter, then the current
   // character. `colon_x` (the column of the time's colon) is unused: same signature as the
   // Halloween decor.
-  template<class Put> void draw(Put &&put, uint32_t now, int colon_x) {
+  template<class Put> void draw(Put &&raw, uint32_t now, int colon_x, bool night = false) {
+    auto put = this->night_filter_(raw, night);
     (void) colon_x;
     if (this->due_(now))
       this->start(now);
@@ -268,12 +255,16 @@ class Decor : public matrix_decor::Cast {
     }
     bool closed = (int32_t) (this->blink_until_ - now) > 0;
     bool glance = (int32_t) (this->glance_until_ - now) > 0;
-    blit(put, PERCHED_HEDWIG, 0, 0, false, [closed, glance](char c) -> Rgb {
+    bool night = this->night_;
+    blit(put, PERCHED_HEDWIG, 0, 0, false, [closed, glance, night](char c) -> Rgb {
       bool eye = c == 'e' || c == 'u' || c == 'n' || c == 'm';
       if (closed && eye)
         return ink('o');
-      if (c == 'u' || c == (glance ? 'm' : 'n'))
-        return BLACK;  // pupils
+      bool pupil = c == 'u' || c == (glance ? 'm' : 'n');
+      if (night)  // in one red: her eyes are holes, their pupils lit
+        return eye && !pupil ? BLACK : ink(pupil ? 'o' : c);
+      if (pupil)
+        return BLACK;
       return ink(eye ? 'e' : c);
     });
   }
@@ -297,7 +288,7 @@ class Decor : public matrix_decor::Cast {
     }
     const Sprite &s = (t / 220) % 2 ? HEDWIG_DOWN : HEDWIG_UP;
     int ix = (int) std::lround(x), y = (t / 440) % 2 ? 1 : 2;
-    blit(put, s, ix, y, false, ink);
+    this->sprite_(put, s, ix, y, false, ink);
     if (t < out) {
       for (int i = 4; i <= 6; i++)
         put_clipped(put, ix + i, y + s.h, ink('E'));
@@ -341,7 +332,7 @@ class Decor : public matrix_decor::Cast {
       put_clipped(put, px, py, scale(SMOKE, 1.0f - f * f));
     }
     if (going)
-      blit(put, s, x, y, this->dir_ < 0, ink);
+      this->sprite_(put, s, x, y, this->dir_ < 0, ink);
     return going || smoke;
   }
 
@@ -394,7 +385,7 @@ class Decor : public matrix_decor::Cast {
         continue;
       flying = true;
       int y = l.y + (int) (((age + l.born) / 300) % 2);
-      blit(put, LETTER, this->across_(age, dur, LETTER.w), y, false, ink);
+      this->sprite_(put, LETTER, this->across_(age, dur, LETTER.w), y, false, ink);
     }
     return flying;
   }
@@ -425,7 +416,7 @@ class Decor : public matrix_decor::Cast {
       }
     }
     // Leaning the way it swings.
-    blit(put, FEATHER, x, (int) std::lround(y), std::cos(t * TWO_PI / 1600.0f) < 0.0f, ink);
+    this->sprite_(put, FEATHER, x, (int) std::lround(y), std::cos(t * TWO_PI / 1600.0f) < 0.0f, ink);
     return true;
   }
 
@@ -459,10 +450,10 @@ class Decor : public matrix_decor::Cast {
     if (t >= enter) {
       float hx = t < darting ? -HARRY.w + (8.0f + HARRY.w) * (float) (t - enter) / (darting - enter)
                              : 8.0f + (WIDTH - 8.0f) * (float) (t - darting) / (gone - darting);
-      blit(put, HARRY, (int) std::lround(hx), (t / 300) % 2 ? 1 : 2, false, harry_ink);
+      this->sprite_(put, HARRY, (int) std::lround(hx), (t / 300) % 2 ? 1 : 2, false, harry_ink);
     }
     if (sx < WIDTH)
-      blit(put, (t / 70) % 2 ? FLYING_SNITCH_DOWN : FLYING_SNITCH_UP, (int) std::lround(sx),
+      this->sprite_(put, (t / 70) % 2 ? FLYING_SNITCH_DOWN : FLYING_SNITCH_UP, (int) std::lround(sx),
            (int) std::lround(sy) - 1, false, ink);
     return true;
   }
