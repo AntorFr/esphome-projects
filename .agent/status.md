@@ -1,17 +1,19 @@
 # Status — esphome-projects
 > MàJ : 2026-11-20
 
-**Décors de nuit (branche `night-decor`, 2026-11-20, non flashé)** : horloges à LED — sous 50 % de
+**Décors de nuit (2026-11-20, flashé sur les deux horloges en ESPHome 2026.11.0)** : horloges à LED — sous 50 % de
 luminosité (coucher), les quatre thèmes restent affichés au lieu de l'horloge nue, en version nuit
 tout en un seul rouge (`matrix_decor::to_night()`) : à 22 %, ESPHome allume chaque LED au niveau 1
 (en 2026.10 toute couleur vire au blanc ou au jaune ; en 2026.11 elle garde sa teinte dominante,
 mais sans nuance), donc les détails sont faits de LED éteintes. Icônes de nuit : citrouille
 au visage en creux, sapin à guirlande en trous, Hedwige aux yeux creusés (pupilles allumées),
 Pikachu inchangé ; les personnages passent cernés de LED éteintes. Au-dessus de 50 %, rendu
-identique au pixel près (banc natif, 20 min par thème). Les deux horloges compilent en ESPHome
-2026.10.0 (leur version actuelle) et 2026.11.0 (sorti le 2026-11-18). À juger sur l'horloge, de nuit.
+identique au pixel près (banc natif, 20 min par thème). Flashé avec ESPHome 2026.11.0 (sorti le
+2026-11-18), désormais celui du `.venv` du repo (il était resté en 2026.7.4) ; le code compile aussi
+en 2026.10.0. Ce flash a aussi livré Harry Potter à l'horloge de Timothée. À juger sur l'horloge,
+de nuit.
 
-**Thème Harry Potter (2026-11-19, flashé sur l'horloge d'Émilie, pas sur celle de Timothée)** : horloges à LED — option
+**Thème Harry Potter (2026-11-19, flashé sur l'horloge d'Émilie, puis le 2026-11-20 sur celle de Timothée)** : horloges à LED — option
 « Harry Potter » du sélecteur Ambiance, choisie à la main depuis HA comme Pokémon (la prochaine
 bascule de l'ambiance maison l'écrase). Pensé pour l'horloge d'Émilie, présent sur les deux comme
 Pokémon. Hedwige perchée à la place de l'icône (cligne des yeux, jette un œil à l'heure), et
